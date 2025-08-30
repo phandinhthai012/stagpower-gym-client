@@ -1,46 +1,75 @@
-# Getting Started with Create React App
+# StagPower Gym Management System - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Hệ thống quản lý phòng gym thông minh - Phần Frontend
 
-## Available Scripts
+## 🚀 Công nghệ sử dụng
 
-In the project directory, you can run:
+- **React 19** - UI Framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **ESLint** - Code quality
+- **React Router** - Routing
+- **Axios** - HTTP client
+- **React Hook Form** - Form handling
 
-### `npm start`
+## 📦 Cài đặt
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```bash
+npm install
+```
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## 🏃‍♂️ Chạy development server
 
-### `npm test`
+```bash
+npm start
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Ứng dụng sẽ chạy tại [http://localhost:3000](http://localhost:3000)
 
-### `npm run build`
+## 🛠️ Scripts có sẵn
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- `npm start` - Chạy development server
+- `npm build` - Build cho production
+- `npm test` - Chạy tests
+- `npm run lint` - Kiểm tra code quality
+- `npm run lint:fix` - Tự động fix lỗi ESLint
+- `npm run type-check` - Kiểm tra TypeScript
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 📁 Cấu trúc thư mục
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```
+src/
+├── components/     # React components
+│   ├── common/     # Components dùng chung
+│   ├── layout/     # Layout components
+│   └── features/   # Feature-specific components
+├── pages/          # Page components
+├── services/       # API services
+├── types/          # TypeScript type definitions
+├── utils/          # Utility functions
+├── hooks/          # Custom React hooks
+├── store/          # State management
+└── assets/         # Static assets
+```
 
-### `npm run eject`
+## 🎨 Design System
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+Project sử dụng Tailwind CSS với custom design tokens cho:
+- Colors
+- Typography
+- Spacing
+- Components
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🔧 Cấu hình
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- **Tailwind CSS**: `tailwind.config.js`
+- **ESLint**: `.eslintrc.js`
+- **TypeScript**: `tsconfig.json`
+- **PostCSS**: `postcss.config.js`
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## 📝 Ghi chú
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+- Đảm bảo chạy `npm run lint` trước khi commit
+- Sử dụng TypeScript strict mode
+- Tuân thủ ESLint rules
+- Responsive design với Tailwind CSS
