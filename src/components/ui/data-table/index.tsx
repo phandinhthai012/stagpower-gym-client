@@ -57,7 +57,7 @@ export function DataTable<TData>({
     >
       {children}
 
-      <div className="overflow-hidden rounded-md border">
+      <div className="tw-overflow-hidden rounded-md border">
         <Table {...TableProps}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup: any) => (
@@ -113,7 +113,7 @@ export function DataTable<TData>({
               <TableRow>
                 <TableCell
                   colSpan={table.getAllColumns().length}
-                  className="h-24 text-center"
+                  className="tw-h-24 text-center"
                 >
                   {emptyMessage}
                 </TableCell>
@@ -123,7 +123,7 @@ export function DataTable<TData>({
         </Table>
       </div>
 
-      <div className="flex flex-col gap-2.5">
+      <div className="tw-flex flex-col gap-2.5">
         <DataTablePagination table={table} />
       </div>
     </div>

@@ -1,32 +1,75 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
+import { MemberPage } from './pages/MemberPage';
+import { Button } from './components/ui/button';
+import { Dumbbell } from 'lucide-react';
 
 function App() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-      <div className="text-center">
-        <div className="mb-8">
-          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-white font-bold text-2xl">S</span>
+  const [currentPage, setCurrentPage] = useState('home');
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'login':
+        return <LoginPage />;
+      case 'register':
+        return <RegisterPage />;
+      case 'registration-success':
+        return <RegistrationSuccessPage />;
+      case 'member':
+        return <MemberPage />;
+      default:
+        return (
+          <div className="tw-min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+            <div className="tw-text-center">
+              <div className="tw-mb-8">
+                <div className="tw-flex items-center justify-center mb-6">
+                  <Dumbbell className="tw-h-16 w-16 text-blue-600" />
+                  <span className="tw-ml-3 text-3xl font-bold text-gray-800">StagPower</span>
+                </div>
+                <h1 className="tw-text-4xl font-bold text-gray-800 mb-4">
+                  Gym Management System
+                </h1>
+                <p className="tw-text-xl text-gray-600">
+                  Hệ thống quản lý phòng gym hiện đại
+                </p>
+              </div>
+              
+              <div className="tw-bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto">
+                <p className="tw-text-gray-600 mb-6">
+                  Chào mừng bạn đến với hệ thống quản lý phòng gym StagPower!
+                </p>
+                <div className="tw-space-y-3">
+                  <Button 
+                    onClick={() => setCurrentPage('login')}
+                    className="tw-w-full"
+                  >
+                    Đăng nhập
+                  </Button>
+                  <Button 
+                    onClick={() => setCurrentPage('register')}
+                    variant="outline"
+                    className="tw-w-full"
+                  >
+                    Đăng ký thành viên
+                  </Button>
+                  <Button 
+                    onClick={() => setCurrentPage('member')}
+                    variant="secondary"
+                    className="tw-w-full"
+                  >
+                    Xem Demo (Member)
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            StagPower Gym
-          </h1>
-          <p className="text-xl text-gray-600">
-            Smart Gym Management System
-          </p>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto">
-          <p className="text-gray-600 mb-6">
-            Welcome to your smart gym management system!
-          </p>
-          <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
-            Get Started
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+        );
+    }
+  };
+
+  return renderPage();
 }
 
 export default App;

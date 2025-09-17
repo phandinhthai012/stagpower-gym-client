@@ -24,13 +24,13 @@ export function MemberTable() {
       columnHelper.accessor('full_name', {
         header: 'Tên',
         cell: (info) => (
-          <div className="flex items-center space-x-3">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-sm font-medium">
+          <div className="tw-flex items-center space-x-3">
+            <div className="tw-h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="tw-text-sm font-medium">
                 {info.getValue().split(' ').map(n => n[0]).join('')}
               </span>
             </div>
-            <span className="font-medium">{info.getValue()}</span>
+            <span className="tw-font-medium">{info.getValue()}</span>
           </div>
         ),
       }),
@@ -70,15 +70,15 @@ export function MemberTable() {
         id: 'actions',
         header: 'Thao tác',
         cell: (info) => (
-          <div className="flex items-center space-x-2">
+          <div className="tw-flex items-center space-x-2">
             <Button variant="ghost" size="sm">
-              <Eye className="h-4 w-4" />
+              <Eye className="tw-h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm">
-              <Edit className="h-4 w-4" />
+              <Edit className="tw-h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm">
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="tw-h-4 w-4" />
             </Button>
           </div>
         ),
@@ -100,9 +100,9 @@ export function MemberTable() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Quản lý thành viên</h2>
+    <div className="tw-space-y-4">
+      <div className="tw-flex items-center justify-between">
+        <h2 className="tw-text-2xl font-bold">Quản lý thành viên</h2>
         <Button>Thêm thành viên</Button>
       </div>
       

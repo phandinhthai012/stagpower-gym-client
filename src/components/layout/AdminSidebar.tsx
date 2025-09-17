@@ -27,14 +27,14 @@ const navigation = [
 
 export function AdminSidebar() {
   return (
-    <div className="w-64 border-r bg-background">
-      <div className="flex h-full flex-col">
-        <div className="flex h-14 items-center border-b px-6">
-          <Dumbbell className="h-6 w-6 text-primary" />
-          <span className="ml-2 text-lg font-semibold">StagPower</span>
+    <div className="tw-w-64 border-r bg-background">
+      <div className="tw-flex h-full flex-col">
+        <div className="tw-flex h-14 items-center border-b px-6">
+          <Dumbbell className="tw-h-6 w-6 text-primary" />
+          <span className="tw-ml-2 text-lg font-semibold">StagPower</span>
         </div>
         
-        <nav className="flex-1 space-y-1 p-4">
+        <nav className="tw-flex-1 space-y-1 p-4">
           {navigation.map((item) => (
             <NavLink
               key={item.name}
@@ -48,7 +48,7 @@ export function AdminSidebar() {
                 )
               }
             >
-              <item.icon className="mr-3 h-4 w-4" />
+              <item.icon className="tw-mr-3 h-4 w-4" />
               {item.name}
             </NavLink>
           ))}
