@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -8,7 +7,11 @@ import { Badge } from '../components/ui/badge';
 import { mockUsers } from '../mockdata';
 import { Dumbbell, Eye, EyeOff, User, Lock } from 'lucide-react';
 
-export function LoginPage() {
+interface LoginPageProps {
+  onNavigate?: (page: string) => void;
+}
+
+export function LoginPage({ onNavigate }: LoginPageProps) {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -16,7 +19,6 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -37,10 +39,23 @@ export function LoginPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Find user in mock data
-      const user = mockUsers.find(u => 
-        u.email === formData.email && 
-        u.password === formData.password // In real app, this would be hashed
+      // For demo purposes, we'll check against demo accounts first, then mock data
+      const demoAccount = demoAccounts.find(account => 
+        account.email === formData.email && 
+        account.password === formData.password
       );
+      
+      let user = null;
+      if (demoAccount) {
+        // Find corresponding user in mock data
+        user = mockUsers.find(u => u.email === formData.email);
+      } else {
+        // Check against mock data (in real app, this would be hashed comparison)
+        user = mockUsers.find(u => 
+          u.email === formData.email && 
+          u.password === formData.password
+        );
+      }
 
       if (user) {
         // Simulate successful login
@@ -52,21 +67,23 @@ export function LoginPage() {
         }));
         
         // Redirect based on role
-        switch (user.role) {
-          case 'Admin':
-            navigate('/admin/dashboard');
-            break;
-          case 'Staff':
-            navigate('/staff/dashboard');
-            break;
-          case 'Trainer':
-            navigate('/trainer/dashboard');
-            break;
-          case 'Member':
-            navigate('/member/dashboard');
-            break;
-          default:
-            navigate('/dashboard');
+        if (onNavigate) {
+          switch (user.role) {
+            case 'Admin':
+              onNavigate('admin-dashboard');
+              break;
+            case 'Staff':
+              onNavigate('staff-dashboard');
+              break;
+            case 'Trainer':
+              onNavigate('trainer-dashboard');
+              break;
+            case 'Member':
+              onNavigate('member-dashboard');
+              break;
+            default:
+              onNavigate('dashboard');
+          }
         }
       } else {
         setError('Email hoặc mật khẩu không đúng');
@@ -203,20 +220,20 @@ export function LoginPage() {
 
             {/* Links */}
             <div className="tw-mt-6 text-center space-y-2">
-              <Link
-                to="/forgot-password"
+              <button
+                onClick={() => onNavigate?.('forgot-password')}
                 className="tw-text-sm text-blue-600 hover:text-blue-800"
               >
                 Quên mật khẩu?
-              </Link>
+              </button>
               <div className="tw-text-sm text-gray-600">
                 Chưa có tài khoản?{' '}
-                <Link
-                  to="/register"
+                <button
+                  onClick={() => onNavigate?.('register')}
                   className="tw-text-blue-600 hover:text-blue-800 font-medium"
                 >
                   Đăng ký ngay
-                </Link>
+                </button>
               </div>
             </div>
           </CardContent>

@@ -7,18 +7,18 @@ import { Button } from './components/ui/button';
 import { Dumbbell } from 'lucide-react';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState('login');
 
   const renderPage = () => {
     switch (currentPage) {
       case 'login':
-        return <LoginPage />;
+        return <LoginPage onNavigate={setCurrentPage} />;
       case 'register':
-        return <RegisterPage />;
+        return <RegisterPage onNavigate={setCurrentPage} />;
       case 'registration-success':
-        return <RegistrationSuccessPage />;
+        return <RegistrationSuccessPage onNavigate={setCurrentPage} />;
       case 'member':
-        return <MemberPage />;
+        return <MemberPage onNavigate={setCurrentPage} />;
       default:
         return (
           <div className="tw-min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">

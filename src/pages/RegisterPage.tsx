@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -9,11 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { mockPackages, mockBranches } from '../mockdata';
 import { Dumbbell, Eye, EyeOff, User, Lock, Mail, Phone, Calendar, MapPin, CreditCard } from 'lucide-react';
 
-export function RegisterPage() {
+interface RegisterPageProps {
+  onNavigate?: (page: string) => void;
+}
+
+export function RegisterPage({ onNavigate }: RegisterPageProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     // Personal Information
@@ -144,7 +146,7 @@ export function RegisterPage() {
       localStorage.setItem('user', JSON.stringify(newUser));
       localStorage.setItem('registration_success', 'true');
       
-      navigate('/registration-success');
+      onNavigate?.('registration-success');
     } catch (err) {
       setError('Đã xảy ra lỗi trong quá trình đăng ký. Vui lòng thử lại.');
     } finally {
@@ -611,9 +613,12 @@ export function RegisterPage() {
         {/* Footer */}
         <div className="tw-text-center mt-8 text-sm text-gray-500">
           <p>Đã có tài khoản?{' '}
-            <Link to="/login" className="tw-text-blue-600 hover:text-blue-800 font-medium">
+            <button 
+              onClick={() => onNavigate?.('login')} 
+              className="tw-text-blue-600 hover:text-blue-800 font-medium"
+            >
               Đăng nhập ngay
-            </Link>
+            </button>
           </p>
         </div>
       </div>

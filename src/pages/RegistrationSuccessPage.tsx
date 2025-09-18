@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { CheckCircle, Dumbbell, QrCode, Calendar, MapPin, CreditCard, Download } from 'lucide-react';
 
-export function RegistrationSuccessPage() {
+interface RegistrationSuccessPageProps {
+  onNavigate?: (page: string) => void;
+}
+
+export function RegistrationSuccessPage({ onNavigate }: RegistrationSuccessPageProps) {
   const [user, setUser] = useState<any>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user just completed registration
@@ -15,7 +17,7 @@ export function RegistrationSuccessPage() {
     const userData = localStorage.getItem('user');
     
     if (!registrationSuccess || !userData) {
-      navigate('/register');
+      onNavigate?.('register');
       return;
     }
 
@@ -23,7 +25,7 @@ export function RegistrationSuccessPage() {
     
     // Clean up
     localStorage.removeItem('registration_success');
-  }, [navigate]);
+  }, [onNavigate]);
 
   const handleDownloadQR = () => {
     // In a real app, this would generate and download the actual QR code
@@ -31,7 +33,7 @@ export function RegistrationSuccessPage() {
   };
 
   const handleGoToDashboard = () => {
-    navigate('/member/dashboard');
+    onNavigate?.('member-dashboard');
   };
 
   if (!user) {
@@ -202,10 +204,12 @@ export function RegistrationSuccessPage() {
           <Button onClick={handleGoToDashboard} size="lg">
             Vào Dashboard
           </Button>
-          <Button variant="outline" size="lg" asChild>
-            <Link to="/login">
-              Đăng nhập
-            </Link>
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={() => onNavigate?.('login')}
+          >
+            Đăng nhập
           </Button>
         </div>
 

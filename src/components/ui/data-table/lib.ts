@@ -1,9 +1,9 @@
-import { type Table } from '@tanstack/react-table';
+import { type Table, type Column } from '@tanstack/react-table';
 
 export function getCommonPinningStyles<TData>({
   column,
 }: {
-  column: Table<TData>['getAllColumns'][number];
+  column: Column<TData, unknown>;
 }) {
   const isPinned = column.getIsPinned();
   const isLastLeftPinnedColumn =

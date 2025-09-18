@@ -57,7 +57,7 @@ export const mockUsers: User[] = [
     phone: '0901234567',
     gender: 'Male',
     date_of_birth: '1995-03-15',
-    password: '$2b$10$hashedpassword1',
+    password: 'member123', // Demo password for testing
     cccd: '123456789012',
     photo: 'https://via.placeholder.com/150/007bff/ffffff?text=NA',
     join_date: '2024-01-15',
@@ -83,8 +83,7 @@ export const mockUsers: User[] = [
     phone: '0901234568',
     gender: 'Female',
     date_of_birth: '2000-07-22',
-    date_of_birth: '2000-07-22',
-    password: '$2b$10$hashedpassword2',
+    password: 'member123', // Demo password for testing
     cccd: '123456789013',
     photo: 'https://via.placeholder.com/150/28a745/ffffff?text=TB',
     join_date: '2024-02-01',
@@ -110,7 +109,7 @@ export const mockUsers: User[] = [
     phone: '0901234569',
     gender: 'Male',
     date_of_birth: '1988-11-10',
-    password: '$2b$10$hashedpassword3',
+    password: 'member123', // Demo password for testing
     cccd: '123456789014',
     photo: 'https://via.placeholder.com/150/dc3545/ffffff?text=LC',
     join_date: '2024-01-20',
@@ -136,7 +135,7 @@ export const mockUsers: User[] = [
     phone: '0901234570',
     gender: 'Female',
     date_of_birth: '1992-05-18',
-    password: '$2b$10$hashedpassword4',
+    password: 'member123', // Demo password for testing
     cccd: '123456789015',
     photo: 'https://via.placeholder.com/150/6f42c1/ffffff?text=PD',
     join_date: '2024-03-01',
@@ -164,7 +163,7 @@ export const mockUsers: User[] = [
     phone: '0901234571',
     gender: 'Male',
     date_of_birth: '1990-09-12',
-    password: '$2b$10$hashedpassword5',
+    password: 'trainer123', // Demo password for testing
     cccd: '123456789016',
     photo: 'https://via.placeholder.com/150/17a2b8/ffffff?text=HE',
     join_date: '2023-06-01',
@@ -189,7 +188,7 @@ export const mockUsers: User[] = [
     phone: '0901234572',
     gender: 'Female',
     date_of_birth: '1985-12-03',
-    password: '$2b$10$hashedpassword6',
+    password: 'trainer123', // Demo password for testing
     cccd: '123456789017',
     photo: 'https://via.placeholder.com/150/fd7e14/ffffff?text=VP',
     join_date: '2023-08-15',
@@ -216,7 +215,7 @@ export const mockUsers: User[] = [
     phone: '0901234573',
     gender: 'Male',
     date_of_birth: '1993-04-25',
-    password: '$2b$10$hashedpassword7',
+    password: 'staff123', // Demo password for testing
     cccd: '123456789018',
     photo: 'https://via.placeholder.com/150/20c997/ffffff?text=DG',
     join_date: '2023-10-01',
@@ -236,7 +235,7 @@ export const mockUsers: User[] = [
     phone: '0901234574',
     gender: 'Female',
     date_of_birth: '1991-08-14',
-    password: '$2b$10$hashedpassword8',
+    password: 'staff123', // Demo password for testing
     cccd: '123456789019',
     photo: 'https://via.placeholder.com/150/e83e8c/ffffff?text=BH',
     join_date: '2023-11-15',
@@ -258,7 +257,7 @@ export const mockUsers: User[] = [
     phone: '0901234575',
     gender: 'Male',
     date_of_birth: '1980-01-01',
-    password: '$2b$10$hashedpassword9',
+    password: 'admin123', // Demo password for testing
     cccd: '123456789020',
     photo: 'https://via.placeholder.com/150/6c757d/ffffff?text=AD',
     join_date: '2023-01-01',
