@@ -3,7 +3,6 @@ module.exports = {
   content: [
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  prefix: 'tw-',
   theme: {
     extend: {
       colors: {

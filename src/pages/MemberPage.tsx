@@ -7,8 +7,9 @@ interface MemberPageProps {
 
 export function MemberPage({ onNavigate }: MemberPageProps) {
   return (
-    <div className="tw-container mx-auto py-6">
+    <div className="container mx-auto py-6">
       <MemberTable />
     </div>
   );
 }
+             
