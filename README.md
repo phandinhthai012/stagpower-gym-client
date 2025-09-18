@@ -4,11 +4,11 @@ Hệ thống quản lý phòng gym thông minh - Phần Frontend
 
 ## 🚀 Công nghệ sử dụng
 
-- **React 18** - UI Framework
+- **React 19** - UI Framework
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
 - **ESLint** - Code quality
-- **Vite** - Build tool và dev server
+- **Create React App** - Build tool và dev server
 - **Radix UI** - UI component library
 - **Lucide React** - Icon library
 - **React Hook Form** - Form handling
@@ -29,9 +29,9 @@ npm run dev
 
 ## 🛠️ Scripts có sẵn
 
-- `npm run dev` - Chạy development server (Vite)
+- `npm run dev` - Chạy development server (port 5173)
 - `npm run build` - Build cho production
-- `npm run preview` - Preview build production
+- `npm start` - Chạy development server (port 3000)
 - `npm run lint` - Kiểm tra code quality
 - `npm run lint:fix` - Tự động fix lỗi ESLint
 - `npm run type-check` - Kiểm tra TypeScript
@@ -72,7 +72,7 @@ Project sử dụng Tailwind CSS với:
 
 ## 🔧 Cấu hình
 
-- **Vite**: `vite.config.ts` - Build tool configuration
+- **Create React App**: `package.json` - Build tool configuration
 - **Tailwind CSS**: `tailwind.config.js` - Styling configuration
 - **ESLint**: `.eslintrc.js` - Code quality rules
 - **TypeScript**: `tsconfig.json` - TypeScript configuration
@@ -92,7 +92,7 @@ Project sử dụng Tailwind CSS với:
 ### 🔐 Authentication System
 - **AuthPage** với tab switching (Login/Register)
 - **Form validation** với error handling
-- **Mock data integration** cho demo
+<!-- - **Mock data integration** cho demo -->
 - **Role-based navigation** (Member, Trainer, Staff, Admin)
 
 ### 📱 Responsive Design

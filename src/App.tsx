@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AuthPage } from './pages/AuthPage';
 import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
 import { MemberPage } from './pages/MemberPage';
 import { LandingPage } from './features/landing/page';
+import { useDocumentTitle } from './hooks/useDocumentTitle';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('landing');
+  
+  // Set dynamic title based on current page
+  useDocumentTitle('StagPower - Hệ Thống Phòng Gym Thông Minh');
 
   const renderPage = () => {
     switch (currentPage) {
