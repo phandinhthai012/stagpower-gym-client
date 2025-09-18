@@ -4,12 +4,13 @@ Hệ thống quản lý phòng gym thông minh - Phần Frontend
 
 ## 🚀 Công nghệ sử dụng
 
-- **React 19** - UI Framework
+- **React 18** - UI Framework
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Styling
 - **ESLint** - Code quality
-- **React Router** - Routing
-- **Axios** - HTTP client
+- **Vite** - Build tool và dev server
+- **Radix UI** - UI component library
+- **Lucide React** - Icon library
 - **React Hook Form** - Form handling
 
 ## 📦 Cài đặt
@@ -21,16 +22,16 @@ npm install
 ## 🏃‍♂️ Chạy development server
 
 ```bash
-npm start
+npm run dev
 ```
 
-Ứng dụng sẽ chạy tại [http://localhost:3000](http://localhost:3000)
+Ứng dụng sẽ chạy tại [http://localhost:5173](http://localhost:5173)
 
 ## 🛠️ Scripts có sẵn
 
-- `npm start` - Chạy development server
-- `npm build` - Build cho production
-- `npm test` - Chạy tests
+- `npm run dev` - Chạy development server (Vite)
+- `npm run build` - Build cho production
+- `npm run preview` - Preview build production
 - `npm run lint` - Kiểm tra code quality
 - `npm run lint:fix` - Tự động fix lỗi ESLint
 - `npm run type-check` - Kiểm tra TypeScript
@@ -39,34 +40,66 @@ npm start
 
 ```
 src/
-├── components/     # React components
-│   ├── common/     # Components dùng chung
-│   ├── layout/     # Layout components
-│   └── features/   # Feature-specific components
-├── features/       # Features page
-├── pages/          # Page components
-├── services/       # API services
-├── types/          # TypeScript type definitions
-├── utils/          # Utility functions
-├── hooks/          # Custom React hooks
-├── store/          # State management
-└── assets/         # Static assets
+├── components/           # React components
+│   └── ui/              # UI components (Button, Input, Card, etc.)
+├── features/            # Feature modules
+│   └── landing/         # Landing page feature
+│       ├── components/  # Landing page components
+│       └── page/        # Landing page main component
+├── pages/               # Page components
+│   ├── AuthPage.tsx     # Login/Register page
+│   ├── MemberPage.tsx   # Member dashboard
+│   └── RegistrationSuccessPage.tsx
+├── mockdata/            # Mock data for demo
+│   ├── users.ts         # User mock data
+│   ├── packages.ts      # Package mock data
+│   └── branches.ts      # Branch mock data
+├── assets/              # Static assets
+│   ├── Logo_dumbbell.png
+│   └── Logo_StagPower_4x.png
+├── App.tsx              # Main app component
+└── main.tsx             # App entry point
 ```
 
 ## 🎨 Design System
 
-Project sử dụng Tailwind CSS với custom design tokens cho:
-- Colors
-- Typography
-- Spacing
-- Components
+Project sử dụng Tailwind CSS với:
+- **Color Scheme**: Orange (#FF6B35) làm primary, Gray/Black cho text
+- **Typography**: Inter font family
+- **Components**: Radix UI components với Tailwind styling
+- **Icons**: Lucide React icon library
+- **Responsive**: Mobile-first design approach
 
 ## 🔧 Cấu hình
 
-- **Tailwind CSS**: `tailwind.config.js`
-- **ESLint**: `.eslintrc.js`
-- **TypeScript**: `tsconfig.json`
-- **PostCSS**: `postcss.config.js`
+- **Vite**: `vite.config.ts` - Build tool configuration
+- **Tailwind CSS**: `tailwind.config.js` - Styling configuration
+- **ESLint**: `.eslintrc.js` - Code quality rules
+- **TypeScript**: `tsconfig.json` - TypeScript configuration
+- **PostCSS**: `postcss.config.js` - CSS processing
+
+## ✨ Tính năng hiện tại
+
+### 🏠 Landing Page
+- **Hero Section** với call-to-action buttons
+- **Features Section** giới thiệu 6 ưu điểm chính
+- **Packages Section** hiển thị 3 gói tập phổ biến
+- **Gym Info Section** với thống kê ấn tượng
+- **Testimonials Section** với đánh giá từ hội viên
+- **FAQ Section** với 10 câu hỏi thường gặp
+- **Footer** với thông tin liên hệ và social links
+
+### 🔐 Authentication System
+- **AuthPage** với tab switching (Login/Register)
+- **Form validation** với error handling
+- **Mock data integration** cho demo
+- **Role-based navigation** (Member, Trainer, Staff, Admin)
+
+### 📱 Responsive Design
+- **Mobile-first** approach
+- **Smooth scrolling** navigation
+- **Interactive elements** với hover effects
+- **Optimized images** và lazy loading
 
 ## 📝 Ghi chú
 
@@ -74,3 +107,30 @@ Project sử dụng Tailwind CSS với custom design tokens cho:
 - Sử dụng TypeScript strict mode
 - Tuân thủ ESLint rules
 - Responsive design với Tailwind CSS
+- **Demo mode**: Sử dụng mock data, không kết nối API thực
+
+## 🚀 Development Workflow
+
+1. **Clone repository** và cài đặt dependencies
+2. **Chạy dev server**: `npm run dev`
+3. **Mở browser**: [http://localhost:5173](http://localhost:5173)
+4. **Landing Page** sẽ hiển thị làm trang chủ
+5. **Navigation**: Sử dụng header menu hoặc CTA buttons để chuyển trang
+
+## 🎯 User Journey
+
+```
+Landing Page (Homepage)
+    ↓
+[Đăng Ký] → AuthPage (Register tab)
+[Đăng Nhập] → AuthPage (Login tab)
+    ↓
+[Submit] → RegistrationSuccessPage / MemberPage
+```
+
+## 📊 Mock Data
+
+- **Users**: 3 demo accounts (admin, trainer, member)
+- **Packages**: 3 gói tập (Trial, 3 tháng, 12 tháng)
+- **Branches**: 4 chi nhánh tại TP.HCM
+- **Testimonials**: 6 đánh giá từ hội viên thực tế
