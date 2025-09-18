@@ -80,6 +80,22 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           </li>
           <li>
             <button 
+              onClick={() => scrollToSection('testimonials')}
+              className="text-white hover:text-orange-400 font-medium transition-colors"
+            >
+              Đánh Giá
+            </button>
+          </li>
+          <li>
+            <button 
+              onClick={() => scrollToSection('faq')}
+              className="text-white hover:text-orange-400 font-medium transition-colors"
+            >
+              FAQ
+            </button>
+          </li>
+          <li>
+            <button 
               onClick={() => scrollToSection('contact')}
               className="text-white hover:text-orange-400 font-medium transition-colors"
             >
@@ -98,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
             Đăng Nhập
           </Button>
           <Button 
-            onClick={() => scrollToSection('registration')}
+            onClick={() => onNavigate?.('register')}
             className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-semibold transition-all hover:-translate-y-0.5"
           >
             Đăng Ký Ngay

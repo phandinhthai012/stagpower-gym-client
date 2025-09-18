@@ -1,7 +1,11 @@
 import React from 'react';
 import { Button } from '../../../components/ui/button';
 
-export const HeroSection: React.FC = () => {
+interface HeroSectionProps {
+  onNavigate?: (page: string) => void;
+}
+
+export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate }) => {
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -30,7 +34,7 @@ export const HeroSection: React.FC = () => {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
-            onClick={() => scrollToSection('registration')}
+            onClick={() => onNavigate?.('register')}
             className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-orange-500/30"
           >
             Đăng Ký Tập Ngay

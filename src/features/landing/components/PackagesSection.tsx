@@ -2,7 +2,11 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
-export const PackagesSection: React.FC = () => {
+interface PackagesSectionProps {
+  onNavigate?: (page: string) => void;
+}
+
+export const PackagesSection: React.FC<PackagesSectionProps> = ({ onNavigate }) => {
   const packages = [
     {
       name: "Gói Thử Nghiệm",
@@ -103,10 +107,10 @@ export const PackagesSection: React.FC = () => {
               </ul>
               
               <Button 
-                onClick={() => scrollToSection('registration')}
+                onClick={() => onNavigate?.('register')}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-full font-semibold transition-all hover:-translate-y-1"
               >
-                Chọn Gói Này
+                Đăng Ký
               </Button>
             </div>
           ))}

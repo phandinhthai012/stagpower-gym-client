@@ -4,7 +4,8 @@ import { HeroSection } from '../components/HeroSection';
 import { FeaturesSection } from '../components/FeaturesSection';
 import { PackagesSection } from '../components/PackagesSection';
 import { GymInfoSection } from '../components/GymInfoSection';
-import { RegistrationForm } from '../components/RegistrationForm';
+import { TestimonialsSection } from '../components/TestimonialsSection';
+import { FAQSection } from '../components/FAQSection';
 import { Footer } from '../components/Footer';
 
 interface LandingPageProps {
@@ -15,11 +16,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
   return (
     <div className="min-h-screen">
       <Header onNavigate={onNavigate} />
-      <HeroSection />
+      <HeroSection onNavigate={onNavigate} />
       <FeaturesSection />
-      <PackagesSection />
+      <PackagesSection onNavigate={onNavigate} />
       <GymInfoSection />
-      <RegistrationForm />
+      <TestimonialsSection onNavigate={onNavigate} />
+      <FAQSection />
       <Footer />
     </div>
   );
