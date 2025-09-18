@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthPage } from './pages/AuthPage';
 import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
 import { MemberPage } from './pages/MemberPage';
+import { LandingPage } from './features/landing/page';
 import { Button } from './components/ui/button';
 import { Dumbbell } from 'lucide-react';
 
@@ -10,6 +11,8 @@ function App() {
 
   const renderPage = () => {
     switch (currentPage) {
+      case 'landing':
+        return <LandingPage onNavigate={setCurrentPage} />;
       case 'login':
       case 'register':
         return <AuthPage onNavigate={setCurrentPage} />;
@@ -40,7 +43,14 @@ function App() {
                 </p>
                 <div className="space-y-3">
                   <Button 
+                    onClick={() => setCurrentPage('landing')}
+                    className="w-full"
+                  >
+                    Xem Landing Page
+                  </Button>
+                  <Button 
                     onClick={() => setCurrentPage('login')}
+                    variant="outline"
                     className="w-full"
                   >
                     Đăng nhập

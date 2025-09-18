@@ -43,6 +43,7 @@ src/
 │   ├── common/     # Components dùng chung
 │   ├── layout/     # Layout components
 │   └── features/   # Feature-specific components
+├── features/       # Features page
 ├── pages/          # Page components
 ├── services/       # API services
 ├── types/          # TypeScript type definitions
