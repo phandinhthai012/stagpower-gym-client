@@ -1,11 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Star, Quote } from 'lucide-react';
 
-interface TestimonialsSectionProps {
-  onNavigate?: (page: string) => void;
-}
-
-export const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ onNavigate }) => {
+export const TestimonialsSection: React.FC = () => {
+  const navigate = useNavigate();
   const testimonials = [
     {
       id: 1,
@@ -139,13 +137,13 @@ export const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({ onNavi
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => onNavigate?.('register')}
+                onClick={() => navigate('/register')}
                 className="bg-white text-orange-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-all hover:-translate-y-1"
               >
                 Đăng Ký Ngay
               </button>
               <button
-                onClick={() => onNavigate?.('login')}
+                onClick={() => navigate('/login')}
                 className="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-orange-600 transition-all hover:-translate-y-1"
               >
                 Đăng Nhập

@@ -1,11 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/button';
 
-interface HeroSectionProps {
-  onNavigate?: (page: string) => void;
-}
-
-export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate }) => {
+export const HeroSection: React.FC = () => {
+  const navigate = useNavigate();
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -34,7 +32,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate }) => {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button 
-            onClick={() => onNavigate?.('register')}
+            onClick={() => navigate('/register')}
             className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-orange-500/30"
           >
             Đăng Ký Tập Ngay
