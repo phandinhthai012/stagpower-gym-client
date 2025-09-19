@@ -5,7 +5,13 @@ import { AuthPage, RegistrationSuccessPage } from './features/auth';
 import { MemberPage } from './features/member';
 import { AdminDashboard } from './features/admin';
 import { StaffDashboard } from './features/staff';
-import { TrainerDashboard } from './features/personTrainer';
+import { TrainerLayout } from './features/personTrainer/components/TrainerLayout';
+import { TrainerDashboardPage } from './features/personTrainer/pages/TrainerDashboardPage';
+import { TrainerMemberManagementPage } from './features/personTrainer/pages/TrainerMemberManagementPage';
+import { TrainerSchedulePage } from './features/personTrainer/pages/TrainerSchedulePage';
+import { TrainerProgressPage } from './features/personTrainer/pages/TrainerProgressPage';
+import { TrainerProfilePage } from './features/personTrainer/pages/TrainerProfilePage';
+import { TrainerNotificationsPage } from './features/personTrainer/pages/TrainerNotificationsPage';
 import { LandingPage } from './features/landing/page';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 
@@ -44,10 +50,18 @@ function App() {
             path="/trainer" 
             element={
               <ProtectedRoute requiredRole="Trainer">
-                <TrainerDashboard />
+                <TrainerLayout />
               </ProtectedRoute>
             } 
-          />
+          >
+            <Route index element={<Navigate to="/trainer/dashboard" replace />} />
+            <Route path="dashboard" element={<TrainerDashboardPage />} />
+            <Route path="member-management" element={<TrainerMemberManagementPage />} />
+            <Route path="schedule" element={<TrainerSchedulePage />} />
+            <Route path="progress" element={<TrainerProgressPage />} />
+            <Route path="profile" element={<TrainerProfilePage />} />
+            <Route path="notifications" element={<TrainerNotificationsPage />} />
+          </Route>
           <Route 
             path="/member" 
             element={
