@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/button';
+import { useAuth } from '../../../contexts/AuthContext';
 import LogoStag from '../../../assets/Logo_StagPower_4x.png';
 
-interface HeaderProps {
-  onNavigate?: (page: string) => void;
-}
-
-export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
+export const Header: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -106,19 +107,61 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
         {/* CTA Buttons */}
         <div className="flex gap-3">
-          <Button 
-            onClick={() => onNavigate?.('login')}
-            variant="outline"
-            className="border-white text-white hover:bg-white hover:text-gray-900 px-4 py-2 rounded-full font-semibold transition-all"
-          >
-            Đăng Nhập
-          </Button>
-          <Button 
-            onClick={() => onNavigate?.('register')}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-semibold transition-all hover:-translate-y-0.5"
-          >
-            Đăng Ký Ngay
-          </Button>
+          {isAuthenticated ? (
+            <div 
+              className="relative"
+              onMouseEnter={() => setIsUserMenuOpen(true)}
+              onMouseLeave={() => setIsUserMenuOpen(false)}
+            >
+              <span className="text-white text-sm px-3 py-2 cursor-pointer hover:text-orange-400 transition-colors">
+                Xin chào, {user?.fullName}
+              </span>
+              
+              {/* Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <button
+                    onClick={() => {
+                      const dashboardPath = user?.role === 'Admin' ? '/admin' :
+                                          user?.role === 'Staff' ? '/staff' :
+                                          user?.role === 'Trainer' ? '/trainer' :
+                                          '/member';
+                      navigate(dashboardPath);
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    Đăng Xuất
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Button 
+                onClick={() => navigate('/login')}
+                variant="outline"
+                className="border-white text-white hover:bg-white hover:text-gray-900 px-4 py-2 rounded-full font-semibold transition-all"
+              >
+                Đăng Nhập
+              </Button>
+              <Button 
+                onClick={() => navigate('/register')}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-semibold transition-all hover:-translate-y-0.5"
+              >
+                Đăng Ký Ngay
+              </Button>
+            </>
+          )}
         </div>
       </nav>
     </header>

@@ -1,12 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
-interface PackagesSectionProps {
-  onNavigate?: (page: string) => void;
-}
-
-export const PackagesSection: React.FC<PackagesSectionProps> = ({ onNavigate }) => {
+export const PackagesSection: React.FC = () => {
+  const navigate = useNavigate();
   const packages = [
     {
       name: "Gói Thử Nghiệm",
@@ -107,7 +105,7 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({ onNavigate }) 
               </ul>
               
               <Button 
-                onClick={() => onNavigate?.('register')}
+                onClick={() => navigate('/register')}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-full font-semibold transition-all hover:-translate-y-1"
               >
                 Đăng Ký

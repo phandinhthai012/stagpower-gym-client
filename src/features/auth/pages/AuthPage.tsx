@@ -1,24 +1,46 @@
-import React, { useState } from 'react';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { mockUsers } from '../mockdata';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Label } from '../../../components/ui/label';
+import { mockUsers } from '../../../mockdata/index';
 import { Eye, EyeOff } from 'lucide-react';
-import LogoDumbbell from '../assets/Logo_dumbbell.png';
-import LogoStagPower4x from '../assets/Logo_StagPower_4x.png';
-
-interface AuthPageProps {
-  onNavigate?: (page: string) => void;
-}
+import LogoDumbbell from '../../../assets/Logo_dumbbell.png';
+import LogoStagPower4x from '../../../assets/Logo_StagPower_4x.png';
+import { useAuth } from '../../../contexts/AuthContext';
 
 type AuthMode = 'login' | 'register';
 
-export function AuthPage({ onNavigate }: AuthPageProps) {
+export function AuthPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, register, isAuthenticated, user } = useAuth();
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Set auth mode based on current route
+  useEffect(() => {
+    if (location.pathname === '/register') {
+      setAuthMode('register');
+    } else {
+      setAuthMode('login');
+    }
+  }, [location.pathname]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Redirect based on user role
+      const dashboardPath = user.role === 'Admin' ? '/admin' :
+                           user.role === 'Staff' ? '/staff' :
+                           user.role === 'Trainer' ? '/trainer' :
+                           '/member';
+      navigate(dashboardPath, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   // Login form data
   const [loginData, setLoginData] = useState({
@@ -85,32 +107,28 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
       );
 
       if (user) {
-        // Simulate successful login
-        localStorage.setItem('user', JSON.stringify({
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          full_name: user.full_name
-        }));
+        const success = await login(loginData.email, loginData.password);
         
-        // Redirect based on role
-        if (onNavigate) {
+        if (success) {
+          // Redirect based on user role
           switch (user.role) {
             case 'Admin':
-              onNavigate('admin-dashboard');
+              navigate('/admin');
               break;
             case 'Staff':
-              onNavigate('staff-dashboard');
+              navigate('/staff');
               break;
             case 'Trainer':
-              onNavigate('trainer-dashboard');
+              navigate('/trainer');
               break;
             case 'Member':
-              onNavigate('member-dashboard');
+              navigate('/member');
               break;
             default:
-              onNavigate('dashboard');
+              navigate('/member');
           }
+        } else {
+          setError('Email hoặc mật khẩu không đúng');
         }
       } else {
         setError('Email hoặc mật khẩu không đúng');
@@ -133,19 +151,14 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Simulate successful registration
-      const newUser = {
-        id: Date.now().toString(),
-        role: 'Member',
-        ...registerData
-      };
-
-      // Store registration data (in real app, this would be sent to server)
-      localStorage.setItem('registrationData', JSON.stringify(newUser));
-
-      // Navigate to success page
-      if (onNavigate) {
-        onNavigate('registration-success');
+      // Use AuthContext register function
+      const success = await register(registerData);
+      
+      if (success) {
+        // Navigate to success page
+        navigate('/registration-success');
+      } else {
+        setError('Đăng ký thất bại. Vui lòng thử lại.');
       }
     } catch (err) {
       setError('Đã xảy ra lỗi. Vui lòng thử lại.');
@@ -181,7 +194,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
             </Label>
           <button
             type="button"
-            onClick={() => onNavigate?.('forgot-password')}
+            onClick={() => navigate('/forgot-password')}
             className="text-sm text-blue-600 hover:text-blue-800"
           >
             Quên?
@@ -381,7 +394,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
         {/* Tabs */}
         <div className="flex space-x-8 mb-8">
           <button
-            onClick={() => setAuthMode('register')}
+            onClick={() => navigate('/register')}
             className={`pb-2 font-medium transition-colors ${
               authMode === 'register'
                 ? 'text-blue-600 border-b-2 border-blue-600'
@@ -391,7 +404,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
             Đăng Ký
           </button>
           <button
-            onClick={() => setAuthMode('login')}
+            onClick={() => navigate('/login')}
             className={`pb-2 font-medium transition-colors ${
               authMode === 'login'
                 ? 'text-blue-600 border-b-2 border-blue-600'
@@ -412,7 +425,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
               <>
                 <span className="text-gray-600">Bạn Chưa Có Tài Khoản? </span>
                 <button
-                  onClick={() => setAuthMode('register')}
+                  onClick={() => navigate('/register')}
                   className="text-blue-600 hover:text-blue-800 font-medium"
                 >
                   Đăng Ký
@@ -422,7 +435,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
               <>
                 <span className="text-gray-600">Bạn Đã Có Tài Khoản? </span>
                 <button
-                  onClick={() => setAuthMode('login')}
+                  onClick={() => navigate('/login')}
                   className="text-blue-600 hover:text-blue-800 font-medium"
                 >
                   Đăng Nhập
@@ -434,10 +447,23 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
           {/* Home Link */}
           <div className="mt-4 text-center">
             <button
-              onClick={() => onNavigate?.('home')}
+              onClick={() => navigate('/')}
               className="text-blue-600 hover:text-blue-800 text-sm"
             >
               Trang Chủ
+            </button>
+          </div>
+
+          {/* Debug Button */}
+          <div className="mt-2 text-center">
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.reload();
+              }}
+              className="text-red-500 hover:text-red-700 text-xs"
+            >
+              Clear Storage & Reload
             </button>
           </div>
         </div>

@@ -1,31 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '../../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
 import { CheckCircle, Dumbbell, QrCode, Calendar, MapPin, CreditCard, Download } from 'lucide-react';
+import { useAuth } from '../../../contexts/AuthContext';
 
-interface RegistrationSuccessPageProps {
-  onNavigate?: (page: string) => void;
-}
-
-export function RegistrationSuccessPage({ onNavigate }: RegistrationSuccessPageProps) {
+export function RegistrationSuccessPage() {
+  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     // Check if user just completed registration
-    const registrationSuccess = localStorage.getItem('registration_success');
-    const userData = localStorage.getItem('user');
-    
-    if (!registrationSuccess || !userData) {
-      onNavigate?.('register');
+    if (!authUser) {
+      navigate('/register');
       return;
     }
 
-    setUser(JSON.parse(userData));
-    
-    // Clean up
-    localStorage.removeItem('registration_success');
-  }, [onNavigate]);
+    setUser(authUser);
+  }, [authUser, navigate]);
 
   const handleDownloadQR = () => {
     // In a real app, this would generate and download the actual QR code
@@ -33,7 +27,7 @@ export function RegistrationSuccessPage({ onNavigate }: RegistrationSuccessPageP
   };
 
   const handleGoToDashboard = () => {
-    onNavigate?.('member-dashboard');
+    navigate('/member');
   };
 
   if (!user) {
@@ -207,7 +201,7 @@ export function RegistrationSuccessPage({ onNavigate }: RegistrationSuccessPageP
           <Button 
             variant="outline" 
             size="lg" 
-            onClick={() => onNavigate?.('login')}
+            onClick={() => navigate('/login')}
           >
             Đăng nhập
           </Button>
