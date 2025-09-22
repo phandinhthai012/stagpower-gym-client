@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { MemberSidebar } from './MemberSidebar';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
-import { Menu, Bell, LogOut } from 'lucide-react';
+import { Menu, MapPin, Bell, LogOut } from 'lucide-react';
+import LogoStagPower from '../../../assets/Logo_StagPower_4x.png';
 
 export function MemberLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -26,6 +27,33 @@ export function MemberLayout() {
     return 'Dashboard';
   };
 
+  const [now, setNow] = useState<Date>(new Date());
+  const [profileOpen, setProfileOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => setNow(new Date()), 30 * 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const formatVNTime = (date: Date) => {
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const isAM = hours < 12;
+    const suffix = isAM ? 'SA' : 'CH';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    const hh = hours.toString().padStart(2, '0');
+    const mm = minutes.toString().padStart(2, '0');
+    return `${hh}:${mm} ${suffix}`;
+  };
+
+  const formatVNDate = (date: Date) => {
+    const d = date.getDate();
+    const m = date.getMonth() + 1;
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -36,9 +64,10 @@ export function MemberLayout() {
       <MemberSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-64">
-        <div className="flex justify-between items-center px-6 py-4">
-          <div className="flex items-center gap-4">
+      <header className="bg-transparent lg:ml-64">
+        <div className="mx-4 my-4 bg-white shadow-sm border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center">
+          {/* Left: Logo and brand */}
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
@@ -47,41 +76,49 @@ export function MemberLayout() {
             >
               <Menu className="w-5 h-5" />
             </Button>
-            <h1 className="text-2xl font-semibold text-blue-900">{getPageTitle()}</h1>
+            <img src={LogoStagPower} alt="StagPower" className="w-16 h-16 rounded-full object-cover" />
+            <span className="text-xl md:text-2xl font-semibold text-blue-900">StagPower</span>
           </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Notification Button */}
+
+          {/* Center: empty for minimal layout */}
+          <div />
+
+          {/* Right: subtle info text, bell, greeting */}
+          <div className="flex items-center justify-end gap-4">
+            <span className="hidden md:flex items-center gap-2 text-gray-600 text-sm">
+              <MapPin className="w-4 h-4 text-gray-500" />
+              {`Gò Vấp • ${formatVNTime(now)} • ${formatVNDate(now)}`}
+            </span>
+            {/* Notification */}
             <Button variant="ghost" size="sm" className="relative p-2 text-gray-500 hover:text-gray-700">
               <Bell className="w-5 h-5" />
-              <Badge variant="destructive" className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center">
-                3
-              </Badge>
+              <Badge variant="destructive" className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center">3</Badge>
             </Button>
-            
-            {/* User Profile */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">
-                  {user?.fullName?.charAt(0) || 'M'}
-                </span>
-              </div>
-              <div className="hidden md:block">
-                <h4 className="text-sm font-medium text-blue-900">{user?.fullName || 'Member'}</h4>
-                <p className="text-xs text-gray-500">Hội viên</p>
-              </div>
-            </div>
-            
-            {/* Logout Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50"
-              title="Đăng xuất"
+
+            {/* Greeting and profile menu */}
+            <div
+              className="relative"
+              onMouseEnter={() => setProfileOpen(true)}
+              // onMouseLeave={() => setProfileOpen(false)}
             >
-              <LogOut className="w-5 h-5" />
-            </Button>
+              <button
+                onClick={() => setProfileOpen((v) => !v)}
+                className="text-sm md:text-base text-blue-900 hover:text-blue-700 font-medium"
+              >
+                Xin chào, {user?.fullName || 'Hội viên'}
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-20">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>

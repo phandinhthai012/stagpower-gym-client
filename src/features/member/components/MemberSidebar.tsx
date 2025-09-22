@@ -66,7 +66,7 @@ export function MemberSidebar({ sidebarOpen, setSidebarOpen }: MemberSidebarProp
               />
               <div>
                 <h2 className="text-lg font-semibold text-white">StagPower</h2>
-                <p className="text-xs text-blue-200">Member Dashboard</p>
+                <p className="text-xs text-blue-200">Bảng Điều Hướng Hội Viên </p>
               </div>
             </div>
             <button
