@@ -121,10 +121,21 @@ export function MemberDashboard() {
       {/* Member Content */}
         <div className="space-y-5">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard Hội Viên</h1>
-
           
+          {/* QR Code Check-in */}
+          <div className="bg-white p-8 rounded-2xl shadow-sm">
+            <h3 className="text-lg font-semibold text-blue-900 text-center mb-6">QR Code Check-in</h3>
+            <div className="flex items-center justify-center">
+              <div className="w-full max-w-3xl h-72 sm:h-80 md:h-96 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center">
+                <div className="w-48 h-48 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                  <QrCode className="w-16 h-16 text-gray-400" />
+                </div>
+              </div>
+            </div>
+            <p className="text-center text-sm text-gray-600 mt-4">Hiển thị mã QR này tại cửa để check-in</p>
+          </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions (moved below QR) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm">
             <h3 className="text-lg font-semibold text-blue-900 mb-5">Thao Tác Nhanh</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -160,19 +171,6 @@ export function MemberDashboard() {
                 <p className="text-sm text-gray-600">Theo dõi tiến độ tập luyện</p>
               </Link>
             </div>
-          </div>
-
-          {/* QR Code Check-in */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm">
-            <h3 className="text-lg font-semibold text-blue-900 text-center mb-6">QR Code Check-in</h3>
-            <div className="flex items-center justify-center">
-              <div className="w-full max-w-3xl h-72 sm:h-80 md:h-96 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-48 h-48 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <QrCode className="w-16 h-16 text-gray-400" />
-                </div>
-              </div>
-            </div>
-            <p className="text-center text-sm text-gray-600 mt-4">Hiển thị mã QR này tại cửa để check-in</p>
           </div>
 
           {/* Recent Activities (from mockdata) */}
