@@ -2,7 +2,17 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { AuthPage, RegistrationSuccessPage } from './features/auth';
-import { MemberPage } from './features/member';
+import { MemberLayout } from './features/member/components/MemberLayout';
+import { MemberDashboard } from './features/member/pages/MemberDashboard';
+import { MemberProfile } from './features/member/pages/MemberProfile';
+import { MemberCheckin } from './features/member/pages/MemberCheckin';
+import { MemberPackages } from './features/member/pages/MemberPackages';
+import { MemberPayments } from './features/member/pages/MemberPayments';
+import { MemberSchedule } from './features/member/pages/MemberSchedule';
+import { MemberHistory } from './features/member/pages/MemberHistory';
+import { MemberNotifications } from './features/member/pages/MemberNotifications';
+import { MemberSuggestions } from './features/member/pages/MemberSuggestions';
+import { LandingPage } from './features/landing/page/LandingPage';
 import { AdminDashboard } from './features/admin';
 import { StaffDashboard } from './features/staff';
 import { TrainerLayout } from './features/personTrainer/components/TrainerLayout';
@@ -12,7 +22,6 @@ import { TrainerSchedulePage } from './features/personTrainer/pages/TrainerSched
 import { TrainerProgressPage } from './features/personTrainer/pages/TrainerProgressPage';
 import { TrainerProfilePage } from './features/personTrainer/pages/TrainerProfilePage';
 import { TrainerNotificationsPage } from './features/personTrainer/pages/TrainerNotificationsPage';
-import { LandingPage } from './features/landing/page';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 
 function App() {
@@ -63,13 +72,24 @@ function App() {
             <Route path="notifications" element={<TrainerNotificationsPage />} />
           </Route>
           <Route 
-            path="/member" 
+            path="/member"
             element={
               <ProtectedRoute requiredRole="Member">
-                <MemberPage />
+                <MemberLayout />
               </ProtectedRoute>
             } 
-          />
+          >
+            <Route index element={<Navigate to="/member/dashboard" replace />} />
+            <Route path="dashboard" element={<MemberDashboard />} />
+            <Route path="profile" element={<MemberProfile />} />
+            <Route path="checkin" element={<MemberCheckin />} />
+            <Route path="packages" element={<MemberPackages />} />
+            <Route path="payments" element={<MemberPayments />} />
+            <Route path="schedule" element={<MemberSchedule />} />
+            <Route path="history" element={<MemberHistory />} />
+            <Route path="notifications" element={<MemberNotifications />} />
+            <Route path="suggestions" element={<MemberSuggestions />} />
+          </Route>
           
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" replace />} />
