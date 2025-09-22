@@ -5,27 +5,30 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../lib/utils';
 
 const buttonVariants = cva(
-  "tw-inline-flex tw-items-center tw-justify-center tw-gap-2 tw-whitespace-nowrap tw-rounded-md tw-text-sm tw-font-medium tw-transition-all disabled:tw-pointer-events-none disabled:tw-opacity-50 [&_svg]:tw-pointer-events-none [&_svg:not([class*='size-'])]:tw-size-4 tw-shrink-0 [&_svg]:tw-shrink-0 tw-outline-none focus-visible:tw-border-ring focus-visible:tw-ring-ring/50 focus-visible:tw-ring-[3px] aria-invalid:tw-ring-destructive/20 dark:aria-invalid:tw-ring-destructive/40 aria-invalid:tw-border-destructive",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
+        // Primary button uses app blue theme
         default:
-          'tw-bg-primary tw-text-primary-foreground tw-shadow-xs hover:tw-bg-primary/90',
+          'bg-blue-600 text-white shadow-xs hover:bg-blue-700',
         destructive:
-          'tw-bg-destructive tw-text-white tw-shadow-xs hover:tw-bg-destructive/90 focus-visible:tw-ring-destructive/20 dark:focus-visible:tw-ring-destructive/40 dark:tw-bg-destructive/60',
+          'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+        // Outline with blue accent
         outline:
-          'tw-border tw-bg-background tw-shadow-xs hover:tw-bg-accent hover:tw-text-accent-foreground dark:tw-bg-input/30 dark:tw-border-input dark:hover:tw-bg-input/50',
+          'border border-blue-600 text-blue-700 bg-white hover:bg-blue-50',
         secondary:
-          'tw-bg-secondary tw-text-secondary-foreground tw-shadow-xs hover:tw-bg-secondary/80',
+          'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
+        // Ghost hover to subtle blue
         ghost:
-          'hover:tw-bg-accent hover:tw-text-accent-foreground dark:hover:tw-bg-accent/50',
-        link: 'tw-text-primary tw-underline-offset-4 hover:tw-underline',
+          'text-blue-700 hover:bg-blue-50',
+        link: 'text-blue-700 underline-offset-4 hover:underline',
       },
       size: {
-        default: 'tw-h-9 tw-px-4 tw-py-2 has-[>svg]:tw-px-3',
-        sm: 'tw-h-8 tw-rounded-md tw-gap-1.5 tw-px-3 has-[>svg]:tw-px-2.5',
-        lg: 'tw-h-10 tw-rounded-md tw-px-6 has-[>svg]:tw-px-4',
-        icon: 'tw-size-9',
+        default: 'h-9 px-4 py-2 has-[>svg]:px-3',
+        sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
+        lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
+        icon: 'size-9',
       },
     },
     defaultVariants: {
