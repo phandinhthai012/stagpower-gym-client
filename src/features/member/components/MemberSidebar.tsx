@@ -39,7 +39,7 @@ export function MemberSidebar({ sidebarOpen, setSidebarOpen }: MemberSidebarProp
     { id: 'schedule', label: 'Đặt lịch PT', icon: Calendar, path: '/member/schedule' },
     { id: 'history', label: 'Lịch sử tập luyện', icon: History, path: '/member/history' },
     { id: 'suggestions', label: 'Gợi ý tập luyện', icon: Lightbulb, path: '/member/suggestions' },
-    { id: 'payments', label: 'Lịch sử thanh toán', icon: CreditCard, path: '/member/payments' },
+    { id: 'payments', label: 'Thanh toán', icon: CreditCard, path: '/member/payments' },
     { id: 'notifications', label: 'Thông báo', icon: Bell, path: '/member/notifications' },
   ];
 

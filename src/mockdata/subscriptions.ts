@@ -42,7 +42,7 @@ export const mockSubscriptions: Subscription[] = [
     start_date: '2024-01-15',
     end_date: '2025-01-14',
     duration_days: 365,
-    status: 'Active',
+    status: 'Expired',
     is_suspended: false,
     created_at: '2024-01-15T08:00:00Z',
     updated_at: '2024-01-15T08:00:00Z'

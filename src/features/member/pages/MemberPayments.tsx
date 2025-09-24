@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
@@ -15,17 +15,24 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  RefreshCw,
+  Plus,
+  Dumbbell,
+  Star
 } from 'lucide-react';
 import { 
   mockPayments, 
   mockSubscriptions,
+  mockPackages,
   getMockDataByMemberId 
 } from '../../../mockdata';
 import { formatDate } from '../../../lib/date-utils';
 
 export function MemberPayments() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'renew' | 'new' | 'pt'>('pt');
 
   // Get member's payment data
   const memberPayments = useMemo(() => {
@@ -119,9 +126,61 @@ export function MemberPayments() {
     };
   }, [memberPayments]);
 
+  // Active subscription for Renew tab
+  const activeSubscription = useMemo(() => {
+    if (!user?.id) return undefined as any;
+    const subs = getMockDataByMemberId('subscriptions', user.id) as any[];
+    return subs.find((s) => (s.status || s.subscription_status) === 'Active') || subs[0];
+  }, [user?.id]);
+
+  // Data from mockdata for tabs
+  const ptPackages = useMemo(() => {
+    return mockPackages.filter((p) => p.type === 'PT');
+  }, []);
+
+  const renewCandidates = useMemo(() => {
+    const basic1 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'Basic' && p.duration_months === 1);
+    const vip1 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'VIP' && p.duration_months === 1);
+    const basic3 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'Basic' && p.duration_months === 3);
+    const vip3 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'VIP' && p.duration_months === 3);
+    return [basic1, vip1, basic3, vip3].filter(Boolean) as typeof mockPackages;
+  }, []);
+
+  const newPackages = useMemo(() => {
+    const basic1 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'Basic' && p.duration_months === 1);
+    const vip1 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'VIP' && p.duration_months === 1);
+    const comboAny = mockPackages.find((p) => p.type === 'Combo');
+    return [basic1, vip1, comboAny].filter(Boolean) as typeof mockPackages;
+  }, []);
+
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      {/* Top tabs like design */}
+      <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-200">
+        <Button
+          variant={activeTab === 'renew' ? 'default' : 'outline'}
+          className={`flex-1 h-11 rounded-lg justify-center ${activeTab === 'renew' ? 'bg-blue-900 hover:bg-blue-900/90 text-white' : 'text-blue-900 border-blue-200'}`}
+          onClick={() => setActiveTab('renew')}
+        >
+          <RefreshCw className="h-4 w-4 mr-2" /> Gia hạn gói tập
+        </Button>
+        <Button
+          variant={activeTab === 'new' ? 'default' : 'outline'}
+          className={`flex-1 h-11 rounded-lg justify-center ${activeTab === 'new' ? 'bg-blue-900 hover:bg-blue-900/90 text-white' : 'text-blue-900 border-blue-200'}`}
+          onClick={() => setActiveTab('new')}
+        >
+          <Plus className="h-4 w-4 mr-2" /> Đăng ký gói mới
+        </Button>
+        <Button
+          variant={activeTab === 'pt' ? 'default' : 'outline'}
+          className={`flex-1 h-11 rounded-lg justify-center ${activeTab === 'pt' ? 'bg-blue-900 hover:bg-blue-900/90 text-white' : 'text-blue-900 border-blue-200'}`}
+          onClick={() => setActiveTab('pt')}
+        >
+          <Dumbbell className="h-4 w-4 mr-2" /> Mua buổi tập PT
+        </Button>
+      </div>
+
+      {/* Sub header actions */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Lịch sử thanh toán</h1>
@@ -139,64 +198,97 @@ export function MemberPayments() {
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{formatPrice(stats.totalAmount)}</p>
-                <p className="text-sm text-gray-600">Tổng chi tiêu</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Statistics Cards removed as requested */}
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Receipt className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.totalTransactions}</p>
-                <p className="text-sm text-gray-600">Tổng giao dịch</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.completedTransactions}</p>
-                <p className="text-sm text-gray-600">Thành công</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.pendingTransactions}</p>
-                <p className="text-sm text-gray-600">Đang xử lý</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tab contents */}
+      {activeTab === 'pt' && (
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Dumbbell className="h-5 w-5 text-blue-900" />
+          <h2 className="text-xl font-semibold text-blue-900">Mua buổi tập PT</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {ptPackages.slice(0,3).map((opt) => (
+            <Card key={opt.id} className="border-2 border-gray-200">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">{opt.name}
+                  <span className="ml-3 text-green-600 font-bold">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(opt.price).replace('₫','VNĐ')}
+                  </span>
+                </h3>
+                <div className="space-y-2 text-gray-700">
+                  <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-blue-700" /> {opt.pt_session_duration || 90} phút/buổi</div>
+                  <div className="flex items-center gap-2"><Users className="h-4 w-4 text-blue-700" /> 1-1 với PT</div>
+                  <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-blue-700" /> Theo dõi tiến độ</div>
+                </div>
+                <div className="mt-4">
+                  <Button className="w-full">Mua ngay</Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
+      )}
+
+      {activeTab === 'renew' && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">ℹ️ Gói hiện tại</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm">
+                <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                  <span className="text-gray-600">Gói</span>
+                  <span className="font-semibold text-blue-900">{activeSubscription?.type || activeSubscription?.subscription_type || '—'}</span>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                  <span className="text-gray-600">Hết hạn</span>
+                  <span className="font-semibold text-blue-900">{activeSubscription?.end_date ? new Date(activeSubscription.end_date).toLocaleDateString('vi-VN') : '—'}</span>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                  <span className="text-gray-600">Trạng thái</span>
+                  <span className="font-semibold text-green-600">Đang hoạt động</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-2">
+              <h3 className="text-lg font-semibold text-blue-900 mb-3">Tùy chọn gia hạn</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {renewCandidates.map((pkg) => (
+                  <div key={pkg.id} className="p-4 rounded-lg border-2 border-gray-200 bg-gray-50">
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="font-semibold text-blue-900 text-sm md:text-base">{pkg.name}</h4>
+                      <span className="text-green-600 font-bold">{new Intl.NumberFormat('vi-VN').format(pkg.price)} VNĐ</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">Gia hạn gói hiện tại</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'new' && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Star className="h-5 w-5 text-blue-900" />
+            <h2 className="text-xl font-semibold text-blue-900">Gói tập mới</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {newPackages.map((pkg) => (
+              <Card key={pkg.id} className="border-2 border-gray-200">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2">{pkg.name}</h3>
+                  <div className="text-green-600 font-bold mb-3">{new Intl.NumberFormat('vi-VN').format(pkg.price)} VNĐ</div>
+                  <div className="text-sm text-gray-700 mb-4">{pkg.description}</div>
+                  <Button className="w-full">Đăng ký</Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Payment Methods */}
       <Card>
@@ -219,74 +311,74 @@ export function MemberPayments() {
         </CardContent>
       </Card>
 
-      {/* Payment History */}
+      {/* Invoice History table */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="h-5 w-5" />
-            <span>Lịch sử thanh toán</span>
+            <span>Hóa đơn đã thanh toán</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {memberPayments.length > 0 ? (
-            <div className="space-y-4">
-              {memberPayments.map((payment) => {
-                const subscription = getSubscriptionInfo(payment.subscription_id);
-                return (
-                  <div key={payment.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusColor(payment.payment_status)}`}>
-                        {getStatusIcon(payment.payment_status)}
-                      </div>
-                      <div>
-                        <h4 className="font-medium">
-                          {subscription ? `Thanh toán gói ${subscription.type}` : 'Thanh toán gói tập'}
-                        </h4>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className="text-sm text-gray-600">
-                            {getPaymentMethodIcon(payment.payment_method)} {payment.payment_method}
-                          </span>
-                          <Badge variant="outline" className={getStatusColor(payment.payment_status)}>
-                            {payment.payment_status}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Mã giao dịch: {payment.transaction_id || 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-semibold">
-                        {formatPrice(payment.amount)}
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        {formatDate(payment.payment_date)}
-                      </p>
-                      {payment.original_amount !== payment.amount && (
-                        <p className="text-xs text-gray-500">
-                          Giảm: {formatPrice(payment.original_amount - payment.amount)}
-                        </p>
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Mã hóa đơn</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Ngày thanh toán</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Gói tập</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Số tiền</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Phương thức</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Trạng thái</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {memberPayments.map((p) => (
+                  <tr key={p.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-blue-900">{p.invoice_number || p.id}</div>
+                      <div className="text-xs text-gray-500">{p.transaction_id || 'N/A'}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{new Date(p.payment_date).toLocaleDateString('vi-VN')}</div>
+                      <div className="text-xs text-gray-500">{new Date(p.payment_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-blue-900">{(p as any).package_name || 'Gói tập'}</div>
+                      {p.original_amount !== p.amount && (
+                        <div className="text-xs text-green-600">Giảm {formatPrice((p.original_amount || 0) - (p.amount || 0))}</div>
                       )}
-                      <div className="flex space-x-2 mt-2">
-                        <Button size="sm" variant="outline">
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Download className="h-3 w-3" />
-                        </Button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-semibold">{formatPrice(p.amount)}</div>
+                      {p.original_amount !== p.amount && (
+                        <div className="text-xs text-gray-500 line-through">{formatPrice(p.original_amount)}</div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2"><span>{getPaymentMethodIcon(p.payment_method)}</span><span className="capitalize text-sm">{p.payment_method}</span></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(p.payment_status)}`}>{p.payment_status}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline"><Download className="h-3 w-3 mr-1" /> Hóa đơn</Button>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <CreditCard className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có giao dịch</h3>
-              <p className="text-gray-500">Bạn chưa có giao dịch thanh toán nào</p>
-            </div>
-          )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {memberPayments.length === 0 && (
+              <div className="text-center py-12">
+                <CreditCard className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có giao dịch</h3>
+                <p className="text-gray-500">Bạn chưa có giao dịch thanh toán nào</p>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
