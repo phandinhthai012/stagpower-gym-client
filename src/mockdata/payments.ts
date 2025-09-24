@@ -241,4 +241,31 @@ export const mockPayments: Payment[] = [
     created_at: '2024-02-15T10:00:00Z',
     updated_at: '2024-02-20T15:00:00Z'
   }
+  ,
+  // Payment for new VIP Combo 12m + 12 PT
+  {
+    id: '507f1f77bcf86cd799439071',
+    subscription_id: '507f1f77bcf86cd799439059',
+    member_id: '507f1f77bcf86cd799439011',
+    original_amount: 16000000,
+    amount: 14400000,
+    discount_details: [
+      {
+        discount_id: '507f1f77bcf86cd799439074',
+        type: 'VIP',
+        discount_percentage: 10,
+        discount_amount: 1600000,
+        description: 'Giảm giá VIP 10%',
+        applied_at: '2025-01-01T00:00:00Z'
+      }
+    ],
+    payment_method: 'BankTransfer',
+    payment_date: '2025-01-01T00:10:00Z',
+    payment_status: 'Completed',
+    transaction_id: 'TXN_20250101_011',
+    invoice_number: 'INV-2025-011',
+    notes: 'Thanh toán combo VIP 12m + 12 PT',
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:10:00Z'
+  }
 ];

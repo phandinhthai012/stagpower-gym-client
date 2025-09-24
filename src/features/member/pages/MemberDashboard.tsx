@@ -28,7 +28,7 @@ import {
 import { 
   mockCheckIns, 
   mockSchedules, 
-  mockPayments, 
+  mockPayments,
   mockBranches 
 } from '../../../mockdata';
 import { 
@@ -121,7 +121,7 @@ export function MemberDashboard() {
       {/* Member Content */}
         <div className="space-y-5">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard Hội Viên</h1>
-          
+
           {/* QR Code Check-in */}
           <div className="bg-white p-8 rounded-2xl shadow-sm">
             <h3 className="text-lg font-semibold text-blue-900 text-center mb-6">QR Code Check-in</h3>
@@ -133,7 +133,7 @@ export function MemberDashboard() {
               </div>
             </div>
             <p className="text-center text-sm text-gray-600 mt-4">Hiển thị mã QR này tại cửa để check-in</p>
-          </div>
+            </div>
 
           {/* Quick Actions (moved below QR) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm">
@@ -170,8 +170,8 @@ export function MemberDashboard() {
                 <h4 className="font-semibold text-gray-900 mb-1">Xem tiến độ</h4>
                 <p className="text-sm text-gray-600">Theo dõi tiến độ tập luyện</p>
               </Link>
+              </div>
             </div>
-          </div>
 
           {/* Recent Activities (from mockdata) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm">
@@ -185,18 +185,18 @@ export function MemberDashboard() {
                     {item.type === 'checkin' && <CheckCircle className="w-5 h-5 text-green-600" />}
                     {item.type === 'schedule' && <Calendar className="w-5 h-5 text-blue-600" />}
                     {item.type === 'payment' && <CreditCardIcon className="w-5 h-5 text-orange-600" />}
-                  </div>
+              </div>
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">{item.title}</div>
                     <div className="text-sm text-gray-600">{item.subtitle}</div>
-                  </div>
+                </div>
                   <div className="text-sm text-gray-500">{formatRelative(item.at)}</div>
                 </li>
               ))}
             </ul>
-          </div>
+              </div>
 
-        </div>
+          </div>
     </div>
   );
 }

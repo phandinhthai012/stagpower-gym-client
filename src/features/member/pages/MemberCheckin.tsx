@@ -27,6 +27,9 @@ export function MemberCheckin() {
   const [isScanning, setIsScanning] = useState(false);
   const [checkinStatus, setCheckinStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [infoMessage, setInfoMessage] = useState<string>('');
 
   // Get member's check-in data
   const memberCheckIns = useMemo(() => {
@@ -74,10 +77,23 @@ export function MemberCheckin() {
 
   const handleCheckOut = () => {
     if (activeCheckIn) {
-      // Simulate check-out
-      console.log('Check-out successful');
-      // In a real app, this would make an API call
+      setIsCheckingOut(true);
+      setInfoMessage('');
+      // Giả lập gọi API check-out
+      setTimeout(() => {
+        setIsCheckingOut(false);
+        setCheckinStatus('success');
+        setInfoMessage('Đã check-out thành công. Cảm ơn bạn đã tập luyện!');
+        console.log('Check-out successful');
+      }, 1500);
     }
+  };
+
+  const handleExtendSession = () => {
+    // Giả lập gia hạn 30 phút trước auto check-out
+    const extendMinutes = 30;
+    const until = new Date(Date.now() + extendMinutes * 60000);
+    setInfoMessage(`Đã gia hạn phiên thêm ${extendMinutes} phút (đến ${until.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}).`);
   };
 
   const getStatusColor = (status: string) => {
@@ -111,121 +127,65 @@ export function MemberCheckin() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Check-in</h1>
-          <p className="text-gray-600 mt-1">Quét QR code để check-in vào phòng gym</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant={activeCheckIn ? 'default' : 'secondary'}>
-            {activeCheckIn ? 'Đang tập' : 'Chưa check-in'}
-          </Badge>
+          <h1 className="text-3xl font-bold text-blue-900">QR Code Check-in</h1>
+          <p className="text-gray-600 mt-1">Hiển thị mã QR này tại cửa để check-in tự động</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Check-in Card */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <QrCode className="h-5 w-5" />
-              <span>Check-in ngay</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {activeCheckIn ? (
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
+        {/* QR Code Section */}
+        <Card className="lg:col-span-3">
+          <CardContent className="p-8">
+            <div className="flex justify-center">
+              <div className="w-full max-w-2xl rounded-2xl border-2 border-dashed border-gray-300 p-8 text-center">
+                <div className="mx-auto mb-4 w-64 h-64 bg-white rounded-xl shadow flex items-center justify-center">
+                  <QrCode className="w-32 h-32 text-blue-900" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-green-600">Đã check-in</h3>
-                  <p className="text-sm text-gray-600">
-                    Bắt đầu lúc: {formatDate(activeCheckIn.check_in_time)}
+                <div className="flex flex-col items-center gap-1">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Mã hội viên:</span> {user?.id || 'MEM001'}
+                  </p>
+                  <p className="text-sm text-gray-700 flex items-center gap-2">
+                    <span className="font-semibold">Trạng thái:</span>
+                    <Badge className="bg-green-100 text-green-700">Hoạt động</Badge>
                   </p>
                 </div>
-                <Button 
-                  onClick={handleCheckOut}
-                  className="w-full bg-red-600 hover:bg-red-700"
-                >
-                  Check-out
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                  <QrCode className="h-8 w-8 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">Sẵn sàng check-in</h3>
-                  <p className="text-sm text-gray-600">
-                    Quét QR code để bắt đầu tập luyện
-                  </p>
-                </div>
-                <Button 
-                  onClick={handleCheckIn}
-                  disabled={isScanning}
-                  className="w-full"
-                >
-                  {isScanning ? (
+                <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+                  {activeCheckIn ? (
                     <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Đang quét...
+                      <Button onClick={handleCheckOut} disabled={isCheckingOut} className="bg-red-600 hover:bg-red-700">
+                        {isCheckingOut ? 'Đang check-out...' : 'Check-out'}
+                      </Button>
+                      <Button variant="outline" onClick={handleExtendSession}>Tôi vẫn còn tập</Button>
                     </>
                   ) : (
-                    <>
-                      <Camera className="h-4 w-4 mr-2" />
-                      Quét QR Code
-                    </>
+                    <Button onClick={handleCheckIn} disabled={isScanning}>
+                      {isScanning ? 'Đang quét...' : 'Quét QR để Check-in'}
+                    </Button>
                   )}
-                </Button>
-              </div>
-            )}
-
-            {/* Status Messages */}
-            {checkinStatus === 'success' && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="text-sm text-green-800">Check-in thành công!</span>
                 </div>
-              </div>
-            )}
-
-            {checkinStatus === 'error' && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <span className="text-sm text-red-800">{errorMessage}</span>
-                </div>
-              </div>
-            )}
-
-            {/* QR Code Display */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <div className="text-center">
-                <div className="w-24 h-24 bg-white border-2 border-gray-300 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                  <QrCode className="h-12 w-12 text-gray-400" />
-                </div>
-                <p className="text-xs text-gray-600">QR Code của bạn</p>
-                <p className="text-xs font-mono text-gray-500 mt-1">
-                  QR_001
-                </p>
+                {infoMessage && (
+                  <div className="mt-3 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 inline-block">
+                    {infoMessage}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Check-in History */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Activity className="h-5 w-5" />
-              <span>Lịch sử check-in</span>
+              <span>Lịch sử ra/vào</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {recentCheckIns.length > 0 ? (
               <div className="space-y-4">
-                {recentCheckIns.map((checkIn) => {
+                {(showAllHistory ? recentCheckIns : recentCheckIns.slice(0, 5)).map((checkIn) => {
                   const branch = getBranchInfo(checkIn.branch_id);
                   return (
                     <div key={checkIn.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -235,12 +195,13 @@ export function MemberCheckin() {
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
-                            <h4 className="font-medium">
-                              {checkIn.status === 'Active' ? 'Đang tập' : 'Đã hoàn thành'}
-                            </h4>
+                            <h4 className="font-medium">{checkIn.status === 'Active' ? 'Đang tập' : 'Đã hoàn thành'}</h4>
                             <Badge variant="outline" className={getStatusColor(checkIn.status)}>
                               {checkIn.status}
                             </Badge>
+                            {checkIn.auto_checkout && (
+                              <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Auto</Badge>
+                            )}
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-gray-600">
                             <div className="flex items-center space-x-1">
@@ -285,6 +246,13 @@ export function MemberCheckin() {
                     </div>
                   );
                 })}
+                {recentCheckIns.length > 5 && (
+                  <div className="flex justify-center">
+                    <Button variant="outline" onClick={() => setShowAllHistory((v) => !v)}>
+                      {showAllHistory ? 'Thu gọn' : 'Xem tất cả'}
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-12">
@@ -296,62 +264,7 @@ export function MemberCheckin() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Activity className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{memberCheckIns.length}</p>
-                <p className="text-sm text-gray-600">Tổng số lần check-in</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <Clock className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {memberCheckIns
-                    .filter(c => c.duration)
-                    .reduce((total, c) => total + (c.duration || 0), 0)
-                  } phút
-                </p>
-                <p className="text-sm text-gray-600">Tổng thời gian tập</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {memberCheckIns.filter(c => {
-                    const checkInDate = new Date(c.check_in_time);
-                    const today = new Date();
-                    return checkInDate.toDateString() === today.toDateString();
-                  }).length}
-                </p>
-                <p className="text-sm text-gray-600">Lần tập hôm nay</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
+  

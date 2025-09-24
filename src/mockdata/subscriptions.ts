@@ -184,5 +184,24 @@ export const mockSubscriptions: Subscription[] = [
     is_suspended: false,
     created_at: '2024-03-15T12:00:00Z',
     updated_at: '2024-03-15T12:00:00Z'
+  },
+
+  // New Active VIP Combo 12m + 12 PT for Nguyễn Văn An (aligns screenshot)
+  {
+    id: '507f1f77bcf86cd799439059',
+    member_id: '507f1f77bcf86cd799439011',
+    package_id: '507f1f77bcf86cd799439046',
+    branch_id: '507f1f77bcf86cd799439047',
+    type: 'Combo',
+    membership_type: 'VIP',
+    start_date: '2025-01-01',
+    end_date: '2025-12-31',
+    duration_days: 365,
+    pt_sessions_remaining: 12,
+    pt_sessions_used: 0,
+    status: 'Active',
+    is_suspended: false,
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z'
   }
 ];

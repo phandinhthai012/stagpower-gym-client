@@ -7,6 +7,11 @@ export interface CheckIn {
   validation_error?: string;
   duration?: number; // minutes
   status: 'Active' | 'Completed' | 'Cancelled';
+  // New fields for checkout control and audit
+  checkout_method?: 'qr_exit' | 'manual_app' | 'staff' | 'auto';
+  auto_checkout?: boolean;
+  auto_checkout_reason?: 'CloseTime' | 'MaxSession';
+  allow_reopen_until?: string; // ISO time until which member can reopen session
   created_at: string;
 }
 
@@ -20,6 +25,7 @@ export const mockCheckIns: CheckIn[] = [
     check_out_time: '2024-03-20T20:15:00Z',
     duration: 105,
     status: 'Completed',
+    checkout_method: 'qr_exit',
     created_at: '2024-03-20T18:30:00Z'
   },
   {
@@ -97,6 +103,16 @@ export const mockCheckIns: CheckIn[] = [
     created_at: '2024-03-20T19:00:00Z'
   },
 
+  // Active check-in - Nguyễn Văn An (for demo: show as currently in gym)
+  {
+    id: '507f1f77bcf86cd799439200',
+    member_id: '507f1f77bcf86cd799439011',
+    branch_id: '507f1f77bcf86cd799439041',
+    check_in_time: '2025-09-24T10:00:00Z',
+    status: 'Active',
+    created_at: '2025-09-24T10:00:00Z'
+  },
+
   // Failed check-ins with validation errors
   {
     id: '507f1f77bcf86cd799439099',
@@ -126,6 +142,9 @@ export const mockCheckIns: CheckIn[] = [
     check_out_time: '2024-03-15T19:45:00Z',
     duration: 105,
     status: 'Completed',
+    checkout_method: 'auto',
+    auto_checkout: true,
+    auto_checkout_reason: 'CloseTime',
     created_at: '2024-03-15T18:00:00Z'
   },
   {

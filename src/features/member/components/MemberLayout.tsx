@@ -79,7 +79,7 @@ export function MemberLayout() {
             <img src={LogoStagPower} alt="StagPower" className="w-16 h-16 rounded-full object-cover" />
             <span className="text-xl md:text-2xl font-semibold text-blue-900">StagPower</span>
           </div>
-
+          
           {/* Center: empty for minimal layout */}
           <div />
 
@@ -94,7 +94,7 @@ export function MemberLayout() {
               <Bell className="w-5 h-5" />
               <Badge variant="destructive" className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center">3</Badge>
             </Button>
-
+            
             {/* Greeting and profile menu */}
             <div
               className="relative"
@@ -116,9 +116,9 @@ export function MemberLayout() {
                     <LogOut className="w-4 h-4" />
                     Đăng xuất
                   </button>
-                </div>
+              </div>
               )}
-            </div>
+              </div>
           </div>
         </div>
       </header>
