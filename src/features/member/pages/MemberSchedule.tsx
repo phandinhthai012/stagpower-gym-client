@@ -21,6 +21,7 @@ import {
   getMockDataByMemberId 
 } from '../../../mockdata';
 import { formatDate } from '../../../lib/date-utils';
+import ModalCreateScheduleWithPT from '../components/ModalCreateScheduleWithPT';
 
 export function MemberSchedule() {
   const { user } = useAuth();
@@ -113,10 +114,18 @@ export function MemberSchedule() {
           <h1 className="text-3xl font-bold text-gray-900">Đặt lịch PT</h1>
           <p className="text-gray-600 mt-1">Quản lý lịch tập với huấn luyện viên</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Đặt lịch mới
-        </Button>
+        <ModalCreateScheduleWithPT
+          trigger={
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Đặt lịch mới
+            </Button>
+          }
+          onOpenChange={() => {}}
+          onSuccess={(payload) => {
+            console.log('Tạo lịch PT (mock):', payload);
+          }}
+        />
       </div>
 
       {/* Today's Schedule */}

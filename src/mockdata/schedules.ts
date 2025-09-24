@@ -246,5 +246,45 @@ export const mockSchedules: Schedule[] = [
     status: 'Completed',
     created_at: '2023-12-01T00:00:00Z',
     updated_at: '2024-02-25T20:30:00Z'
+  },
+  // --- Member Nguyễn Văn An (507f...011) demo data ---
+  {
+    id: '507f1f77bcf86cd799439201',
+    member_id: '507f1f77bcf86cd799439011',
+    trainer_id: '507f1f77bcf86cd799439015',
+    subscription_id: '507f1f77bcf86cd799439059',
+    branch_id: '507f1f77bcf86cd799439047',
+    note: 'Buổi PT toàn thân – kỹ thuật compound',
+    date_time: new Date().toISOString(),
+    duration_minutes: 90,
+    status: 'Confirmed',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: '507f1f77bcf86cd799439202',
+    member_id: '507f1f77bcf86cd799439011',
+    trainer_id: '507f1f77bcf86cd799439015',
+    subscription_id: '507f1f77bcf86cd799439059',
+    branch_id: '507f1f77bcf86cd799439047',
+    note: 'Buổi PT chân và core',
+    date_time: new Date(Date.now() + 3*24*60*60*1000).toISOString(),
+    duration_minutes: 90,
+    status: 'Confirmed',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: '507f1f77bcf86cd799439203',
+    member_id: '507f1f77bcf86cd799439011',
+    trainer_id: '507f1f77bcf86cd799439015',
+    subscription_id: '507f1f77bcf86cd799439059',
+    branch_id: '507f1f77bcf86cd799439047',
+    note: 'Buổi PT lưng xô',
+    date_time: new Date(Date.now() - 3*24*60*60*1000).toISOString(),
+    duration_minutes: 90,
+    status: 'Completed',
+    created_at: new Date(Date.now() - 3*24*60*60*1000).toISOString(),
+    updated_at: new Date(Date.now() - 3*24*60*60*1000).toISOString()
   }
 ];
