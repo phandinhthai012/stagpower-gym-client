@@ -5,6 +5,7 @@ import { Label } from '../../../components/ui/label';
 import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { mockUsers, mockBranches } from '../../../mockdata';
+import { X } from 'lucide-react';
 
 type Props = {
   trigger?: React.ReactNode;
@@ -44,8 +45,18 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
     <div>
       {trigger && <div onClick={() => onOpenChange?.(true)}>{trigger}</div>}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <Card className="w-full max-w-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/20 backdrop-blur-[2px]">
+          <Card className="relative w-full max-w-xl bg-white">
+            {/* Close button */}
+            <button
+              aria-label="Đóng"
+              className="absolute right-3 top-3 rounded-full p-1 text-gray-500 hover:bg-gray-100"
+              onClick={() => {
+                if (confirm('Bạn có chắc muốn hủy đặt lịch?')) onOpenChange?.(false);
+              }}
+            >
+              <X className="h-5 w-5" />
+            </button>
             <CardHeader>
               <CardTitle>Đặt lịch PT mới</CardTitle>
             </CardHeader>
@@ -95,7 +106,14 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => onOpenChange?.(false)}>Hủy</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (confirm('Xác nhận hủy đặt lịch?')) onOpenChange?.(false);
+                  }}
+                >
+                  Hủy
+                </Button>
                 <Button onClick={handleSubmit} disabled={!canSubmit || submitting}>
                   {submitting ? 'Đang tạo...' : 'Tạo lịch'}
                 </Button>

@@ -123,29 +123,29 @@ export function MemberCheckin() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-blue-900">QR Code Check-in</h1>
-          <p className="text-gray-600 mt-1">Hiển thị mã QR này tại cửa để check-in tự động</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-blue-900">QR Code Check-in</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Hiển thị mã QR này tại cửa để check-in tự động</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* QR Code Section */}
         <Card className="lg:col-span-3">
-          <CardContent className="p-8">
+          <CardContent className="p-4 md:p-8">
             <div className="flex justify-center">
-              <div className="w-full max-w-2xl rounded-2xl border-2 border-dashed border-gray-300 p-8 text-center">
-                <div className="mx-auto mb-4 w-64 h-64 bg-white rounded-xl shadow flex items-center justify-center">
-                  <QrCode className="w-32 h-32 text-blue-900" />
+              <div className="w-full max-w-2xl rounded-2xl border-2 border-dashed border-gray-300 p-4 md:p-8 text-center">
+                <div className="mx-auto mb-4 w-40 h-40 md:w-64 md:h-64 bg-white rounded-xl shadow flex items-center justify-center">
+                  <QrCode className="w-20 h-20 md:w-32 md:h-32 text-blue-900" />
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm md:text-base text-gray-700">
                     <span className="font-semibold">Mã hội viên:</span> {user?.id || 'MEM001'}
                   </p>
-                  <p className="text-sm text-gray-700 flex items-center gap-2">
+                  <p className="text-sm md:text-base text-gray-700 flex items-center gap-2">
                     <span className="font-semibold">Trạng thái:</span>
                     <Badge className="bg-green-100 text-green-700">Hoạt động</Badge>
                   </p>
@@ -165,7 +165,7 @@ export function MemberCheckin() {
                   )}
                 </div>
                 {infoMessage && (
-                  <div className="mt-3 text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 inline-block">
+                  <div className="mt-3 text-xs md:text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 inline-block">
                     {infoMessage}
                   </div>
                 )}
@@ -184,64 +184,33 @@ export function MemberCheckin() {
           </CardHeader>
           <CardContent>
             {recentCheckIns.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {(showAllHistory ? recentCheckIns : recentCheckIns.slice(0, 5)).map((checkIn) => {
                   const branch = getBranchInfo(checkIn.branch_id);
                   return (
-                    <div key={checkIn.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusColor(checkIn.status)}`}>
+                    <div key={checkIn.id} className="p-3 md:p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center ${getStatusColor(checkIn.status)}`}>
                           {getStatusIcon(checkIn.status)}
                         </div>
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <h4 className="font-medium">{checkIn.status === 'Active' ? 'Đang tập' : 'Đã hoàn thành'}</h4>
-                            <Badge variant="outline" className={getStatusColor(checkIn.status)}>
-                              {checkIn.status}
-                            </Badge>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-medium text-sm md:text-base">{checkIn.status === 'Active' ? 'Đang tập' : 'Đã hoàn thành'}</h4>
+                            <Badge variant="outline" className={`${getStatusColor(checkIn.status)} px-2 py-0.5 text-[10px] md:text-xs`}>{checkIn.status}</Badge>
                             {checkIn.auto_checkout && (
-                              <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Auto</Badge>
+                              <Badge variant="outline" className="bg-yellow-100 text-yellow-800 px-2 py-0.5 text-[10px] md:text-xs">Auto</Badge>
                             )}
                           </div>
-                          <div className="flex items-center space-x-4 text-sm text-gray-600">
-                            <div className="flex items-center space-x-1">
-                              <Calendar className="h-3 w-3" />
-                              <span>{formatDate(checkIn.check_in_time)}</span>
-                            </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-600">
+                            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(checkIn.check_in_time)}</span>
                             {checkIn.check_out_time && (
-                              <div className="flex items-center space-x-1">
-                                <Clock className="h-3 w-3" />
-                                <span>
-                                  {checkIn.duration ? `${checkIn.duration} phút` : 'Đã hoàn thành'}
-                                </span>
-                              </div>
+                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{checkIn.duration ? `${checkIn.duration} phút` : 'Đã hoàn thành'}</span>
                             )}
                             {branch && (
-                              <div className="flex items-center space-x-1">
-                                <MapPin className="h-3 w-3" />
-                                <span>{branch.name}</span>
-                              </div>
+                              <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{branch.name}</span>
                             )}
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        {checkIn.check_in_time && (
-                          <p className="text-sm font-medium">
-                            {new Date(checkIn.check_in_time).toLocaleTimeString('vi-VN', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        )}
-                        {checkIn.check_out_time && (
-                          <p className="text-xs text-gray-500">
-                            Kết thúc: {new Date(checkIn.check_out_time).toLocaleTimeString('vi-VN', {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        )}
                       </div>
                     </div>
                   );
