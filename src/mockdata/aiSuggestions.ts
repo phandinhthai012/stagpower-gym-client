@@ -19,7 +19,7 @@ export const mockAISuggestions: AISuggestion[] = [
   {
     id: '507f1f77bcf86cd799439161',
     member_id: '507f1f77bcf86cd799439011',
-    recommendation_date: '2024-03-20',
+    recommendation_date: '2025-09-24',
     goal: 'MuscleGain',
     level: 'Intermediate',
     exercises: '1. Bench Press 3x8-10 reps\n2. Squats 3x8-10 reps\n3. Deadlifts 3x5 reps\n4. Pull-ups 3x6-8 reps\n5. Overhead Press 3x8-10 reps\n6. Barbell Rows 3x8-10 reps\n7. Dips 3x8-10 reps\n8. Plank 3x60 seconds',
@@ -28,15 +28,15 @@ export const mockAISuggestions: AISuggestion[] = [
     estimated_time: 12,
     workout_duration: 90,
     note: 'Tập trung vào progressive overload, tăng dần trọng lượng mỗi tuần. Nghỉ ngơi đầy đủ giữa các buổi tập.',
-    created_at: '2024-03-20T08:00:00Z',
-    updated_at: '2024-03-20T08:00:00Z'
+    created_at: '2025-09-24T08:00:00Z',
+    updated_at: '2025-09-24T08:00:00Z'
   },
 
   // AI Suggestions for Trần Thị Bình (WeightLoss, Beginner)
   {
     id: '507f1f77bcf86cd799439162',
     member_id: '507f1f77bcf86cd799439012',
-    recommendation_date: '2024-03-20',
+    recommendation_date: '2025-09-23',
     goal: 'WeightLoss',
     level: 'Beginner',
     exercises: '1. Walking/Jogging 20-30 phút\n2. Bodyweight Squats 3x10-15 reps\n3. Push-ups (knee) 3x8-12 reps\n4. Lunges 3x10 reps mỗi chân\n5. Plank 3x30-45 giây\n6. Mountain Climbers 3x20 reps\n7. Jumping Jacks 3x30 reps\n8. Stretching 10-15 phút',
@@ -45,15 +45,15 @@ export const mockAISuggestions: AISuggestion[] = [
     estimated_time: 16,
     workout_duration: 45,
     note: 'Bắt đầu từ từ, không ép bản thân quá sức. Tập trung vào việc xây dựng thói quen tập luyện đều đặn.',
-    created_at: '2024-03-20T09:00:00Z',
-    updated_at: '2024-03-20T09:00:00Z'
+    created_at: '2025-09-23T09:00:00Z',
+    updated_at: '2025-09-23T09:00:00Z'
   },
 
   // AI Suggestions for Lê Văn Cường (Health, Advanced)
   {
     id: '507f1f77bcf86cd799439163',
     member_id: '507f1f77bcf86cd799439013',
-    recommendation_date: '2024-03-20',
+    recommendation_date: '2025-09-22',
     goal: 'Health',
     level: 'Advanced',
     exercises: '1. Deadlifts 4x5 reps\n2. Squats 4x6-8 reps\n3. Bench Press 4x6-8 reps\n4. Pull-ups 4x8-10 reps\n5. Overhead Press 4x6-8 reps\n6. Barbell Rows 4x8-10 reps\n7. Farmer\'s Walk 3x50m\n8. Turkish Get-ups 3x5 reps mỗi bên',
@@ -62,8 +62,8 @@ export const mockAISuggestions: AISuggestion[] = [
     estimated_time: 8,
     workout_duration: 120,
     note: 'Tập trung vào sức mạnh và sức bền. Theo dõi huyết áp thường xuyên do tiền sử cao huyết áp.',
-    created_at: '2024-03-20T10:00:00Z',
-    updated_at: '2024-03-20T10:00:00Z'
+    created_at: '2025-09-22T10:00:00Z',
+    updated_at: '2025-09-22T10:00:00Z'
   },
 
   // AI Suggestions for Phạm Thị Dung (MuscleGain, Beginner)
@@ -87,7 +87,7 @@ export const mockAISuggestions: AISuggestion[] = [
   {
     id: '507f1f77bcf86cd799439165',
     member_id: '507f1f77bcf86cd799439021',
-    recommendation_date: '2024-03-20',
+    recommendation_date: '2025-09-21',
     goal: 'WeightLoss',
     level: 'Intermediate',
     exercises: '1. HIIT Cardio 20 phút\n2. Squats 4x12-15 reps\n3. Push-ups 4x10-12 reps\n4. Lunges 4x12 reps mỗi chân\n5. Plank 4x45-60 giây\n6. Burpees 3x8-10 reps\n7. Russian Twists 3x20 reps\n8. Cool-down stretching 10 phút',
@@ -96,8 +96,8 @@ export const mockAISuggestions: AISuggestion[] = [
     estimated_time: 14,
     workout_duration: 75,
     note: 'Kết hợp với PT sessions để có kết quả tối ưu. Theo dõi tiến độ hàng tuần.',
-    created_at: '2024-03-20T13:00:00Z',
-    updated_at: '2024-03-20T13:00:00Z'
+    created_at: '2025-09-21T13:00:00Z',
+    updated_at: '2025-09-21T13:00:00Z'
   },
 
   // AI Suggestions for another member (Health, Beginner)
@@ -121,7 +121,7 @@ export const mockAISuggestions: AISuggestion[] = [
   {
     id: '507f1f77bcf86cd799439167',
     member_id: '507f1f77bcf86cd799439011',
-    recommendation_date: '2024-02-20',
+    recommendation_date: '2025-08-24',
     goal: 'MuscleGain',
     level: 'Intermediate',
     exercises: '1. Bench Press 3x8 reps\n2. Squats 3x8 reps\n3. Deadlifts 3x5 reps\n4. Pull-ups 3x6 reps\n5. Overhead Press 3x8 reps\n6. Barbell Rows 3x8 reps\n7. Dips 3x8 reps\n8. Plank 3x45 seconds',
@@ -130,8 +130,8 @@ export const mockAISuggestions: AISuggestion[] = [
     estimated_time: 12,
     workout_duration: 90,
     note: 'Gợi ý cũ - đã được cập nhật với chương trình mới',
-    created_at: '2024-02-20T08:00:00Z',
-    updated_at: '2024-02-20T08:00:00Z'
+    created_at: '2025-08-24T08:00:00Z',
+    updated_at: '2025-08-24T08:00:00Z'
   },
   {
     id: '507f1f77bcf86cd799439168',
