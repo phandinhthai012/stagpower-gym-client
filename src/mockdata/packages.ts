@@ -266,4 +266,23 @@ export const mockPackages: Package[] = [
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z'
   }
+  ,
+  // New: VIP Combo 12 months + 12 PT (aligns with spec examples)
+  {
+    id: '507f1f77bcf86cd799439046',
+    name: 'Combo VIP 12 tháng + 12 buổi PT',
+    type: 'Combo',
+    package_category: 'LongTerm',
+    duration_months: 12,
+    membership_type: 'VIP',
+    price: 16000000,
+    pt_sessions: 12,
+    pt_session_duration: 90,
+    branch_access: 'All',
+    is_trial: false,
+    description: 'Gói combo 12 tháng VIP + 12 buổi PT cá nhân, phù hợp mục tiêu dài hạn',
+    status: 'Active',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
+  }
 ];

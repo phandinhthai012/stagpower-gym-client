@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
@@ -15,7 +15,9 @@ import {
   AlertTriangle,
   TrendingUp,
   CreditCard,
-  RefreshCw
+  RefreshCw,
+  Crown,
+  Pause
 } from 'lucide-react';
 import { 
   mockPackages, 
@@ -26,6 +28,9 @@ import { formatDate } from '../../../lib/date-utils';
 
 export function MemberPackages() {
   const { user } = useAuth();
+  const [filterType, setFilterType] = useState<'All' | 'Membership' | 'Combo' | 'PT'>('All');
+  const [filterTier, setFilterTier] = useState<'All' | 'Basic' | 'VIP'>('All');
+  const [visibleCount, setVisibleCount] = useState<number>(3);
 
   // Get member's subscription data
   const memberSubscriptions = useMemo(() => {
@@ -106,97 +111,60 @@ export function MemberPackages() {
 
       {/* Current Package */}
       {activeSubscription ? (
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-green-800">
-              <CheckCircle className="h-5 w-5" />
-              <span>Gói tập hiện tại</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card>
+          <CardContent className="p-6">
             {(() => {
               const packageInfo = getPackageInfo(activeSubscription.package_id);
               const daysLeft = getDaysUntilExpiry(activeSubscription.end_date);
-              const progress = getSubscriptionProgress(activeSubscription);
-              
               return (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <h3 className="text-xl font-semibold text-green-800">
-                        {packageInfo?.name || 'Gói tập'}
-                      </h3>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <Badge className={getMembershipTypeColor(activeSubscription.membership_type)}>
-                          {activeSubscription.membership_type}
-                        </Badge>
-                        <Badge variant="outline">
-                          {activeSubscription.type}
-                        </Badge>
+                  {/* Header row */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center">
+                        <Crown className="w-8 h-8 text-white" />
                       </div>
-                    </div>
-                    
-                    <div>
-                      <div className="text-2xl font-bold text-green-800">
-                        {daysLeft > 0 ? `${daysLeft} ngày` : 'Đã hết hạn'}
+                      <div>
+                        <h3 className="text-xl font-semibold text-blue-900">{packageInfo?.name || 'Gói tập'}</h3>
+                        <p className="text-gray-600">{activeSubscription.membership_type === 'VIP' ? 'Tập tại tất cả chi nhánh' : 'Tập tại 1 chi nhánh'}{activeSubscription.pt_sessions_remaining ? ` + ${activeSubscription.pt_sessions_remaining} buổi PT` : ''}</p>
+                        <Badge className="mt-2 bg-green-100 text-green-700">Đang hoạt động</Badge>
                       </div>
-                      <p className="text-sm text-green-600">
-                        Còn lại trong gói
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <div className="text-2xl font-bold text-green-800">
-                        {activeSubscription.pt_sessions_remaining || 0}
-                      </div>
-                      <p className="text-sm text-green-600">
-                        Buổi PT còn lại
-                      </p>
                     </div>
                   </div>
 
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-green-700">Tiến độ sử dụng</span>
-                      <span className="text-sm text-green-600">{Math.round(progress)}%</span>
+                  {/* Stats row */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
+                      <div className="text-sm font-semibold text-blue-900 mb-1">Ngày bắt đầu</div>
+                      <div className="text-gray-700">{formatDate(activeSubscription.start_date)}</div>
                     </div>
-                    <Progress value={progress} className="h-2" />
-                    <div className="flex justify-between text-xs text-green-600 mt-1">
-                      <span>{formatDate(activeSubscription.start_date)}</span>
-                      <span>{formatDate(activeSubscription.end_date)}</span>
+                    <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
+                      <div className="text-sm font-semibold text-blue-900 mb-1">Ngày hết hạn</div>
+                      <div className="text-gray-700">{formatDate(activeSubscription.end_date)}</div>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-white rounded-lg border border-green-200">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Calendar className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium">Thời hạn</span>
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        {activeSubscription.duration_days} ngày
-                      </p>
+                    <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
+                      <div className="text-sm font-semibold text-blue-900 mb-1">Buổi PT còn lại</div>
+                      <div className="text-gray-700">{activeSubscription.pt_sessions_remaining || 0} buổi</div>
                     </div>
-                    
-                    <div className="p-4 bg-white rounded-lg border border-green-200">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <MapPin className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium">Quyền truy cập</span>
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        {activeSubscription.membership_type === 'VIP' ? 'Tất cả chi nhánh' : '1 chi nhánh'}
-                      </p>
+                    <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
+                      <div className="text-sm font-semibold text-blue-900 mb-1">Trạng thái</div>
+                      <div className="text-gray-700">{daysLeft > 0 ? `Còn ${daysLeft} ngày` : 'Đã hết hạn'}</div>
                     </div>
                   </div>
 
-                  <div className="flex space-x-3">
-                    <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-100">
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-3">
+                    <Button variant="outline" className="border-blue-600 text-blue-700 hover:bg-blue-50">
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Gia hạn
                     </Button>
-                    <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-100">
+                    <Button variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
                       <TrendingUp className="h-4 w-4 mr-2" />
                       Nâng cấp
+                    </Button>
+                    <Button className="bg-orange-500 hover:bg-orange-600">
+                      <Pause className="h-4 w-4 mr-2" />
+                      Tạm ngưng
                     </Button>
                   </div>
                 </div>
@@ -231,10 +199,44 @@ export function MemberPackages() {
             <Star className="h-5 w-5" />
             <span>Gói tập có sẵn</span>
           </CardTitle>
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="flex flex-wrap gap-2">
+              {(['All','Membership','Combo','PT'] as const).map(t => (
+                <Button
+                  key={t}
+                  variant={filterType === t ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilterType(t)}
+                >
+                  {t === 'All' ? 'Tất cả loại' : t}
+                </Button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(['All','Basic','VIP'] as const).map(tier => (
+                <Button
+                  key={tier}
+                  variant={filterTier === tier ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilterTier(tier)}
+                >
+                  {tier === 'All' ? 'Tất cả hạng' : tier}
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockPackages.filter(pkg => pkg.status === 'Active').map((pkg) => (
+          {(() => {
+            const filtered = mockPackages
+              .filter(pkg => pkg.status === 'Active')
+              .filter(pkg => (filterType === 'All' ? true : pkg.type === filterType))
+              .filter(pkg => (filterTier === 'All' ? true : pkg.membership_type === filterTier));
+            const items = filtered.slice(0, visibleCount);
+            return (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {items.map((pkg) => (
               <Card key={pkg.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -253,7 +255,7 @@ export function MemberPackages() {
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2 text-sm">
                       <Clock className="h-4 w-4 text-gray-500" />
-                      <span>{pkg.duration_months} tháng</span>
+                            <span>{pkg.duration_months > 0 ? `${pkg.duration_months} tháng` : (pkg.max_trial_days ? `${pkg.max_trial_days} ngày` : 'Theo buổi')}</span>
                     </div>
                     <div className="flex items-center space-x-2 text-sm">
                       <MapPin className="h-4 w-4 text-gray-500" />
@@ -275,8 +277,16 @@ export function MemberPackages() {
                   </Button>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+                  ))}
+                </div>
+                {filtered.length > visibleCount && (
+                  <div className="flex justify-center mt-6">
+                    <Button variant="outline" onClick={() => setVisibleCount(c => c + 3)}>Xem thêm</Button>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </CardContent>
       </Card>
 

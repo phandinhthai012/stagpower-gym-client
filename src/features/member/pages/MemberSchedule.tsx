@@ -21,16 +21,20 @@ import {
   getMockDataByMemberId 
 } from '../../../mockdata';
 import { formatDate } from '../../../lib/date-utils';
+import ModalCreateScheduleWithPT from '../components/ModalCreateScheduleWithPT';
 
 export function MemberSchedule() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [openCreate, setOpenCreate] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Get member's schedule data
   const memberSchedules = useMemo(() => {
     if (!user?.id) return [];
+    // refreshKey to re-compute when new item pushed
     return getMockDataByMemberId('schedules', user.id);
-  }, [user?.id]);
+  }, [user?.id, refreshKey]);
 
   // Get trainers
   const trainers = useMemo(() => {
@@ -106,71 +110,76 @@ export function MemberSchedule() {
   }, [memberSchedules]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Đặt lịch PT</h1>
-          <p className="text-gray-600 mt-1">Quản lý lịch tập với huấn luyện viên</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Đặt lịch PT</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">Quản lý lịch tập với huấn luyện viên</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Đặt lịch mới
-        </Button>
+        <ModalCreateScheduleWithPT
+          trigger={
+            <Button onClick={() => setOpenCreate(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Đặt lịch mới
+            </Button>
+          }
+          open={openCreate}
+          onOpenChange={setOpenCreate}
+          onSuccess={(payload) => {
+            if (!user) return;
+            const id = Math.random().toString(16).slice(2);
+            const newSchedule = {
+              id,
+              member_id: user.id,
+              trainer_id: payload.trainer_id,
+              subscription_id: 'local-mock',
+              branch_id: payload.branch_id,
+              note: payload.note,
+              date_time: payload.date_time,
+              duration_minutes: payload.duration_minutes,
+              status: 'Confirmed',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            } as any;
+            // Push vào mock để demo
+            (mockSchedules as any).unshift(newSchedule);
+            setRefreshKey((k) => k + 1);
+          }}
+        />
       </div>
 
       {/* Today's Schedule */}
       {todaySchedules.length > 0 && (
         <Card className="border-blue-200 bg-blue-50">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-blue-800">
+            <CardTitle className="flex items-center space-x-2 text-blue-800 text-base md:text-lg">
               <Calendar className="h-5 w-5" />
               <span>Lịch tập hôm nay</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {todaySchedules.map((schedule) => {
                 const trainer = getTrainerInfo(schedule.trainer_id);
                 const branch = getBranchInfo(schedule.branch_id);
                 return (
-                  <div key={schedule.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusColor(schedule.status)}`}>
+                  <div key={schedule.id} className="p-3 md:p-4 bg-white rounded-lg border border-blue-200">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center ${getStatusColor(schedule.status)}`}>
                         {getStatusIcon(schedule.status)}
                       </div>
-                      <div>
-                        <h4 className="font-medium">Buổi PT với {trainer?.full_name}</h4>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {new Date(schedule.date_time).toLocaleTimeString('vi-VN', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Users className="h-3 w-3" />
-                            <span>{schedule.duration_minutes} phút</span>
-                          </div>
-                          {branch && (
-                            <div className="flex items-center space-x-1">
-                              <MapPin className="h-3 w-3" />
-                              <span>{branch.name}</span>
-                            </div>
-                          )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-medium text-sm md:text-base truncate">Buổi PT với {trainer?.full_name}</h4>
+                          <Badge variant="outline" className={`${getStatusColor(schedule.status)} px-2 py-0.5 text-[10px] md:text-xs`}>{schedule.status}</Badge>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-600">
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(schedule.date_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="flex items-center gap-1"><Users className="h-3 w-3" />{schedule.duration_minutes} phút</span>
+                          {branch && (<span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{branch.name}</span>)}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className={getStatusColor(schedule.status)}>
-                        {schedule.status}
-                      </Badge>
-                      <Button size="sm" variant="outline">
-                        Chi tiết
-                      </Button>
                     </div>
                   </div>
                 );
@@ -184,7 +193,7 @@ export function MemberSchedule() {
         {/* Upcoming Schedules */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+            <CardTitle className="flex items-center space-x-2 text-base md:text-lg">
               <Calendar className="h-5 w-5" />
               <span>Lịch sắp tới</span>
             </CardTitle>
@@ -196,14 +205,14 @@ export function MemberSchedule() {
                   const trainer = getTrainerInfo(schedule.trainer_id);
                   const branch = getBranchInfo(schedule.branch_id);
                   return (
-                    <div key={schedule.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div key={schedule.id} className="flex items-center justify-between p-3 md:p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                           <Calendar className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
-                          <h4 className="font-medium">Buổi PT với {trainer?.full_name}</h4>
-                          <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                          <h4 className="font-medium text-sm md:text-base">Buổi PT với {trainer?.full_name}</h4>
+                          <div className="flex items-center space-x-4 text-xs md:text-sm text-gray-600 mt-1">
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
                               <span>{formatDate(schedule.date_time)}</span>
@@ -216,10 +225,10 @@ export function MemberSchedule() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" className="hidden sm:inline-flex">
                           Hủy
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" className="hidden sm:inline-flex">
                           Chi tiết
                         </Button>
                       </div>
@@ -244,7 +253,7 @@ export function MemberSchedule() {
         {/* Recent Schedules */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+            <CardTitle className="flex items-center space-x-2 text-base md:text-lg">
               <Clock className="h-5 w-5" />
               <span>Lịch sử gần đây</span>
             </CardTitle>
@@ -255,14 +264,14 @@ export function MemberSchedule() {
                 {recentSchedules.map((schedule) => {
                   const trainer = getTrainerInfo(schedule.trainer_id);
                   return (
-                    <div key={schedule.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div key={schedule.id} className="flex items-center justify-between p-3 md:p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusColor(schedule.status)}`}>
                           {getStatusIcon(schedule.status)}
                         </div>
                         <div>
-                          <h4 className="font-medium">Buổi PT với {trainer?.full_name}</h4>
-                          <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                          <h4 className="font-medium text-sm md:text-base">Buổi PT với {trainer?.full_name}</h4>
+                          <div className="flex items-center space-x-4 text-xs md:text-sm text-gray-600 mt-1">
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
                               <span>{formatDate(schedule.date_time)}</span>
@@ -274,7 +283,7 @@ export function MemberSchedule() {
                           </div>
                         </div>
                       </div>
-                      <Badge variant="outline" className={getStatusColor(schedule.status)}>
+                      <Badge variant="outline" className={`${getStatusColor(schedule.status)} hidden sm:inline-flex`}>
                         {schedule.status}
                       </Badge>
                     </div>
