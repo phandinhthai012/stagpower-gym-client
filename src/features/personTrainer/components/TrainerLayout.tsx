@@ -30,42 +30,43 @@ export function TrainerLayout() {
     <div className="min-h-screen bg-gray-50">
       <TrainerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 lg:ml-64">
-        <div className="flex justify-between items-center px-6 py-4">
-          <div className="flex items-center gap-4">
+      {/* Header  */}
+      <header className="bg-transparent lg:ml-64">
+        <div className="mx-4 my-4 bg-white shadow-sm border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center">
+          {/* Left: page title and menu */}
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden text-gray-500 hover:text-gray-700"
             >
-              <Menu className="w-6 h-6" />
+              <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-2xl font-semibold text-blue-900">{getPageTitle()}</h1>
+            <h1 className="text-xl md:text-2xl font-semibold text-blue-900">{getPageTitle()}</h1>
           </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Notification Button */}
+
+          {/* Center: reserved */}
+          <div />
+
+          {/* Right: notifications, profile, logout */}
+          <div className="flex items-center justify-end gap-4">
+            {/* Notification */}
             <button className="relative p-2 text-gray-500 hover:text-gray-700">
-              <Bell className="w-6 h-6" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                3
-              </span>
+              <Bell className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
             </button>
-            
-            {/* User Profile */}
+
+            {/* User avatar + info */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">
-                  {user?.fullName?.charAt(0) || 'P'}
-                </span>
+                <span className="text-white font-semibold text-sm">{user?.fullName?.charAt(0) || 'P'}</span>
               </div>
               <div className="hidden md:block">
                 <h4 className="text-sm font-medium text-blue-900">{user?.fullName || 'Personal Trainer'}</h4>
                 <p className="text-xs text-gray-500">Personal Trainer</p>
               </div>
             </div>
-            
-            {/* Logout Button */}
+
+            {/* Logout */}
             <button
               onClick={handleLogout}
               className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"

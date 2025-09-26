@@ -11,6 +11,7 @@ import {
   X,
   Menu
 } from 'lucide-react';
+import LogoStagPower from '../../../assets/Logo_StagPower_4x.png';
 
 interface TrainerSidebarProps {
   sidebarOpen: boolean;
@@ -47,9 +48,7 @@ export function TrainerSidebar({ sidebarOpen, setSidebarOpen }: TrainerSidebarPr
         <div className="px-6 py-6 border-b border-blue-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">SP</span>
-              </div>
+              <img src={LogoStagPower} alt="StagPower" className="w-24 h-24 rounded-full object-cover" />
               <div className="ml-3">
                 <h2 className="text-lg font-semibold text-white">StagPower</h2>
                 <p className="text-xs text-blue-200">Personal Trainer Dashboard</p>
