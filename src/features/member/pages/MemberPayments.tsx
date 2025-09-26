@@ -20,9 +20,7 @@ import {
   Plus,
   Dumbbell,
   Star,
-  QrCode,
-  Smartphone,
-  Landmark
+  QrCode
 } from 'lucide-react';
 import { 
   mockPayments, 
@@ -162,8 +160,15 @@ export function MemberPayments() {
 
   const handleSelectPackage = (id: string, name: string, amount: number) => {
     setSelectedPkg({ id, name, amount });
-    setSelectedMethod(undefined);
-    setShowPaymentMethods(true);
+    setSelectedMethod('bank');
+    setShowPaymentMethods(false);
+    setOpenModal(true);
+  };
+
+  // Select a renew option but do not open modal yet
+  const handleSelectRenewPackage = (id: string, name: string, amount: number) => {
+    setSelectedPkg({ id, name, amount });
+    setSelectedMethod('bank');
   };
 
   const proceedToPayment = () => {
@@ -242,8 +247,12 @@ export function MemberPayments() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {ptPackages.slice(0,3).map((opt) => (
-            <Card key={opt.id} className="border-2 border-gray-200">
-          <CardContent className="p-6">
+            <Card
+              key={opt.id}
+              className={`border-2 cursor-pointer select-none ${selectedPkg?.id === opt.id ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}`}
+              onClick={() => handleSelectRenewPackage(opt.id, opt.name, opt.price)}
+            >
+              <CardContent className="p-6">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">{opt.name}
                   <span className="ml-3 text-green-600 font-bold">
                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(opt.price).replace('₫','VNĐ')}
@@ -253,104 +262,38 @@ export function MemberPayments() {
                   <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-blue-700" /> {opt.pt_session_duration || 90} phút/buổi</div>
                   <div className="flex items-center gap-2"><Users className="h-4 w-4 text-blue-700" /> 1-1 với PT</div>
                   <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-blue-700" /> Theo dõi tiến độ</div>
-              </div>
-                <div className="mt-4">
-                  <Button className="w-full" onClick={() => handleSelectPackage(opt.id, opt.name, opt.price)}>Mua ngay</Button>
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+              </CardContent>
+            </Card>
           ))}
+        </div>
+        <div className="mt-4 text-right">
+          <Button onClick={() => setOpenModal(true)} disabled={!selectedPkg}>Thanh toán</Button>
         </div>
       </div>
       )}
 
-      {/* Payment methods + summary (like HTML template) */}
-      {showPaymentMethods && selectedPkg && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CreditCard className="h-5 w-5" />
-              <span>Phương thức thanh toán</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button
-                className={`p-4 rounded-xl border-2 text-left ${selectedMethod === 'momo' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-                onClick={() => setSelectedMethod('momo')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-pink-500 text-white flex items-center justify-center">
-                    <Smartphone className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-blue-900">Momo</div>
-                    <div className="text-sm text-gray-600">Ví điện tử Momo</div>
-                  </div>
-                </div>
-              </button>
-              <button
-                className={`p-4 rounded-xl border-2 text-left ${selectedMethod === 'zalopay' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-                onClick={() => setSelectedMethod('zalopay')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center">
-                    <CreditCard className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-blue-900">ZaloPay</div>
-                    <div className="text-sm text-gray-600">Ví điện tử ZaloPay</div>
-                  </div>
-                </div>
-              </button>
-              <button
-                className={`p-4 rounded-xl border-2 text-left ${selectedMethod === 'bank' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
-                onClick={() => setSelectedMethod('bank')}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center">
-                    <Landmark className="h-5 w-5" />
-              </div>
-              <div>
-                    <div className="font-semibold text-blue-900">Chuyển khoản</div>
-                    <div className="text-sm text-gray-600">Chuyển khoản ngân hàng</div>
-                  </div>
-              </div>
-              </button>
-            </div>
-
-            <div className="mt-6 p-4 rounded-lg border-2 border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-gray-600">Gói đã chọn</div>
-                  <div className="font-semibold text-blue-900">{selectedPkg.name}</div>
-                </div>
-                <div className="text-green-600 font-bold">{new Intl.NumberFormat('vi-VN').format(selectedPkg.amount)} VNĐ</div>
-              </div>
-              <div className="mt-3 text-right">
-                <Button disabled={!selectedMethod} onClick={proceedToPayment}>Tiến hành thanh toán</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Payment methods section removed as requested */}
 
       {activeTab === 'renew' && (
         <Card>
           <CardContent className="p-6">
             <div className="mb-4">
-              <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">ℹ️ Gói hiện tại</h3>
+              <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                <Dumbbell className="h-5 w-5 text-blue-900" />
+                Gói hiện tại
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 text-sm">
-                <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
-                  <span className="text-gray-600">Gói</span>
+                <div className="p-3 bg-gray-50 rounded-lg flex items-center gap-2">
+                  <span className="text-gray-600">Gói: </span>
                   <span className="font-semibold text-blue-900">{activeSubscription?.type || activeSubscription?.subscription_type || '—'}</span>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
-                  <span className="text-gray-600">Hết hạn</span>
+                <div className="p-3 bg-gray-50 rounded-lg flex items-center gap-2">
+                  <span className="text-gray-600">Hết hạn: </span>
                   <span className="font-semibold text-blue-900">{activeSubscription?.end_date ? new Date(activeSubscription.end_date).toLocaleDateString('vi-VN') : '—'}</span>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
-                  <span className="text-gray-600">Trạng thái</span>
+                <div className="p-3 bg-gray-50 rounded-lg flex items-center gap-2">
+                  <span className="text-gray-600">Trạng thái: </span>
                   <span className="font-semibold text-green-600">Đang hoạt động</span>
                 </div>
               </div>
@@ -359,7 +302,11 @@ export function MemberPayments() {
               <h3 className="text-lg font-semibold text-blue-900 mb-3">Tùy chọn gia hạn</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {renewCandidates.map((pkg) => (
-                  <div key={pkg.id} className="p-4 rounded-lg border-2 border-gray-200 bg-gray-50">
+                  <div
+                    key={pkg.id}
+                    className={`p-4 rounded-lg border-2 bg-gray-50 cursor-pointer select-none ${selectedPkg?.id === pkg.id ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}`}
+                    onClick={() => handleSelectRenewPackage(pkg.id, pkg.name, pkg.price)}
+                  >
                     <div className="flex items-center justify-between mb-1">
                       <h4 className="font-semibold text-blue-900 text-sm md:text-base">{pkg.name}</h4>
                       <span className="text-green-600 font-bold">{new Intl.NumberFormat('vi-VN').format(pkg.price)} VNĐ</span>
@@ -367,6 +314,9 @@ export function MemberPayments() {
                     <p className="text-gray-600 text-sm">Gia hạn gói hiện tại</p>
                   </div>
                 ))}
+              </div>
+              <div className="mt-4 text-right">
+                <Button onClick={() => setOpenModal(true)} disabled={!selectedPkg}>Thanh toán</Button>
               </div>
             </div>
           </CardContent>
@@ -381,39 +331,26 @@ export function MemberPayments() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {newPackages.map((pkg) => (
-              <Card key={pkg.id} className="border-2 border-gray-200">
+              <Card
+                key={pkg.id}
+                className={`border-2 cursor-pointer select-none ${selectedPkg?.id === pkg.id ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}`}
+                onClick={() => handleSelectRenewPackage(pkg.id, pkg.name, pkg.price)}
+              >
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold text-blue-900 mb-2">{pkg.name}</h3>
                   <div className="text-green-600 font-bold mb-3">{new Intl.NumberFormat('vi-VN').format(pkg.price)} VNĐ</div>
-                  <div className="text-sm text-gray-700 mb-4">{pkg.description}</div>
-                  <Button className="w-full" onClick={() => handleSelectPackage(pkg.id, pkg.name, pkg.price)}>Đăng ký</Button>
+                  <div className="text-sm text-gray-700">{pkg.description}</div>
                 </CardContent>
               </Card>
             ))}
           </div>
+          <div className="mt-4 text-right">
+            <Button onClick={() => setOpenModal(true)} disabled={!selectedPkg}>Thanh toán</Button>
+          </div>
       </div>
       )}
 
-      {/* Payment Methods */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <CreditCard className="h-5 w-5" />
-            <span>Phương thức thanh toán</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {Object.entries(stats.methodStats).map(([method, count]) => (
-                <div key={method} className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl mb-2">{getPaymentMethodIcon(method)}</div>
-                  <div className="text-lg font-semibold">{count as number}</div>
-                  <div className="text-sm text-gray-600 capitalize">{method}</div>
-                </div>
-              ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Payment methods stats section removed as requested */}
 
       <MemberPaymentModal
         open={openModal}
