@@ -6,7 +6,6 @@ import { Badge } from '../../../components/ui/badge';
 import { 
   CreditCard, 
   Download, 
-  Eye, 
   Calendar, 
   DollarSign,
   TrendingUp,
@@ -20,7 +19,10 @@ import {
   RefreshCw,
   Plus,
   Dumbbell,
-  Star
+  Star,
+  QrCode,
+  Smartphone,
+  Landmark
 } from 'lucide-react';
 import { 
   mockPayments, 
@@ -29,10 +31,15 @@ import {
   getMockDataByMemberId 
 } from '../../../mockdata';
 import { formatDate } from '../../../lib/date-utils';
+import MemberPaymentModal from '../components/ModalPayment';
 
 export function MemberPayments() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'renew' | 'new' | 'pt'>('pt');
+  const [selectedPkg, setSelectedPkg] = useState<undefined | { id: string; name: string; amount: number }>(undefined);
+  const [selectedMethod, setSelectedMethod] = useState<undefined | 'momo' | 'zalopay' | 'bank'>(undefined);
+  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+  const [openModal, setOpenModal] = useState(false);
 
   // Get member's payment data
   const memberPayments = useMemo(() => {
@@ -153,6 +160,36 @@ export function MemberPayments() {
     return [basic1, vip1, comboAny].filter(Boolean) as typeof mockPackages;
   }, []);
 
+  const handleSelectPackage = (id: string, name: string, amount: number) => {
+    setSelectedPkg({ id, name, amount });
+    setSelectedMethod(undefined);
+    setShowPaymentMethods(true);
+  };
+
+  const proceedToPayment = () => {
+    if (!selectedPkg || !selectedMethod) return;
+    setOpenModal(true);
+  };
+
+  const paymentConfig = (method: 'momo' | 'zalopay' | 'bank' | undefined) => {
+    if (method === 'momo') {
+      return {
+        title: 'Thanh toán Momo',
+        steps: ['Mở ứng dụng Momo', 'Chọn Quét mã QR', 'Quét mã QR trên màn hình', 'Xác nhận thanh toán', 'Nhập mật khẩu để hoàn tất']
+      };
+    }
+    if (method === 'zalopay') {
+      return {
+        title: 'Thanh toán ZaloPay',
+        steps: ['Mở ứng dụng ZaloPay', 'Chọn Quét mã QR', 'Quét mã QR trên màn hình', 'Xác nhận thanh toán', 'Nhập mật khẩu để hoàn tất']
+      };
+    }
+    return {
+      title: 'Chuyển khoản ngân hàng',
+      steps: ['Mở ứng dụng ngân hàng', 'Chọn Chuyển khoản/QR', 'Quét mã QR trên màn hình', 'Xác nhận thông tin', 'Nhập OTP để hoàn tất']
+    };
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Top tabs like design */}
@@ -191,10 +228,6 @@ export function MemberPayments() {
             <Download className="h-4 w-4 mr-2" />
             Xuất báo cáo
           </Button>
-          <Button>
-            <CreditCard className="h-4 w-4 mr-2" />
-            Thanh toán mới
-          </Button>
         </div>
       </div>
 
@@ -210,7 +243,7 @@ export function MemberPayments() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {ptPackages.slice(0,3).map((opt) => (
             <Card key={opt.id} className="border-2 border-gray-200">
-              <CardContent className="p-6">
+          <CardContent className="p-6">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">{opt.name}
                   <span className="ml-3 text-green-600 font-bold">
                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(opt.price).replace('₫','VNĐ')}
@@ -220,15 +253,86 @@ export function MemberPayments() {
                   <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-blue-700" /> {opt.pt_session_duration || 90} phút/buổi</div>
                   <div className="flex items-center gap-2"><Users className="h-4 w-4 text-blue-700" /> 1-1 với PT</div>
                   <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-blue-700" /> Theo dõi tiến độ</div>
-                </div>
+              </div>
                 <div className="mt-4">
-                  <Button className="w-full">Mua ngay</Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <Button className="w-full" onClick={() => handleSelectPackage(opt.id, opt.name, opt.price)}>Mua ngay</Button>
+            </div>
+          </CardContent>
+        </Card>
           ))}
         </div>
       </div>
+      )}
+
+      {/* Payment methods + summary (like HTML template) */}
+      {showPaymentMethods && selectedPkg && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <CreditCard className="h-5 w-5" />
+              <span>Phương thức thanh toán</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                className={`p-4 rounded-xl border-2 text-left ${selectedMethod === 'momo' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                onClick={() => setSelectedMethod('momo')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-pink-500 text-white flex items-center justify-center">
+                    <Smartphone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-blue-900">Momo</div>
+                    <div className="text-sm text-gray-600">Ví điện tử Momo</div>
+                  </div>
+                </div>
+              </button>
+              <button
+                className={`p-4 rounded-xl border-2 text-left ${selectedMethod === 'zalopay' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                onClick={() => setSelectedMethod('zalopay')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-blue-900">ZaloPay</div>
+                    <div className="text-sm text-gray-600">Ví điện tử ZaloPay</div>
+                  </div>
+                </div>
+              </button>
+              <button
+                className={`p-4 rounded-xl border-2 text-left ${selectedMethod === 'bank' ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                onClick={() => setSelectedMethod('bank')}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center">
+                    <Landmark className="h-5 w-5" />
+              </div>
+              <div>
+                    <div className="font-semibold text-blue-900">Chuyển khoản</div>
+                    <div className="text-sm text-gray-600">Chuyển khoản ngân hàng</div>
+                  </div>
+              </div>
+              </button>
+            </div>
+
+            <div className="mt-6 p-4 rounded-lg border-2 border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-gray-600">Gói đã chọn</div>
+                  <div className="font-semibold text-blue-900">{selectedPkg.name}</div>
+                </div>
+                <div className="text-green-600 font-bold">{new Intl.NumberFormat('vi-VN').format(selectedPkg.amount)} VNĐ</div>
+              </div>
+              <div className="mt-3 text-right">
+                <Button disabled={!selectedMethod} onClick={proceedToPayment}>Tiến hành thanh toán</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {activeTab === 'renew' && (
@@ -282,12 +386,12 @@ export function MemberPayments() {
                   <h3 className="text-lg font-semibold text-blue-900 mb-2">{pkg.name}</h3>
                   <div className="text-green-600 font-bold mb-3">{new Intl.NumberFormat('vi-VN').format(pkg.price)} VNĐ</div>
                   <div className="text-sm text-gray-700 mb-4">{pkg.description}</div>
-                  <Button className="w-full">Đăng ký</Button>
+                  <Button className="w-full" onClick={() => handleSelectPackage(pkg.id, pkg.name, pkg.price)}>Đăng ký</Button>
                 </CardContent>
               </Card>
             ))}
           </div>
-        </div>
+      </div>
       )}
 
       {/* Payment Methods */}
@@ -310,6 +414,15 @@ export function MemberPayments() {
           </div>
         </CardContent>
       </Card>
+
+      <MemberPaymentModal
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        method={selectedMethod}
+        packageName={selectedPkg?.name || ''}
+        amount={selectedPkg?.amount || 0}
+        getConfig={paymentConfig}
+      />
 
       {/* Invoice History table */}
       <Card>
@@ -372,12 +485,12 @@ export function MemberPayments() {
               </tbody>
             </table>
             {memberPayments.length === 0 && (
-              <div className="text-center py-12">
-                <CreditCard className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có giao dịch</h3>
-                <p className="text-gray-500">Bạn chưa có giao dịch thanh toán nào</p>
-              </div>
-            )}
+            <div className="text-center py-12">
+              <CreditCard className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có giao dịch</h3>
+              <p className="text-gray-500">Bạn chưa có giao dịch thanh toán nào</p>
+            </div>
+          )}
           </div>
         </CardContent>
       </Card>
