@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
-import { 
-  Calendar, 
+import {
+  Calendar,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -15,26 +15,29 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { mockUsers, mockSchedules, mockSubscriptions, getMockDataByTrainerId } from '../../../mockdata';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export function TrainerSchedulePage() {
   const { user } = useAuth();
-  const [currentView, setCurrentView] = useState<'calendar' | 'list'>('calendar');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialViewParam = searchParams.get('view');
+  const [currentView, setCurrentView] = useState<'calendar' | 'list'>(initialViewParam === 'list' ? 'list' : 'calendar');
   const [currentFilter, setCurrentFilter] = useState('all');
-
+  const navigate = useNavigate();
   // Get trainer's schedules from mockdata
   const trainerSchedules = getMockDataByTrainerId('schedules', user?.id || '');
-  
+
   // Enhance schedules with member and subscription data
   const enhancedSchedules = trainerSchedules.map(schedule => {
     const member = mockUsers.find(u => u.id === schedule.member_id);
     const subscription = mockSubscriptions.find(sub => sub.id === schedule.subscription_id);
-    
+
     return {
       id: schedule.id,
       date: schedule.date_time.split('T')[0],
-      time: new Date(schedule.date_time).toLocaleTimeString('vi-VN', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      time: new Date(schedule.date_time).toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit'
       }),
       member: member?.full_name || 'Unknown',
       type: subscription?.type?.toLowerCase() || 'pt',
@@ -102,17 +105,17 @@ export function TrainerSchedulePage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('vi-VN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
   // Get current month and year for calendar header
   const currentDate = new Date();
-  const currentMonth = currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+  const currentMonth = currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' }).toUpperCase();
 
   return (
     <div>
@@ -129,21 +132,37 @@ export function TrainerSchedulePage() {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">{currentMonth}</h2>
+
             </div>
-            
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-gray-900 text-center">{currentMonth}</h2>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant={currentView === 'calendar' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setCurrentView('calendar')}
+                onClick={() => {
+                  setCurrentView('calendar');
+                  setSearchParams(prev => {
+                    const params = new URLSearchParams(prev);
+                    params.set('view', 'calendar');
+                    return params;
+                  });
+                }}
               >
                 Lịch
               </Button>
               <Button
                 variant={currentView === 'list' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setCurrentView('list')}
+                onClick={() => {
+                  setCurrentView('list');
+                  setSearchParams(prev => {
+                    const params = new URLSearchParams(prev);
+                    params.set('view', 'list');
+                    return params;
+                  });
+                }}
               >
                 Danh sách
               </Button>
@@ -163,7 +182,7 @@ export function TrainerSchedulePage() {
                 </div>
               ))}
             </div>
-            
+
             <div className="grid grid-cols-7 gap-2">
               {/* Calendar days would be generated here */}
               {Array.from({ length: 35 }, (_, i) => {
@@ -172,7 +191,7 @@ export function TrainerSchedulePage() {
                   const scheduleDate = new Date(s.date);
                   return scheduleDate.getDate() === dayNumber;
                 });
-                
+
                 return (
                   <div key={i} className="min-h-[100px] border border-gray-200 rounded-lg p-2">
                     <div className="text-sm font-medium text-gray-600 mb-2">
@@ -251,7 +270,11 @@ export function TrainerSchedulePage() {
               <div className="space-y-4">
                 {filteredSchedule.length > 0 ? (
                   filteredSchedule.map((item) => (
-                    <div key={item.id} className="p-6 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                    <div
+                      onClick={() => navigate(`/trainer/schedule/session/${item.id}?view=${currentView}`)}
+                      key={item.id}
+                      className="p-6 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
@@ -265,7 +288,7 @@ export function TrainerSchedulePage() {
                             <p className="text-xs text-gray-500">{item.note}</p>
                           </div>
                         </div>
-                        
+
                         <div className="text-right">
                           <div className="flex items-center space-x-2 mb-2">
                             <Clock className="w-4 h-4 text-gray-500" />
