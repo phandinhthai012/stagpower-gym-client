@@ -118,67 +118,6 @@ export function TrainerMemberManagementPage() {
 
   return (
     <div>
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Tổng hội viên</CardTitle>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="h-4 w-4 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{enhancedMembers.length}</div>
-            <p className="text-xs text-gray-500 mt-1">hội viên đang phụ trách</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Hoạt động</CardTitle>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <UserCheck className="h-4 w-4 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {enhancedMembers.filter(m => m.status === 'active').length}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">hội viên đang tập</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-yellow-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Tạm ngưng</CardTitle>
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-yellow-600">
-              {enhancedMembers.filter(m => m.status === 'suspended').length}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">hội viên tạm ngưng</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Đánh giá TB</CardTitle>
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Star className="h-4 w-4 text-orange-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">
-              {(enhancedMembers.reduce((sum, m) => sum + m.rating, 0) / enhancedMembers.length).toFixed(1)}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">sao từ hội viên</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters and Search */}
       <Card className="mb-6">
         <CardHeader>
@@ -223,7 +162,7 @@ export function TrainerMemberManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Members Grid */}
+      {/* Members Table */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-lg">
@@ -234,100 +173,142 @@ export function TrainerMemberManagementPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Desktop/Table view */}
+          <div className="overflow-x-auto hidden md:block">
+            <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Hội viên</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Gói</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Trạng thái</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Buổi</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Đánh giá</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Tiến độ</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Mục tiêu</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Lần cuối</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.map((member) => (
+                  <tr key={member.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            {member.avatar}
+                          </div>
+                          {member.package === 'pt' && (
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
+                              <Crown className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div> 
+                          <div className="font-semibold text-gray-900">{member.name}</div>
+                          <div className="text-xs text-gray-600">{member.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={getPackageColor(member.package)}>{getPackageText(member.package)}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={getStatusColor(member.status)}>{getStatusText(member.status)}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-center text-blue-600 font-semibold">{member.totalSessions}</td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-1 text-yellow-600">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="font-semibold">{member.rating.toFixed(1)}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full" style={{ width: `${member.progress}%` }} />
+                        </div>
+                        <span className="text-sm font-semibold text-green-600">{member.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-800">{getGoalText(member.goal)}</td>
+                    <td className="px-4 py-3 text-gray-600">{member.lastSession}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-1">
+                        <Button variant="outline" size="sm"><Eye className="w-4 h-4" /></Button>
+                        <Button variant="outline" size="sm"><MessageCircle className="w-4 h-4" /></Button>
+                        <Button variant="outline" size="sm"><Phone className="w-4 h-4" /></Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile list view */}
+          <div className="md:hidden space-y-4">
             {filteredMembers.map((member) => (
-              <div key={member.id} className="p-6 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
+              <div key={member.id} className="p-4 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
                     <div className="relative">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">
-                          {member.avatar}
-                        </span>
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                        {member.avatar}
                       </div>
                       {member.package === 'pt' && (
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
-                          <Crown className="w-4 h-4 text-white" />
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
+                          <Crown className="w-3 h-3 text-white" />
                         </div>
                       )}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-lg">{member.name}</h3>
-                      <p className="text-sm text-gray-600">{member.email}</p>
+                      <div className="font-semibold text-gray-900">{member.name}</div>
+                      <div className="text-xs text-gray-600">{member.email}</div>
                     </div>
                   </div>
-                  <div className="flex space-x-1">
-                    <Button variant="outline" size="sm">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <MessageCircle className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Phone className="w-4 h-4" />
-                    </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm"><Eye className="w-4 h-4" /></Button>
+                    <Button variant="outline" size="sm"><MessageCircle className="w-4 h-4" /></Button>
+                    <Button variant="outline" size="sm"><Phone className="w-4 h-4" /></Button>
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Gói tập:</span>
-                    <Badge className={getPackageColor(member.package)}>
-                      {getPackageText(member.package)}
-                    </Badge>
+                    <span className="text-gray-600">Gói</span>
+                    <Badge className={getPackageColor(member.package)}>{getPackageText(member.package)}</Badge>
                   </div>
-                  
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Trạng thái:</span>
-                    <Badge className={getStatusColor(member.status)}>
-                      {getStatusText(member.status)}
-                    </Badge>
+                    <span className="text-gray-600">Trạng thái</span>
+                    <Badge className={getStatusColor(member.status)}>{getStatusText(member.status)}</Badge>
                   </div>
-
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Buổi tập:</span>
-                    <span className="text-sm font-semibold text-blue-600">{member.totalSessions}</span>
+                    <span className="text-gray-600">Buổi</span>
+                    <span className="font-semibold text-blue-600">{member.totalSessions}</span>
                   </div>
-
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Đánh giá:</span>
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                      <span className="text-sm font-semibold text-yellow-600">{member.rating.toFixed(1)}</span>
+                    <span className="text-gray-600">Đánh giá</span>
+                    <span className="flex items-center gap-1 text-yellow-600 font-semibold"><Star className="w-4 h-4 fill-current" />{member.rating.toFixed(1)}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Tiến độ</span>
+                      <span className="text-green-600 font-semibold">{member.progress}%</span>
+                    </div>
+                    <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full" style={{ width: `${member.progress}%` }} />
                     </div>
                   </div>
-
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Tiến độ:</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${member.progress}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-semibold text-green-600">{member.progress}%</span>
-                    </div>
+                    <span className="text-gray-600">Mục tiêu</span>
+                    <span className="font-medium text-gray-900">{getGoalText(member.goal)}</span>
                   </div>
-
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Mục tiêu:</span>
-                    <span className="text-sm font-medium text-gray-900">{getGoalText(member.goal)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Tập lần cuối:</span>
-                    <span className="text-sm text-gray-500">{member.lastSession}</span>
+                    <span className="text-gray-600">Lần cuối</span>
+                    <span className="text-gray-600">{member.lastSession}</span>
                   </div>
                 </div>
-
-                {member.notes && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-800">
-                      <strong>Ghi chú:</strong> {member.notes}
-                    </p>
-                  </div>
-                )}
               </div>
             ))}
           </div>
