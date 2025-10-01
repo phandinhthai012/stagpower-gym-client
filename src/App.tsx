@@ -13,7 +13,7 @@ import { MemberHistory } from './features/member/pages/MemberHistory';
 import { MemberNotifications } from './features/member/pages/MemberNotifications';
 import { MemberSuggestions } from './features/member/pages/MemberSuggestions';
 import { LandingPage } from './features/landing/page/LandingPage';
-import { AdminDashboard } from './features/admin';
+import { AdminDashboard, AdminLayout, AdminPackageManagement, AdminAccessControl, AdminMemberManagement, AdminReports } from './features/admin';
 import { StaffDashboard } from './features/staff';
 import { TrainerLayout } from './features/personTrainer/components/TrainerLayout';
 import { TrainerDashboardPage } from './features/personTrainer/pages/TrainerDashboardPage';
@@ -43,10 +43,17 @@ function App() {
             path="/admin" 
             element={
               <ProtectedRoute requiredRole="Admin">
-                <AdminDashboard />
+                <AdminLayout />
               </ProtectedRoute>
             } 
-          />
+          >
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="members" element={<AdminMemberManagement />} />
+            <Route path="packages" element={<AdminPackageManagement />} />
+            <Route path="access-control" element={<AdminAccessControl />} />
+            <Route path="reports" element={<AdminReports />} />
+          </Route>
           <Route 
             path="/staff" 
             element={
