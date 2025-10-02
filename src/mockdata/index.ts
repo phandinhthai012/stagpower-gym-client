@@ -10,6 +10,8 @@ import { mockCheckIns, type CheckIn } from './checkIns';
 import { mockSchedules, type Schedule } from './schedules';
 import { mockBookingRequests, type BookingRequest } from './bookingRequests';
 import { mockAISuggestions, type AISuggestion } from './aiSuggestions';
+import { mockExercises, type Exercise } from './exercises';
+import { mockComplaints, type Complaint } from './complaints';
 
 // Re-export all mock data and types
 export { mockUsers, type User };
@@ -23,6 +25,8 @@ export { mockCheckIns, type CheckIn };
 export { mockSchedules, type Schedule };
 export { mockBookingRequests, type BookingRequest };
 export { mockAISuggestions, type AISuggestion };
+export { mockExercises, type Exercise };
+export { mockComplaints, type Complaint };
 
 // Combined mock data object for easy access
 export const mockData = {
@@ -37,6 +41,8 @@ export const mockData = {
   schedules: mockSchedules,
   bookingRequests: mockBookingRequests,
   aiSuggestions: mockAISuggestions,
+  exercises: mockExercises,
+  complaints: mockComplaints,
 };
 
 // Helper functions for mock data
@@ -81,5 +87,7 @@ export const getMockStats = () => {
     totalSchedules: mockSchedules.length,
     totalBookingRequests: mockBookingRequests.length,
     totalAISuggestions: mockAISuggestions.length,
+    totalExercises: mockExercises.length,
+    totalComplaints: mockComplaints.length,
   };
 };

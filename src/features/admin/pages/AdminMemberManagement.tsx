@@ -55,12 +55,6 @@ export function AdminMemberManagement() {
   const vipMembers = members.filter(member => member.member_info?.membership_level === 'VIP').length;
   const hssvMembers = members.filter(member => member.member_info?.is_hssv).length;
 
-  const statsCards = [
-    { title: 'Tổng hội viên', value: totalMembers, icon: Users, color: 'text-blue-600' },
-    { title: 'Hội viên hoạt động', value: activeMembers, icon: UserCheck, color: 'text-green-600' },
-    { title: 'Hội viên VIP', value: vipMembers, icon: Package, color: 'text-orange-600' },
-    { title: 'HSSV', value: hssvMembers, icon: Calendar, color: 'text-purple-600' }
-  ];
 
   const handleSelectMember = (memberId: string) => {
     setSelectedMembers(prev => 
@@ -116,27 +110,6 @@ export function AdminMemberManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
       {/* Filters and Search */}
       <Card>

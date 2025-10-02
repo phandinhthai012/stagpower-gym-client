@@ -51,40 +51,6 @@ export function AdminBranchManagement() {
   const totalStaff = mockBranches.reduce((sum, branch) => sum + (branch.staff_count || 0), 0);
   const totalMembers = mockBranches.reduce((sum, branch) => sum + (branch.member_count || 0), 0);
 
-  const statsCards = [
-    { 
-      title: 'Tổng số chi nhánh', 
-      value: totalBranches, 
-      icon: Building2, 
-      color: 'text-blue-600',
-      change: '+1 chi nhánh mới',
-      changeType: 'positive'
-    },
-    { 
-      title: 'Chi nhánh đang hoạt động', 
-      value: activeBranches, 
-      icon: CheckCircle, 
-      color: 'text-green-600',
-      change: `${Math.round((activeBranches / totalBranches) * 100)}% tỷ lệ hoạt động`,
-      changeType: 'positive'
-    },
-    { 
-      title: 'Chi nhánh bảo trì', 
-      value: maintenanceBranches, 
-      icon: PauseCircle, 
-      color: 'text-yellow-600',
-      change: `${Math.round((maintenanceBranches / totalBranches) * 100)}% tỷ lệ bảo trì`,
-      changeType: 'negative'
-    },
-    { 
-      title: 'Tổng nhân viên', 
-      value: totalStaff, 
-      icon: Users, 
-      color: 'text-purple-600',
-      change: '+3 nhân viên mới',
-      changeType: 'positive'
-    }
-  ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -162,38 +128,6 @@ export function AdminBranchManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <div className={`flex items-center gap-1 text-xs mt-1 ${
-                      stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {stat.changeType === 'positive' ? (
-                        <ArrowUp className="w-3 h-3" />
-                      ) : (
-                        <ArrowDown className="w-3 h-3" />
-                      )}
-                      <span>{stat.change}</span>
-                    </div>
-                  </div>
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
       {/* Action Buttons */}
       <Card>
         <CardContent className="p-6">

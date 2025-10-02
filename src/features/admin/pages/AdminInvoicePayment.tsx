@@ -49,12 +49,6 @@ export function AdminInvoicePayment() {
     return payment.payment_status === 'Pending' && paymentDate < now;
   }).length;
 
-  const statsCards = [
-    { title: 'Tổng doanh thu', value: `${(totalRevenue / 1000000).toFixed(1)}M VNĐ`, icon: DollarSign, color: 'text-green-600' },
-    { title: 'Hóa đơn đã thanh toán', value: paidInvoices, icon: CheckCircle, color: 'text-blue-600' },
-    { title: 'Chờ thanh toán', value: pendingInvoices, icon: Clock, color: 'text-yellow-600' },
-    { title: 'Quá hạn', value: overdueInvoices, icon: AlertTriangle, color: 'text-red-600' }
-  ];
 
   // Create invoice data from payments
   const invoices = mockPayments.map(payment => {
@@ -121,27 +115,6 @@ export function AdminInvoicePayment() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
       {/* Action Buttons */}
       <Card>

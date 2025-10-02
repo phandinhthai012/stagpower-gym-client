@@ -133,27 +133,6 @@ export function AdminPTSchedule() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-blue-900">Phân Lịch Cho PT</h1>
-            <p className="text-gray-600">Phân bổ lịch làm việc cho PT</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium">
-              <span className="flex items-center gap-2">
-                <span>Chi Nhánh: Gò Vấp</span>
-              </span>
-            </div>
-            <div className="text-right text-sm text-gray-600">
-              <div>{new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
-              <div>{new Date().toLocaleDateString('vi-VN')}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Direct Schedule Assignment */}

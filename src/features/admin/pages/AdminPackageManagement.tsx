@@ -32,12 +32,6 @@ export function AdminPackageManagement() {
   const comboPackages = packages.filter(pkg => pkg.type === 'Combo').length;
   const ptPackages = packages.filter(pkg => pkg.type === 'PT').length;
 
-  const statsCards = [
-    { title: 'Gói đang hoạt động', value: activePackages, icon: Package, color: 'text-blue-600' },
-    { title: 'Gói Membership', value: membershipPackages, icon: Users, color: 'text-green-600' },
-    { title: 'Gói Combo', value: comboPackages, icon: Dumbbell, color: 'text-orange-600' },
-    { title: 'Gói PT riêng', value: ptPackages, icon: Calendar, color: 'text-purple-600' }
-  ];
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -65,27 +59,6 @@ export function AdminPackageManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

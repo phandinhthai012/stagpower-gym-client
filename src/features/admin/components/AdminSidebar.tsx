@@ -83,22 +83,6 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
             </button>
           </div>
         </div>
-
-        {/* User Profile */}
-        <div className="px-4 py-4 border-b border-blue-700">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-lg">
-                {user?.fullName?.charAt(0) || 'A'}
-              </span>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-white">{user?.fullName || 'Admin'}</h3>
-              <p className="text-xs text-blue-200">Quản trị viên</p>
-            </div>
-          </div>
-        </div>
-
         {/* Navigation Menu */}
         <div className="px-0 py-6 flex-1 overflow-y-auto">
           <nav className="space-y-1">

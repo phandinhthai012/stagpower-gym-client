@@ -42,44 +42,6 @@ export function AdminDashboard() {
   // Get recent trainers
   const trainers = mockUsers.filter(user => user.role === 'Trainer').slice(0, 3);
 
-  const statsCards = [
-    {
-      title: 'Tổng Hội Viên',
-      value: totalMembers,
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-      change: '+12%',
-      changeType: 'positive'
-    },
-    {
-      title: 'Hội Viên Hoạt Động',
-      value: activeMembers,
-      icon: UserCheck,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-      change: '+8%',
-      changeType: 'positive'
-    },
-    {
-      title: 'Doanh Thu Tháng',
-      value: `${(monthlyRevenue / 1000000).toFixed(1)}M VNĐ`,
-      icon: DollarSign,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-      change: '+15%',
-      changeType: 'positive'
-    },
-    {
-      title: 'Check-in Hôm Nay',
-      value: activeCheckIns,
-      icon: TrendingUp,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-      change: '+5%',
-      changeType: 'positive'
-    }
-  ];
 
   const quickActions = [
     { title: 'Thêm Hội Viên Mới', icon: Users, color: 'bg-blue-500' },
@@ -112,35 +74,6 @@ export function AdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsCards.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <div className="flex items-center mt-2">
-                      <span className={`text-sm font-medium ${
-                        stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {stat.change}
-                      </span>
-                      <span className="text-sm text-gray-500 ml-1">so với tháng trước</span>
-                    </div>
-                  </div>
-                  <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
 
       {/* Main Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
