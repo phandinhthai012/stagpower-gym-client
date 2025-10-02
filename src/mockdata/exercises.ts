@@ -1,190 +1,431 @@
 export interface Exercise {
   id: string;
   name: string;
-  category: 'Cardio' | 'Strength' | 'Flexibility' | 'Yoga';
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  muscle_groups: string[];
-  equipment: string;
-  duration_minutes: number;
-  calories_per_minute: number;
-  video_url?: string;
+  description: string;
   instructions: string;
-  status: 'Active' | 'Inactive';
-  created_at: string;
-  updated_at: string;
+  tips: string;
+  category: 'Chest' | 'Back' | 'Legs' | 'Shoulders' | 'Arms' | 'Core' | 'Cardio' | 'FullBody' | 'Flexibility' | 'Balance';
+  difficultyLevel: 'Beginner' | 'Intermediate' | 'Advanced';
+  targetMuscles: string[];
+  duration?: number; // phút
+  equipment: string;
+  sets: number;
+  reps: number;
+  weight: number; // kg
+  restTime: number; // phút
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const mockExercises: Exercise[] = [
+  // CHEST EXERCISES
   {
-    id: '507f1f77bcf86cd799439101',
-    name: 'Push-up',
-    category: 'Strength',
-    difficulty: 'Beginner',
-    muscle_groups: ['Chest', 'Arms', 'Core'],
+    id: 'ex_001',
+    name: 'Push-ups',
+    description: 'Bài tập cơ bản cho ngực, vai và tay',
+    instructions: 'Nằm sấp, đặt tay rộng bằng vai, nâng người lên xuống bằng cách co duỗi tay',
+    tips: 'Giữ lưng thẳng, hít vào khi hạ xuống, thở ra khi đẩy lên',
+    category: 'Chest',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Pectoralis Major', 'Anterior Deltoid', 'Triceps'],
     equipment: 'Bodyweight',
-    duration_minutes: 5,
-    calories_per_minute: 8,
-    video_url: 'https://youtube.com/watch?v=example1',
-    instructions: 'Chống đẩy cơ bản cho ngực và tay. Bắt đầu ở tư thế plank, hạ thấp cơ thể xuống sàn và đẩy lên.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    sets: 3,
+    reps: 15,
+    weight: 0,
+    restTime: 1,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: '507f1f77bcf86cd799439102',
-    name: 'Running',
-    category: 'Cardio',
-    difficulty: 'Beginner',
-    muscle_groups: ['Legs', 'Full Body'],
-    equipment: 'Bodyweight',
-    duration_minutes: 30,
-    calories_per_minute: 12,
-    video_url: 'https://youtube.com/watch?v=example2',
-    instructions: 'Chạy bộ tăng cường sức bền. Giữ tư thế thẳng, bước chân nhẹ nhàng và thở đều.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '507f1f77bcf86cd799439103',
-    name: 'Deadlift',
-    category: 'Strength',
-    difficulty: 'Advanced',
-    muscle_groups: ['Back', 'Legs', 'Core'],
-    equipment: 'Barbell',
-    duration_minutes: 15,
-    calories_per_minute: 10,
-    video_url: 'https://youtube.com/watch?v=example3',
-    instructions: 'Nâng tạ đòn cho lưng và chân. Giữ lưng thẳng, gập gối và nâng tạ từ sàn lên hông.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '507f1f77bcf86cd799439104',
-    name: 'Yoga Stretch',
-    category: 'Yoga',
-    difficulty: 'Intermediate',
-    muscle_groups: ['Full Body', 'Flexibility'],
-    equipment: 'Bodyweight',
-    duration_minutes: 45,
-    calories_per_minute: 4,
-    video_url: 'https://youtube.com/watch?v=example4',
-    instructions: 'Các động tác yoga cơ bản. Tập trung vào hơi thở và giữ tư thế ổn định.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
-  },
-  {
-    id: '507f1f77bcf86cd799439105',
+    id: 'ex_002',
     name: 'Bench Press',
-    category: 'Strength',
-    difficulty: 'Intermediate',
-    muscle_groups: ['Chest', 'Arms', 'Shoulders'],
+    description: 'Bài tập ngực với tạ đòn',
+    instructions: 'Nằm trên ghế, nâng tạ từ ngực lên cao, sau đó hạ xuống',
+    tips: 'Kiểm soát trọng lượng, không nâng quá nặng',
+    category: 'Chest',
+    difficultyLevel: 'Intermediate',
+    targetMuscles: ['Pectoralis Major', 'Anterior Deltoid', 'Triceps'],
     equipment: 'Barbell',
-    duration_minutes: 20,
-    calories_per_minute: 9,
-    video_url: 'https://youtube.com/watch?v=example5',
-    instructions: 'Đẩy tạ đòn cho ngực. Nằm trên ghế, hạ tạ xuống ngực và đẩy lên mạnh mẽ.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    sets: 4,
+    reps: 8,
+    weight: 60,
+    restTime: 3,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: '507f1f77bcf86cd799439106',
-    name: 'Squat',
-    category: 'Strength',
-    difficulty: 'Beginner',
-    muscle_groups: ['Legs', 'Glutes', 'Core'],
+    id: 'ex_003',
+    name: 'Dumbbell Flyes',
+    description: 'Bài tập ngực với tạ đơn',
+    instructions: 'Nằm trên ghế, cầm tạ đơn, mở rộng tay ra hai bên rồi đưa lại',
+    tips: 'Giữ khuỷu tay hơi cong, cảm nhận cơ ngực căng',
+    category: 'Chest',
+    difficultyLevel: 'Intermediate',
+    targetMuscles: ['Pectoralis Major'],
+    equipment: 'Dumbbell',
+    sets: 3,
+    reps: 12,
+    weight: 15,
+    restTime: 2,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+
+  // BACK EXERCISES
+  {
+    id: 'ex_004',
+    name: 'Pull-ups',
+    description: 'Bài tập lưng cơ bản',
+    instructions: 'Treo người trên xà, kéo người lên cho đến khi cằm qua xà',
+    tips: 'Giữ lưng thẳng, kéo bằng lưng chứ không phải tay',
+    category: 'Back',
+    difficultyLevel: 'Intermediate',
+    targetMuscles: ['Latissimus Dorsi', 'Rhomboids', 'Middle Trapezius'],
     equipment: 'Bodyweight',
-    duration_minutes: 10,
-    calories_per_minute: 7,
-    video_url: 'https://youtube.com/watch?v=example6',
-    instructions: 'Squat cơ bản cho chân và mông. Đứng rộng bằng vai, hạ người xuống như ngồi xổm.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    sets: 3,
+    reps: 8,
+    weight: 0,
+    restTime: 2,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: '507f1f77bcf86cd799439107',
+    id: 'ex_005',
+    name: 'Bent-over Row',
+    description: 'Bài tập lưng với tạ đòn',
+    instructions: 'Cúi người, cầm tạ đòn, kéo tạ lên ngực',
+    tips: 'Giữ lưng thẳng, kéo bằng lưng',
+    category: 'Back',
+    difficultyLevel: 'Intermediate',
+    targetMuscles: ['Latissimus Dorsi', 'Rhomboids', 'Posterior Deltoid'],
+    equipment: 'Barbell',
+    sets: 4,
+    reps: 10,
+    weight: 40,
+    restTime: 2,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'ex_006',
+    name: 'Lat Pulldown',
+    description: 'Bài tập lưng với máy',
+    instructions: 'Ngồi trên máy, kéo thanh xuống sau gáy',
+    tips: 'Kiểm soát chuyển động, không dùng đà',
+    category: 'Back',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Latissimus Dorsi', 'Rhomboids'],
+    equipment: 'Machine',
+    sets: 3,
+    reps: 12,
+    weight: 30,
+    restTime: 2,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+
+  // LEGS EXERCISES
+  {
+    id: 'ex_007',
+    name: 'Squats',
+    description: 'Bài tập chân cơ bản',
+    instructions: 'Đứng thẳng, hạ người xuống như ngồi ghế, sau đó đứng lên',
+    tips: 'Giữ lưng thẳng, đầu gối không vượt quá mũi chân',
+    category: 'Legs',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Quadriceps', 'Glutes', 'Hamstrings'],
+    equipment: 'Bodyweight',
+    sets: 3,
+    reps: 20,
+    weight: 0,
+    restTime: 2,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'ex_008',
+    name: 'Deadlift',
+    description: 'Bài tập toàn thân với tạ đòn',
+    instructions: 'Đứng cúi xuống cầm tạ, đứng thẳng lên',
+    tips: 'Giữ lưng thẳng, không cong lưng',
+    category: 'Legs',
+    difficultyLevel: 'Advanced',
+    targetMuscles: ['Hamstrings', 'Glutes', 'Erector Spinae'],
+    equipment: 'Barbell',
+    sets: 4,
+    reps: 6,
+    weight: 80,
+    restTime: 3,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'ex_009',
+    name: 'Lunges',
+    description: 'Bài tập chân với bước dài',
+    instructions: 'Bước một chân về phía trước, hạ người xuống, sau đó đẩy lên',
+    tips: 'Giữ thăng bằng, đầu gối sau không chạm đất',
+    category: 'Legs',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Quadriceps', 'Glutes', 'Hamstrings'],
+    equipment: 'Bodyweight',
+    sets: 3,
+    reps: 12,
+    weight: 0,
+    restTime: 1,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+
+  // SHOULDERS EXERCISES
+  {
+    id: 'ex_010',
+    name: 'Shoulder Press',
+    description: 'Bài tập vai với tạ đơn',
+    instructions: 'Ngồi hoặc đứng, nâng tạ từ vai lên cao',
+    tips: 'Giữ lưng thẳng, kiểm soát chuyển động',
+    category: 'Shoulders',
+    difficultyLevel: 'Intermediate',
+    targetMuscles: ['Anterior Deltoid', 'Medial Deltoid'],
+    equipment: 'Dumbbell',
+    sets: 3,
+    reps: 10,
+    weight: 12,
+    restTime: 2,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'ex_011',
+    name: 'Lateral Raises',
+    description: 'Bài tập vai bên',
+    instructions: 'Đứng, nâng tạ ra hai bên đến ngang vai',
+    tips: 'Không nâng quá cao, kiểm soát chuyển động',
+    category: 'Shoulders',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Medial Deltoid'],
+    equipment: 'Dumbbell',
+    sets: 3,
+    reps: 15,
+    weight: 5,
+    restTime: 1,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+
+  // ARMS EXERCISES
+  {
+    id: 'ex_012',
+    name: 'Bicep Curls',
+    description: 'Bài tập tay trước',
+    instructions: 'Cầm tạ đơn, co tay lên xuống',
+    tips: 'Giữ khuỷu tay cố định, kiểm soát chuyển động',
+    category: 'Arms',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Biceps'],
+    equipment: 'Dumbbell',
+    sets: 3,
+    reps: 12,
+    weight: 8,
+    restTime: 1,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'ex_013',
+    name: 'Tricep Dips',
+    description: 'Bài tập tay sau',
+    instructions: 'Ngồi trên ghế, đặt tay cạnh hông, hạ người xuống',
+    tips: 'Giữ lưng thẳng, không hạ quá thấp',
+    category: 'Arms',
+    difficultyLevel: 'Intermediate',
+    targetMuscles: ['Triceps'],
+    equipment: 'Bodyweight',
+    sets: 3,
+    reps: 10,
+    weight: 0,
+    restTime: 2,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+
+  // CORE EXERCISES
+  {
+    id: 'ex_014',
     name: 'Plank',
-    category: 'Strength',
-    difficulty: 'Beginner',
-    muscle_groups: ['Core', 'Shoulders', 'Arms'],
+    description: 'Bài tập cơ bụng tĩnh',
+    instructions: 'Nằm sấp, chống khuỷu tay, giữ người thẳng',
+    tips: 'Giữ lưng thẳng, hít thở đều',
+    category: 'Core',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Rectus Abdominis', 'Transverse Abdominis'],
+    duration: 1,
     equipment: 'Bodyweight',
-    duration_minutes: 3,
-    calories_per_minute: 6,
-    video_url: 'https://youtube.com/watch?v=example7',
-    instructions: 'Giữ tư thế plank để tăng cường cơ bụng. Giữ cơ thể thẳng từ đầu đến chân.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    sets: 3,
+    reps: 1,
+    weight: 0,
+    restTime: 1,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: '507f1f77bcf86cd799439108',
+    id: 'ex_015',
+    name: 'Crunches',
+    description: 'Bài tập cơ bụng động',
+    instructions: 'Nằm ngửa, co đầu gối, nâng vai lên khỏi đất',
+    tips: 'Không kéo cổ, dùng cơ bụng',
+    category: 'Core',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Rectus Abdominis'],
+    equipment: 'Bodyweight',
+    sets: 3,
+    reps: 20,
+    weight: 0,
+    restTime: 1,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+
+  // CARDIO EXERCISES
+  {
+    id: 'ex_016',
+    name: 'Running',
+    description: 'Chạy bộ cardio',
+    instructions: 'Chạy với tốc độ ổn định',
+    tips: 'Giữ nhịp tim trong vùng đốt cháy mỡ',
+    category: 'Cardio',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Quadriceps', 'Hamstrings', 'Calves'],
+    duration: 30,
+    equipment: 'None',
+    sets: 1,
+    reps: 1,
+    weight: 0,
+    restTime: 0,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'ex_017',
     name: 'Jumping Jacks',
+    description: 'Nhảy dang tay chân',
+    instructions: 'Nhảy dang tay chân đồng thời',
+    tips: 'Giữ nhịp độ ổn định',
     category: 'Cardio',
-    difficulty: 'Beginner',
-    muscle_groups: ['Full Body', 'Legs'],
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Full Body'],
+    duration: 5,
     equipment: 'Bodyweight',
-    duration_minutes: 5,
-    calories_per_minute: 10,
-    video_url: 'https://youtube.com/watch?v=example8',
-    instructions: 'Nhảy dang tay chân để tăng nhịp tim. Nhảy lên và dang tay chân ra ngoài đồng thời.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    sets: 3,
+    reps: 1,
+    weight: 0,
+    restTime: 1,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   },
+
+  // FULL BODY EXERCISES
   {
-    id: '507f1f77bcf86cd799439109',
-    name: 'Burpee',
-    category: 'Cardio',
-    difficulty: 'Advanced',
-    muscle_groups: ['Full Body', 'Core'],
+    id: 'ex_018',
+    name: 'Burpees',
+    description: 'Bài tập toàn thân',
+    instructions: 'Squat xuống, chống tay, nhảy chân ra sau, hít đất, nhảy chân về, nhảy lên',
+    tips: 'Thực hiện liên tục, giữ nhịp độ',
+    category: 'FullBody',
+    difficultyLevel: 'Advanced',
+    targetMuscles: ['Full Body'],
     equipment: 'Bodyweight',
-    duration_minutes: 8,
-    calories_per_minute: 15,
-    video_url: 'https://youtube.com/watch?v=example9',
-    instructions: 'Kết hợp squat, plank và nhảy. Động tác toàn thân đốt cháy nhiều calo.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    sets: 3,
+    reps: 8,
+    weight: 0,
+    restTime: 2,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   },
+
+  // FLEXIBILITY EXERCISES
   {
-    id: '507f1f77bcf86cd799439110',
-    name: 'Mountain Climbers',
-    category: 'Cardio',
-    difficulty: 'Intermediate',
-    muscle_groups: ['Core', 'Legs', 'Arms'],
+    id: 'ex_019',
+    name: 'Yoga Stretches',
+    description: 'Bài tập giãn cơ yoga',
+    instructions: 'Thực hiện các tư thế yoga cơ bản',
+    tips: 'Thở sâu, không ép cơ thể',
+    category: 'Flexibility',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Full Body'],
+    duration: 15,
+    equipment: 'Yoga Mat',
+    sets: 1,
+    reps: 1,
+    weight: 0,
+    restTime: 0,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+
+  // BALANCE EXERCISES
+  {
+    id: 'ex_020',
+    name: 'Single Leg Stand',
+    description: 'Đứng một chân',
+    instructions: 'Đứng một chân, giữ thăng bằng',
+    tips: 'Tập trung, thở đều',
+    category: 'Balance',
+    difficultyLevel: 'Beginner',
+    targetMuscles: ['Core', 'Legs'],
+    duration: 2,
     equipment: 'Bodyweight',
-    duration_minutes: 6,
-    calories_per_minute: 12,
-    video_url: 'https://youtube.com/watch?v=example10',
-    instructions: 'Chạy tại chỗ ở tư thế plank. Di chuyển chân nhanh như đang leo núi.',
-    status: 'Active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    sets: 3,
+    reps: 1,
+    weight: 0,
+    restTime: 1,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   }
 ];
 
-// Statistics helper functions
-export const getExerciseStats = () => {
-  const total = mockExercises.length;
-  const byCategory = mockExercises.reduce((acc, exercise) => {
-    acc[exercise.category] = (acc[exercise.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  const byDifficulty = mockExercises.reduce((acc, exercise) => {
-    acc[exercise.difficulty] = (acc[exercise.difficulty] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+// Helper functions
+export const getExercisesByCategory = (category: string) => {
+  return mockExercises.filter(exercise => exercise.category === category);
+};
 
-  return {
-    total,
-    byCategory,
-    byDifficulty,
-    active: mockExercises.filter(e => e.status === 'Active').length,
-    inactive: mockExercises.filter(e => e.status === 'Inactive').length
-  };
+export const getExercisesByDifficulty = (difficulty: string) => {
+  return mockExercises.filter(exercise => exercise.difficultyLevel === difficulty);
+};
+
+export const searchExercises = (searchTerm: string) => {
+  return mockExercises.filter(exercise => 
+    exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    exercise.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    exercise.targetMuscles.some(muscle => muscle.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+};
+
+export const getActiveExercises = () => {
+  return mockExercises.filter(exercise => exercise.isActive);
+};
+
+export const getExerciseById = (id: string) => {
+  return mockExercises.find(exercise => exercise.id === id);
 };

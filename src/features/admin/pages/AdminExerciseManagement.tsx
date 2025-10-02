@@ -27,7 +27,7 @@ import {
   AlertCircle,
   Info
 } from 'lucide-react';
-import { mockExercises, getExerciseStats, type Exercise } from '../../../mockdata/exercises';
+import { mockExercises, type Exercise } from '../../../mockdata/exercises';
 
 export function AdminExerciseManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,38 +39,75 @@ export function AdminExerciseManagement() {
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [newExercise, setNewExercise] = useState({
     name: '',
+    description: '',
     category: '',
-    difficulty: '',
-    muscle_groups: [] as string[],
+    difficultyLevel: '',
+    targetMuscles: [] as string[],
     equipment: '',
-    duration_minutes: '',
-    calories_per_minute: '',
-    video_url: '',
+    duration: '',
+    sets: '',
+    reps: '',
+    weight: '',
+    restTime: '',
     instructions: '',
-    status: 'Active'
+    tips: '',
+    isActive: true
   });
 
   // Get statistics from mock data
+  const getExerciseStats = () => {
+    const total = mockExercises.length;
+    const byCategory = mockExercises.reduce((acc, exercise) => {
+      acc[exercise.category] = (acc[exercise.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const byDifficulty = mockExercises.reduce((acc, exercise) => {
+      acc[exercise.difficultyLevel] = (acc[exercise.difficultyLevel] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      total,
+      byCategory,
+      byDifficulty,
+      active: mockExercises.filter(e => e.isActive).length,
+      inactive: mockExercises.filter(e => !e.isActive).length
+    };
+  };
+  
   const stats = getExerciseStats();
 
 
   const getCategoryBadge = (category: string) => {
     switch (category) {
+      case 'Chest':
+        return <Badge className="bg-red-100 text-red-800">Chest</Badge>;
+      case 'Back':
+        return <Badge className="bg-blue-100 text-blue-800">Back</Badge>;
+      case 'Legs':
+        return <Badge className="bg-green-100 text-green-800">Legs</Badge>;
+      case 'Shoulders':
+        return <Badge className="bg-yellow-100 text-yellow-800">Shoulders</Badge>;
+      case 'Arms':
+        return <Badge className="bg-purple-100 text-purple-800">Arms</Badge>;
+      case 'Core':
+        return <Badge className="bg-orange-100 text-orange-800">Core</Badge>;
       case 'Cardio':
-        return <Badge className="bg-green-100 text-green-800">Cardio</Badge>;
-      case 'Strength':
-        return <Badge className="bg-blue-100 text-blue-800">Strength</Badge>;
+        return <Badge className="bg-cyan-100 text-cyan-800">Cardio</Badge>;
+      case 'FullBody':
+        return <Badge className="bg-indigo-100 text-indigo-800">Full Body</Badge>;
       case 'Flexibility':
-        return <Badge className="bg-purple-100 text-purple-800">Flexibility</Badge>;
-      case 'Yoga':
-        return <Badge className="bg-orange-100 text-orange-800">Yoga</Badge>;
+        return <Badge className="bg-pink-100 text-pink-800">Flexibility</Badge>;
+      case 'Balance':
+        return <Badge className="bg-teal-100 text-teal-800">Balance</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">Khác</Badge>;
     }
   };
 
-  const getDifficultyBadge = (difficulty: string) => {
-    switch (difficulty) {
+  const getDifficultyBadge = (difficultyLevel: string) => {
+    switch (difficultyLevel) {
       case 'Beginner':
         return <Badge className="bg-green-100 text-green-800">Beginner</Badge>;
       case 'Intermediate':
@@ -107,15 +144,19 @@ export function AdminExerciseManagement() {
     setShowAddModal(false);
     setNewExercise({
       name: '',
+      description: '',
       category: '',
-      difficulty: '',
-      muscle_groups: [],
+      difficultyLevel: '',
+      targetMuscles: [],
       equipment: '',
-      duration_minutes: '',
-      calories_per_minute: '',
-      video_url: '',
+      duration: '',
+      sets: '',
+      reps: '',
+      weight: '',
+      restTime: '',
       instructions: '',
-      status: 'Active'
+      tips: '',
+      isActive: true
     });
   };
 
@@ -128,9 +169,10 @@ export function AdminExerciseManagement() {
   // Filter exercises based on search and filters
   const filteredExercises = mockExercises.filter(exercise => {
     const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         exercise.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          exercise.instructions.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || exercise.category === categoryFilter;
-    const matchesDifficulty = difficultyFilter === 'all' || exercise.difficulty === difficultyFilter;
+    const matchesDifficulty = difficultyFilter === 'all' || exercise.difficultyLevel === difficultyFilter;
     const matchesEquipment = equipmentFilter === 'all' || exercise.equipment === equipmentFilter;
     
     return matchesSearch && matchesCategory && matchesDifficulty && matchesEquipment;
@@ -185,10 +227,16 @@ export function AdminExerciseManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="Chest">Chest</SelectItem>
+                <SelectItem value="Back">Back</SelectItem>
+                <SelectItem value="Legs">Legs</SelectItem>
+                <SelectItem value="Shoulders">Shoulders</SelectItem>
+                <SelectItem value="Arms">Arms</SelectItem>
+                <SelectItem value="Core">Core</SelectItem>
                 <SelectItem value="Cardio">Cardio</SelectItem>
-                <SelectItem value="Strength">Strength</SelectItem>
+                <SelectItem value="FullBody">Full Body</SelectItem>
                 <SelectItem value="Flexibility">Flexibility</SelectItem>
-                <SelectItem value="Yoga">Yoga</SelectItem>
+                <SelectItem value="Balance">Balance</SelectItem>
               </SelectContent>
             </Select>
 
@@ -245,8 +293,8 @@ export function AdminExerciseManagement() {
                   <th className="text-left p-4">Độ khó</th>
                   <th className="text-left p-4">Nhóm cơ</th>
                   <th className="text-left p-4">Thiết bị</th>
-                  <th className="text-left p-4">Thời gian</th>
-                  <th className="text-left p-4">Calo/phút</th>
+                  <th className="text-left p-4">Sets/Reps</th>
+                  <th className="text-left p-4">Trạng thái</th>
                   <th className="text-left p-4">Thao tác</th>
                 </tr>
               </thead>
@@ -262,10 +310,10 @@ export function AdminExerciseManagement() {
                       </div>
                     </td>
                     <td className="p-4">{getCategoryBadge(exercise.category)}</td>
-                    <td className="p-4">{getDifficultyBadge(exercise.difficulty)}</td>
+                    <td className="p-4">{getDifficultyBadge(exercise.difficultyLevel)}</td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
-                        {exercise.muscle_groups.map((muscle, index) => (
+                        {exercise.targetMuscles.map((muscle: string, index: number) => (
                           <Badge key={index} variant="outline" className="text-xs">
                             {muscle}
                           </Badge>
@@ -277,11 +325,14 @@ export function AdminExerciseManagement() {
                     </td>
                     <td className="p-4 flex items-center gap-1">
                       <Clock className="w-4 h-4 text-gray-500" />
-                      {exercise.duration_minutes} phút
+                      {exercise.sets}x{exercise.reps} {exercise.weight > 0 && `${exercise.weight}kg`}
                     </td>
                     <td className="p-4 flex items-center gap-1">
-                      <Activity className="w-4 h-4 text-red-500" />
-                      <span className="font-semibold text-red-600">{exercise.calories_per_minute} kcal</span>
+                      {exercise.isActive ? (
+                        <Badge className="bg-green-100 text-green-800">Active</Badge>
+                      ) : (
+                        <Badge className="bg-red-100 text-red-800">Inactive</Badge>
+                      )}
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
@@ -356,10 +407,16 @@ export function AdminExerciseManagement() {
                         <SelectValue placeholder="Chọn danh mục" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="Chest">Chest</SelectItem>
+                        <SelectItem value="Back">Back</SelectItem>
+                        <SelectItem value="Legs">Legs</SelectItem>
+                        <SelectItem value="Shoulders">Shoulders</SelectItem>
+                        <SelectItem value="Arms">Arms</SelectItem>
+                        <SelectItem value="Core">Core</SelectItem>
                         <SelectItem value="Cardio">Cardio</SelectItem>
-                        <SelectItem value="Strength">Strength</SelectItem>
+                        <SelectItem value="FullBody">Full Body</SelectItem>
                         <SelectItem value="Flexibility">Flexibility</SelectItem>
-                        <SelectItem value="Yoga">Yoga</SelectItem>
+                        <SelectItem value="Balance">Balance</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -369,8 +426,8 @@ export function AdminExerciseManagement() {
                   <div>
                     <Label htmlFor="exerciseDifficulty">Độ khó *</Label>
                     <Select 
-                      value={newExercise.difficulty} 
-                      onValueChange={(value) => setNewExercise(prev => ({ ...prev, difficulty: value }))}
+                      value={newExercise.difficultyLevel} 
+                      onValueChange={(value) => setNewExercise(prev => ({ ...prev, difficultyLevel: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn độ khó" />
@@ -403,41 +460,68 @@ export function AdminExerciseManagement() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
-                    <Label htmlFor="exerciseDuration">Thời gian (phút)</Label>
+                    <Label htmlFor="exerciseSets">Sets</Label>
                     <Input
-                      id="exerciseDuration"
+                      id="exerciseSets"
                       type="number"
-                      value={newExercise.duration_minutes}
-                      onChange={(e) => setNewExercise(prev => ({ ...prev, duration_minutes: e.target.value }))}
-                      placeholder="15"
+                      value={newExercise.sets}
+                      onChange={(e) => setNewExercise(prev => ({ ...prev, sets: e.target.value }))}
+                      placeholder="3"
                       min="1"
-                      max="120"
+                      max="10"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="caloriesBurn">Calo đốt cháy (kcal/phút)</Label>
+                    <Label htmlFor="exerciseReps">Reps</Label>
                     <Input
-                      id="caloriesBurn"
+                      id="exerciseReps"
                       type="number"
-                      value={newExercise.calories_per_minute}
-                      onChange={(e) => setNewExercise(prev => ({ ...prev, calories_per_minute: e.target.value }))}
-                      placeholder="8"
+                      value={newExercise.reps}
+                      onChange={(e) => setNewExercise(prev => ({ ...prev, reps: e.target.value }))}
+                      placeholder="12"
                       min="1"
-                      max="20"
+                      max="50"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="exerciseWeight">Trọng lượng (kg)</Label>
+                    <Input
+                      id="exerciseWeight"
+                      type="number"
+                      value={newExercise.weight}
+                      onChange={(e) => setNewExercise(prev => ({ ...prev, weight: e.target.value }))}
+                      placeholder="0"
+                      min="0"
+                      max="200"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="exerciseRestTime">Nghỉ (phút)</Label>
+                    <Input
+                      id="exerciseRestTime"
+                      type="number"
+                      value={newExercise.restTime}
+                      onChange={(e) => setNewExercise(prev => ({ ...prev, restTime: e.target.value }))}
+                      placeholder="2"
+                      min="0"
+                      max="10"
+                      step="0.5"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="videoUrl">Link video demo</Label>
-                  <Input
-                    id="videoUrl"
-                    type="url"
-                    value={newExercise.video_url}
-                    onChange={(e) => setNewExercise(prev => ({ ...prev, video_url: e.target.value }))}
-                    placeholder="https://youtube.com/..."
+                  <Label htmlFor="exerciseDescription">Mô tả bài tập *</Label>
+                  <textarea
+                    id="exerciseDescription"
+                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                    rows={3}
+                    placeholder="Mô tả ngắn gọn về bài tập..."
+                    value={newExercise.description}
+                    onChange={(e) => setNewExercise(prev => ({ ...prev, description: e.target.value }))}
+                    required
                   />
                 </div>
 
@@ -451,6 +535,18 @@ export function AdminExerciseManagement() {
                     value={newExercise.instructions}
                     onChange={(e) => setNewExercise(prev => ({ ...prev, instructions: e.target.value }))}
                     required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="exerciseTips">Mẹo thực hiện</Label>
+                  <textarea
+                    id="exerciseTips"
+                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                    rows={3}
+                    placeholder="Những lưu ý quan trọng khi thực hiện bài tập..."
+                    value={newExercise.tips}
+                    onChange={(e) => setNewExercise(prev => ({ ...prev, tips: e.target.value }))}
                   />
                 </div>
 
@@ -508,10 +604,16 @@ export function AdminExerciseManagement() {
                         <SelectValue placeholder="Chọn danh mục" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="Chest">Chest</SelectItem>
+                        <SelectItem value="Back">Back</SelectItem>
+                        <SelectItem value="Legs">Legs</SelectItem>
+                        <SelectItem value="Shoulders">Shoulders</SelectItem>
+                        <SelectItem value="Arms">Arms</SelectItem>
+                        <SelectItem value="Core">Core</SelectItem>
                         <SelectItem value="Cardio">Cardio</SelectItem>
-                        <SelectItem value="Strength">Strength</SelectItem>
+                        <SelectItem value="FullBody">Full Body</SelectItem>
                         <SelectItem value="Flexibility">Flexibility</SelectItem>
-                        <SelectItem value="Yoga">Yoga</SelectItem>
+                        <SelectItem value="Balance">Balance</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -520,7 +622,7 @@ export function AdminExerciseManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="editExerciseDifficulty">Độ khó</Label>
-                    <Select defaultValue={selectedExercise.difficulty}>
+                    <Select defaultValue={selectedExercise.difficultyLevel}>
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn độ khó" />
                       </SelectTrigger>
@@ -549,38 +651,62 @@ export function AdminExerciseManagement() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
-                    <Label htmlFor="editExerciseDuration">Thời gian (phút)</Label>
+                    <Label htmlFor="editExerciseSets">Sets</Label>
                     <Input
-                      id="editExerciseDuration"
+                      id="editExerciseSets"
                       type="number"
-                      defaultValue={selectedExercise.duration_minutes}
-                      placeholder="15"
+                      defaultValue={selectedExercise.sets}
+                      placeholder="3"
                       min="1"
-                      max="120"
+                      max="10"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="editCaloriesBurn">Calo đốt cháy (kcal/phút)</Label>
+                    <Label htmlFor="editExerciseReps">Reps</Label>
                     <Input
-                      id="editCaloriesBurn"
+                      id="editExerciseReps"
                       type="number"
-                      defaultValue={selectedExercise.calories_per_minute}
-                      placeholder="8"
+                      defaultValue={selectedExercise.reps}
+                      placeholder="12"
                       min="1"
-                      max="20"
+                      max="50"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editExerciseWeight">Trọng lượng (kg)</Label>
+                    <Input
+                      id="editExerciseWeight"
+                      type="number"
+                      defaultValue={selectedExercise.weight}
+                      placeholder="0"
+                      min="0"
+                      max="200"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editExerciseRestTime">Nghỉ (phút)</Label>
+                    <Input
+                      id="editExerciseRestTime"
+                      type="number"
+                      defaultValue={selectedExercise.restTime}
+                      placeholder="2"
+                      min="0"
+                      max="10"
+                      step="0.5"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="editVideoUrl">Link video demo</Label>
-                  <Input
-                    id="editVideoUrl"
-                    type="url"
-                    defaultValue={selectedExercise.video_url || ''}
-                    placeholder="https://youtube.com/..."
+                  <Label htmlFor="editExerciseDescription">Mô tả bài tập</Label>
+                  <textarea
+                    id="editExerciseDescription"
+                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                    rows={3}
+                    placeholder="Mô tả ngắn gọn về bài tập..."
+                    defaultValue={selectedExercise.description}
                   />
                 </div>
 
@@ -592,6 +718,17 @@ export function AdminExerciseManagement() {
                     rows={4}
                     placeholder="Mô tả chi tiết cách thực hiện bài tập..."
                     defaultValue={selectedExercise.instructions}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="editExerciseTips">Mẹo thực hiện</Label>
+                  <textarea
+                    id="editExerciseTips"
+                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                    rows={3}
+                    placeholder="Những lưu ý quan trọng khi thực hiện bài tập..."
+                    defaultValue={selectedExercise.tips}
                   />
                 </div>
 

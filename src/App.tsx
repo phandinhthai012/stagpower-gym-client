@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { AuthPage, RegistrationSuccessPage } from './features/auth';
@@ -22,6 +22,7 @@ import { TrainerSchedulePage } from './features/personTrainer/pages/TrainerSched
 import { TrainerProgressPage } from './features/personTrainer/pages/TrainerProgressPage';
 import { TrainerProfilePage } from './features/personTrainer/pages/TrainerProfilePage';
 import { TrainerNotificationsPage } from './features/personTrainer/pages/TrainerNotificationsPage';
+import { TrainerSessionDetailPage } from './features/personTrainer/pages/TrainerSessionDetailPage';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 
 function App() {
@@ -71,7 +72,7 @@ function App() {
           />
           <Route 
             path="/trainer" 
-            element={
+            element={ 
               <ProtectedRoute requiredRole="Trainer">
                 <TrainerLayout />
               </ProtectedRoute>
@@ -80,10 +81,14 @@ function App() {
             <Route index element={<Navigate to="/trainer/dashboard" replace />} />
             <Route path="dashboard" element={<TrainerDashboardPage />} />
             <Route path="member-management" element={<TrainerMemberManagementPage />} />
-            <Route path="schedule" element={<TrainerSchedulePage />} />
+            <Route path="schedule" element={<Outlet />}>
+              <Route index element={<TrainerSchedulePage />} />
+              <Route path="session/:sessionId" element={<TrainerSessionDetailPage />} />
+            </Route>
             <Route path="progress" element={<TrainerProgressPage />} />
             <Route path="profile" element={<TrainerProfilePage />} />
             <Route path="notifications" element={<TrainerNotificationsPage />} />
+            
           </Route>
           <Route 
             path="/member"

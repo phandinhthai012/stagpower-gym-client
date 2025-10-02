@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { 
-  Users, 
-  Calendar, 
-  TrendingUp, 
+import {
+  Users,
+  Calendar,
+  TrendingUp,
   Settings,
   Bell,
   LogOut,
   X,
   Menu
 } from 'lucide-react';
+import LogoStagPower from '../../../assets/Logo_StagPower_4x.png';
 
 interface TrainerSidebarProps {
   sidebarOpen: boolean;
@@ -47,9 +48,7 @@ export function TrainerSidebar({ sidebarOpen, setSidebarOpen }: TrainerSidebarPr
         <div className="px-6 py-6 border-b border-blue-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">SP</span>
-              </div>
+              <img src={LogoStagPower} alt="StagPower" className="w-24 h-24 rounded-full object-cover" />
               <div className="ml-3">
                 <h2 className="text-lg font-semibold text-white">StagPower</h2>
                 <p className="text-xs text-blue-200">Personal Trainer Dashboard</p>
@@ -64,8 +63,8 @@ export function TrainerSidebar({ sidebarOpen, setSidebarOpen }: TrainerSidebarPr
           </div>
         </div>
 
-        <div className="px-4 py-6">
-          <div className="mb-6">
+        <div className="w-full">
+          <div className="px-4 py-6">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                 <span className="text-white font-semibold text-lg">
@@ -79,7 +78,7 @@ export function TrainerSidebar({ sidebarOpen, setSidebarOpen }: TrainerSidebarPr
             </div>
           </div>
 
-          <nav className="space-y-2">
+          <nav className="w-full">  
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -89,11 +88,10 @@ export function TrainerSidebar({ sidebarOpen, setSidebarOpen }: TrainerSidebarPr
                     navigate(item.path);
                     setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    isActive(item.path)
-                      ? 'bg-orange-500 text-white'
+                  className={`w-full flex items-center px-5 py-4 text-sm font-medium rounded-sm transition-colors ${isActive(item.path)
+                      ? 'bg-blue-700 text-white'
                       : 'text-blue-200 hover:bg-blue-700 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   {item.label}
@@ -106,7 +104,7 @@ export function TrainerSidebar({ sidebarOpen, setSidebarOpen }: TrainerSidebarPr
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-700">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 text-sm font-medium text-blue-200 hover:bg-blue-700 hover:text-white rounded-lg transition-colors"
+            className="w-full flex items-center px-4 py-3 text-sm font-medium text-blue-200 hover:bg-blue-700 hover:text-white rounded-md transition-colors"
           >
             <LogOut className="w-5 h-5 mr-3" />
             Đăng Xuất
@@ -116,7 +114,7 @@ export function TrainerSidebar({ sidebarOpen, setSidebarOpen }: TrainerSidebarPr
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />

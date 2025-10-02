@@ -205,7 +205,7 @@ export function TrainerProgressPage() {
         </CardHeader>
       </Card>
 
-      {/* Progress Overview */}
+      {/* Progress Overview - Table */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center text-lg">
@@ -216,49 +216,49 @@ export function TrainerProgressPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredData.map((client) => (
-              <div key={client.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">
-                        {client.clientName.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{client.clientName}</h4>
-                      <Badge className={getGoalColor(client.goal)}>
-                        {getGoalText(client.goal)}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-green-600">{client.currentProgress}%</p>
-                    <p className="text-xs text-gray-500">Tiến độ hiện tại</p>
-                  </div>
-                </div>
-                
-                <div className="mb-3">
-                  <Progress value={client.currentProgress} className="h-3" />
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-sm font-semibold text-orange-600">{client.sessionsCompleted}</p>
-                    <p className="text-xs text-gray-500">Buổi hoàn thành</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-blue-600">{client.totalSessions}</p>
-                    <p className="text-xs text-gray-500">Tổng buổi</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-purple-600">{client.achievements.length}</p>
-                    <p className="text-xs text-gray-500">Thành tích</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Hội viên</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Mục tiêu</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Hoàn thành</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Tổng buổi</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Tiến độ</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Thành tích</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Buổi cuối</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Buổi tiếp</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredData.map((client) => (
+                  <tr key={client.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                          {client.clientName.charAt(0)}
+                        </div>
+                        <span className="font-medium text-gray-900">{client.clientName}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge className={getGoalColor(client.goal)}>{getGoalText(client.goal)}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-center text-orange-600 font-semibold">{client.sessionsCompleted}</td>
+                    <td className="px-4 py-3 text-center text-blue-700 font-semibold">{client.totalSessions}</td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex flex-col items-center">
+                        <span className="font-semibold text-green-600 mb-1">{client.currentProgress}%</span>
+                        <Progress value={client.currentProgress} className="h-2 w-28" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center text-purple-700 font-semibold">{client.achievements.length}</td>
+                    <td className="px-4 py-3 text-gray-700">{client.lastSession}</td>
+                    <td className="px-4 py-3 text-gray-700">{client.nextSession}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
