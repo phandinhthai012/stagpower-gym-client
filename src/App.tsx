@@ -13,7 +13,7 @@ import { MemberHistory } from './features/member/pages/MemberHistory';
 import { MemberNotifications } from './features/member/pages/MemberNotifications';
 import { MemberSuggestions } from './features/member/pages/MemberSuggestions';
 import { LandingPage } from './features/landing/page/LandingPage';
-import { AdminDashboard, AdminLayout, AdminPackageManagement, AdminAccessControl, AdminMemberManagement, AdminReports, AdminPTSchedule } from './features/admin';
+import { AdminDashboard, AdminLayout, AdminPackageManagement, AdminAccessControl, AdminMemberManagement, AdminReports, AdminPTSchedule, AdminInvoicePayment, AdminBranchManagement } from './features/admin';
 import { StaffDashboard } from './features/staff';
 import { TrainerLayout } from './features/personTrainer/components/TrainerLayout';
 import { TrainerDashboardPage } from './features/personTrainer/pages/TrainerDashboardPage';
@@ -54,6 +54,8 @@ function App() {
             <Route path="access-control" element={<AdminAccessControl />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="schedules" element={<AdminPTSchedule />} />
+            <Route path="invoice-payment" element={<AdminInvoicePayment />} />
+            <Route path="branch-management" element={<AdminBranchManagement />} />
           </Route>
           <Route 
             path="/staff" 

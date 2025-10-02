@@ -15,7 +15,8 @@ import {
   MessageSquare, 
   Settings, 
   LogOut, 
-  X
+  X,
+  DollarSign
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -40,8 +41,8 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
     { id: 'access-control', label: 'Kiểm Soát Ra Vào', icon: QrCode, path: '/admin/access-control' },
     { id: 'schedules', label: 'Quản Lý Lịch PT', icon: Calendar, path: '/admin/schedules' },
     { id: 'reports', label: 'Báo Cáo & Thống Kê', icon: BarChart3, path: '/admin/reports' },
-    { id: 'payments', label: 'Quản Lý Thanh Toán', icon: CreditCard, path: '/admin/payments' },
-    { id: 'branches', label: 'Quản Lý Chi Nhánh', icon: Building2, path: '/admin/branches' },
+    { id: 'invoice-payment', label: 'Hóa Đơn & Thanh Toán', icon: DollarSign, path: '/admin/invoice-payment' },
+    { id: 'branch-management', label: 'Quản Lý Chi Nhánh', icon: Building2, path: '/admin/branch-management' },
     { id: 'discounts', label: 'Quản Lý Ưu Đãi', icon: Percent, path: '/admin/discounts' },
     { id: 'exercises', label: 'Quản Lý Bài Tập', icon: Dumbbell, path: '/admin/exercises' },
     { id: 'complaints', label: 'Quản Lý Khiếu Nại', icon: MessageSquare, path: '/admin/complaints' },
