@@ -44,7 +44,7 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['staff-pt']));
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['staff-pt', 'services']));
 
   const toggleMenu = (menuId: string) => {
     setExpandedMenus(prev => {
@@ -61,7 +61,6 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
   const menuItems: MenuItem[] = [
     { id: 'dashboard', label: 'Bảng Điều Khiển', icon: LayoutDashboard, path: '/admin/dashboard' },
     { id: 'members', label: 'Quản Lý Hội Viên', icon: Users, path: '/admin/members' },
-    { id: 'packages', label: 'Quản Lý Gói Tập', icon: Package, path: '/admin/packages' },
     { id: 'access-control', label: 'Kiểm Soát Ra Vào', icon: QrCode, path: '/admin/access-control' },
     { 
       id: 'staff-pt', 
@@ -73,11 +72,20 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
         { id: 'schedules', label: 'Lịch làm việc NV/PT', icon: Calendar, path: '/admin/schedules' }
       ]
     },
+    { 
+      id: 'services', 
+      label: 'Quản Lý Dịch Vụ', 
+      icon: Package, 
+      hasSubmenu: true,
+      subItems: [
+        { id: 'packages', label: 'Quản Lý Gói Tập', icon: Package, path: '/admin/packages' },
+        { id: 'exercises', label: 'Quản Lý Bài Tập', icon: Dumbbell, path: '/admin/exercises' },
+        { id: 'discounts', label: 'Quản Lý Ưu Đãi', icon: Percent, path: '/admin/discounts' }
+      ]
+    },
     { id: 'reports', label: 'Báo Cáo & Thống Kê', icon: BarChart3, path: '/admin/reports' },
     { id: 'invoice-payment', label: 'Hóa Đơn & Thanh Toán', icon: DollarSign, path: '/admin/invoice-payment' },
     { id: 'branch-management', label: 'Quản Lý Chi Nhánh', icon: Building2, path: '/admin/branch-management' },
-    { id: 'discounts', label: 'Quản Lý Ưu Đãi', icon: Percent, path: '/admin/discounts' },
-    { id: 'exercises', label: 'Quản Lý Bài Tập', icon: Dumbbell, path: '/admin/exercises' },
     { id: 'complaints', label: 'Quản Lý Khiếu Nại', icon: MessageSquare, path: '/admin/complaints' },
     { id: 'settings', label: 'Cài Đặt Tài Khoản', icon: Settings, path: '/admin/settings' },
   ];

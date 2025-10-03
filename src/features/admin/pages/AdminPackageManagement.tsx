@@ -8,23 +8,43 @@ import { Badge } from '../../../components/ui/badge';
 import { 
   Plus, 
   Package, 
-  Percent, 
   Edit, 
   Trash2, 
   Eye,
   DollarSign,
   Calendar,
   Users,
-  Dumbbell
+  Dumbbell,
+  Search,
+  Filter,
+  X
 } from 'lucide-react';
 import { mockPackages } from '../../../mockdata/packages';
-import { mockDiscounts } from '../../../mockdata/discounts';
+import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
 
 export function AdminPackageManagement() {
   const [packages] = useState(mockPackages);
-  const [discounts] = useState(mockDiscounts);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showDiscountForm, setShowDiscountForm] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [membershipTypeFilter, setMembershipTypeFilter] = useState('all');
+
+  // Filter packages
+  const filteredPackages = packages.filter(pkg => {
+    const matchesSearch = pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         pkg.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = typeFilter === 'all' || pkg.type === typeFilter;
+    const matchesStatus = statusFilter === 'all' || pkg.status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' || pkg.package_category === categoryFilter;
+    const matchesMembershipType = membershipTypeFilter === 'all' || 
+                                 (pkg.membership_type && pkg.membership_type === membershipTypeFilter) ||
+                                 (!pkg.membership_type && membershipTypeFilter === 'none');
+
+    return matchesSearch && matchesType && matchesStatus && matchesCategory && matchesMembershipType;
+  });
 
   // Calculate statistics
   const activePackages = packages.filter(pkg => pkg.status === 'Active').length;
@@ -32,6 +52,13 @@ export function AdminPackageManagement() {
   const comboPackages = packages.filter(pkg => pkg.type === 'Combo').length;
   const ptPackages = packages.filter(pkg => pkg.type === 'PT').length;
 
+  const clearFilters = () => {
+    setSearchTerm('');
+    setTypeFilter('all');
+    setStatusFilter('all');
+    setCategoryFilter('all');
+    setMembershipTypeFilter('all');
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -60,194 +87,141 @@ export function AdminPackageManagement() {
   return (
     <div className="space-y-6">
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Create New Package */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5 text-blue-600" />
-              Tạo gói tập mới
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="packageName">Tên gói</Label>
-                  <Input id="packageName" placeholder="VD: Gói VIP 6 tháng" />
-                </div>
-                <div>
-                  <Label htmlFor="packageType">Loại gói</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn loại gói" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Membership">Membership</SelectItem>
-                      <SelectItem value="Combo">Combo (Membership + PT)</SelectItem>
-                      <SelectItem value="PT">PT riêng</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Quản lý gói tập</h1>
+        <p className="text-gray-600">Quản lý các gói tập và dịch vụ của phòng gym</p>
+      </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="packageCategory">Thời hạn</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn thời hạn" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ShortTerm">Ngắn hạn (1 tháng)</SelectItem>
-                      <SelectItem value="MediumTerm">Trung hạn (3-6 tháng)</SelectItem>
-                      <SelectItem value="LongTerm">Dài hạn (12 tháng)</SelectItem>
-                      <SelectItem value="Trial">Gói thử (1-7 ngày)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="durationMonths">Số tháng</Label>
-                  <Input id="durationMonths" type="number" placeholder="1, 3, 6, 12" />
-                </div>
+      {/* Filter Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Filter className="h-5 w-5 text-blue-600" />
+            <span>Bộ lọc</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Search */}
+            <div className="lg:col-span-2">
+              <Label htmlFor="search">Tìm kiếm</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="search"
+                  placeholder="Tìm theo tên hoặc mô tả..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
+            </div>
+            
+            {/* Type Filter */}
+            <div>
+              <Label htmlFor="typeFilter">Loại gói</Label>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn loại" />
+                </SelectTrigger>
+                <SelectContent lockScroll={true}>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="Membership">Membership</SelectItem>
+                  <SelectItem value="Combo">Combo</SelectItem>
+                  <SelectItem value="PT">PT</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="membershipType">Loại Membership</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn loại" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Basic">Basic (1 chi nhánh)</SelectItem>
-                      <SelectItem value="VIP">VIP (Tất cả chi nhánh)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="packagePrice">Giá gốc (VNĐ)</Label>
-                  <Input id="packagePrice" type="number" placeholder="2000000" />
-                </div>
-              </div>
+            {/* Status Filter */}
+            <div>
+              <Label htmlFor="statusFilter">Trạng thái</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent lockScroll={true}>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="Active">Hoạt động</SelectItem>
+                  <SelectItem value="Inactive">Ngừng hoạt động</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="ptSessions">Số buổi PT</Label>
-                  <Input id="ptSessions" type="number" placeholder="0 nếu không có PT" />
-                </div>
-                <div>
-                  <Label htmlFor="ptSessionDuration">Thời lượng buổi PT (phút)</Label>
-                  <Input id="ptSessionDuration" type="number" placeholder="90" />
-                </div>
-              </div>
+            {/* Category Filter */}
+            <div>
+              <Label htmlFor="categoryFilter">Thời hạn</Label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn thời hạn" />
+                </SelectTrigger>
+                <SelectContent lockScroll={true}>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="ShortTerm">Ngắn hạn</SelectItem>
+                  <SelectItem value="MediumTerm">Trung hạn</SelectItem>
+                  <SelectItem value="LongTerm">Dài hạn</SelectItem>
+                  <SelectItem value="Trial">Gói thử</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
+          {/* Membership Type Filter */}
+          <div className="mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
-                <Label htmlFor="branchAccess">Quyền truy cập</Label>
-                <Select>
+                <Label htmlFor="membershipTypeFilter">Loại Membership</Label>
+                <Select value={membershipTypeFilter} onValueChange={setMembershipTypeFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn quyền" />
+                    <SelectValue placeholder="Chọn loại membership" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Single">1 chi nhánh</SelectItem>
-                    <SelectItem value="All">Tất cả chi nhánh</SelectItem>
+                  <SelectContent lockScroll={true}>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="Basic">Basic</SelectItem>
+                    <SelectItem value="VIP">VIP</SelectItem>
+                    <SelectItem value="none">Không có</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="packageDescription">Mô tả gói</Label>
-                <textarea 
-                  id="packageDescription" 
-                  className="w-full p-3 border border-gray-300 rounded-md resize-none" 
-                  rows={3} 
-                  placeholder="Mô tả chi tiết về gói tập..."
-                />
+              {/* Clear Filters Button */}
+              <div className="flex items-end">
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="w-full flex items-center space-x-2"
+                >
+                  <X className="h-4 w-4" />
+                  <span>Xóa bộ lọc</span>
+                </Button>
               </div>
+            </div>
+          </div>
 
-              <Button className="w-full">
-                <Plus className="w-4 h-4 mr-2" />
-                Tạo gói tập
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Discount Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Percent className="w-5 h-5 text-green-600" />
-              Quản lý ưu đãi
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4">
-              <div>
-                <Label htmlFor="discountName">Tên ưu đãi</Label>
-                <Input id="discountName" placeholder="VD: Ưu đãi HSSV" />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="discountType">Loại ưu đãi</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn loại" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="HSSV">HSSV</SelectItem>
-                      <SelectItem value="VIP">VIP</SelectItem>
-                      <SelectItem value="Group">Nhóm bạn</SelectItem>
-                      <SelectItem value="Company">Công ty</SelectItem>
-                      <SelectItem value="Voucher">Voucher</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="discountPercentage">Giảm giá (%)</Label>
-                  <Input id="discountPercentage" type="number" placeholder="10" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="discountAmount">Giảm giá cố định (VNĐ)</Label>
-                  <Input id="discountAmount" type="number" placeholder="0" />
-                </div>
-                <div>
-                  <Label htmlFor="bonusDays">Số ngày tặng thêm</Label>
-                  <Input id="bonusDays" type="number" placeholder="7" />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="discountConditions">Điều kiện áp dụng</Label>
-                <textarea 
-                  id="discountConditions" 
-                  className="w-full p-3 border border-gray-300 rounded-md resize-none" 
-                  rows={2} 
-                  placeholder="Mô tả điều kiện áp dụng..."
-                />
-              </div>
-
-              <Button className="w-full">
-                <Percent className="w-4 h-4 mr-2" />
-                Tạo ưu đãi
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Results Count */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Hiển thị <span className="font-medium text-gray-900">{filteredPackages.length}</span> trong tổng số{' '}
+              <span className="font-medium text-gray-900">{packages.length}</span> gói tập
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Packages Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-blue-600" />
-            Danh sách gói tập
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-blue-600" />
+              Danh sách gói tập
+            </CardTitle>
+            <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center space-x-2">
+              <Plus className="w-4 h-4" />
+              <span>Tạo gói tập mới</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -263,7 +237,7 @@ export function AdminPackageManagement() {
                 </tr>
               </thead>
               <tbody>
-                {packages.slice(0, 10).map((pkg) => (
+                {filteredPackages.map((pkg) => (
                   <tr key={pkg.id} className="border-b hover:bg-gray-50">
                     <td className="p-3">
                       <div>
@@ -323,89 +297,16 @@ export function AdminPackageManagement() {
         </CardContent>
       </Card>
 
-      {/* Discounts Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Percent className="w-5 h-5 text-green-600" />
-            Danh sách ưu đãi
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 font-medium text-gray-600">Tên ưu đãi</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Loại</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Giảm giá</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Thời gian</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Trạng thái</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {discounts.slice(0, 10).map((discount) => (
-                  <tr key={discount.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">
-                      <div>
-                        <p className="font-medium text-gray-900">{discount.name}</p>
-                        <p className="text-sm text-gray-500">{discount.conditions}</p>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <Badge className="bg-blue-100 text-blue-800">
-                        {discount.type}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        {discount.discount_percentage && (
-                          <p className="text-sm text-gray-900">{discount.discount_percentage}%</p>
-                        )}
-                        {discount.discount_amount && (
-                          <p className="text-sm text-gray-900">{formatPrice(discount.discount_amount)}</p>
-                        )}
-                        {discount.bonus_days && (
-                          <p className="text-xs text-gray-500">+{discount.bonus_days} ngày</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        <p className="text-sm text-gray-900">
-                          {new Date(discount.start_date).toLocaleDateString('vi-VN')}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          đến {new Date(discount.end_date).toLocaleDateString('vi-VN')}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <Badge className={discount.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                        {discount.status === 'Active' ? 'Hoạt động' : 'Ngừng hoạt động'}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Create Package Modal */}
+      <ModalCreatePackage
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          setIsCreateModalOpen(false);
+          // TODO: Refresh data
+          console.log('Package created successfully');
+        }}
+      />
     </div>
   );
 }
