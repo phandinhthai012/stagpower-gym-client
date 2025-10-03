@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { 
@@ -14,9 +14,10 @@ import {
   Dumbbell, 
   MessageSquare, 
   Settings, 
-  LogOut, 
   X,
-  DollarSign
+  DollarSign,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -24,22 +25,55 @@ interface AdminSidebarProps {
   setSidebarOpen: (open: boolean) => void;
 }
 
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: any;
+  path?: string;
+  hasSubmenu?: boolean;
+  subItems?: SubMenuItem[];
+}
+
+interface SubMenuItem {
+  id: string;
+  label: string;
+  icon: any;
+  path: string;
+}
+
 export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['staff-pt']));
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const toggleMenu = (menuId: string) => {
+    setExpandedMenus(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(menuId)) {
+        newSet.delete(menuId);
+      } else {
+        newSet.add(menuId);
+      }
+      return newSet;
+    });
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { id: 'dashboard', label: 'Bảng Điều Khiển', icon: LayoutDashboard, path: '/admin/dashboard' },
     { id: 'members', label: 'Quản Lý Hội Viên', icon: Users, path: '/admin/members' },
     { id: 'packages', label: 'Quản Lý Gói Tập', icon: Package, path: '/admin/packages' },
     { id: 'access-control', label: 'Kiểm Soát Ra Vào', icon: QrCode, path: '/admin/access-control' },
-    { id: 'schedules', label: 'Quản Lý Lịch PT', icon: Calendar, path: '/admin/schedules' },
+    { 
+      id: 'staff-pt', 
+      label: 'Quản Lý Nhân Viên/PT', 
+      icon: Users, 
+      hasSubmenu: true,
+      subItems: [
+        { id: 'staff-pt-management', label: 'Quản Lý Nhân Viên/PT', icon: Users, path: '/admin/staff-pt-management' },
+        { id: 'schedules', label: 'Lịch làm việc NV/PT', icon: Calendar, path: '/admin/schedules' }
+      ]
+    },
     { id: 'reports', label: 'Báo Cáo & Thống Kê', icon: BarChart3, path: '/admin/reports' },
     { id: 'invoice-payment', label: 'Hóa Đơn & Thanh Toán', icon: DollarSign, path: '/admin/invoice-payment' },
     { id: 'branch-management', label: 'Quản Lý Chi Nhánh', icon: Building2, path: '/admin/branch-management' },
@@ -51,6 +85,10 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const isParentActive = (subItems: SubMenuItem[]) => {
+    return subItems.some(item => isActive(item.path));
   };
 
   return (
@@ -84,44 +122,98 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
           </div>
         </div>
         {/* Navigation Menu */}
-        <div className="px-0 py-6 flex-1 overflow-y-auto">
+        <div className="px-0 py-6 flex-1 overflow-y-auto max-h-[calc(100vh-120px)] scrollbar-hide">
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    navigate(item.path);
-                    setSidebarOpen(false);
-                  }}
-                  className={`
-                    w-full flex items-center px-5 py-3 text-sm font-medium transition-all duration-300 ease-in-out
-                    border-l-3 border-transparent
-                    ${isActive(item.path)
-                      ? 'bg-blue-700 text-white border-l-orange-500'
-                      : 'text-blue-200 hover:bg-blue-700 hover:text-white hover:border-l-orange-500'
-                    }
-                  `}
-                >
-                  <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                </button>
-              );
+              const isExpanded = expandedMenus.has(item.id);
+              const hasSubmenu = item.hasSubmenu;
+              const isParentActiveState = hasSubmenu && item.subItems ? isParentActive(item.subItems) : false;
+              
+              if (hasSubmenu) {
+                return (
+                  <div key={item.id}>
+                    {/* Parent Menu Item */}
+                    <button
+                      onClick={() => toggleMenu(item.id)}
+                      className={`
+                        w-full flex items-center justify-between px-5 py-3 text-sm font-medium transition-all duration-300 ease-in-out
+                        border-l-3 border-transparent
+                        ${isParentActiveState
+                          ? 'bg-blue-700 text-white border-l-orange-500'
+                          : 'text-blue-200 hover:bg-blue-700 hover:text-white hover:border-l-orange-500'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center">
+                        <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                      )}
+                    </button>
+                    
+                    {/* Sub Menu Items */}
+                    {isExpanded && item.subItems && (
+                      <div className="ml-4 space-y-1">
+                        {item.subItems.map((subItem) => {
+                          const SubIcon = subItem.icon;
+                          return (
+                            <button
+                              key={subItem.id}
+                              onClick={() => {
+                                navigate(subItem.path);
+                                setSidebarOpen(false);
+                              }}
+                              className={`
+                                w-full flex items-center px-5 py-2 text-sm font-medium transition-all duration-300 ease-in-out
+                                border-l-3 border-transparent rounded-r-md
+                                ${isActive(subItem.path)
+                                  ? 'bg-teal-600 text-white border-l-green-500'
+                                  : 'text-blue-200 hover:bg-blue-600 hover:text-white hover:border-l-green-400'
+                                }
+                              `}
+                            >
+                              <SubIcon className="w-4 h-4 mr-3 flex-shrink-0" />
+                              <span className="truncate">{subItem.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              } else {
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (item.path) {
+                        navigate(item.path);
+                        setSidebarOpen(false);
+                      }
+                    }}
+                    className={`
+                      w-full flex items-center px-5 py-3 text-sm font-medium transition-all duration-300 ease-in-out
+                      border-l-3 border-transparent
+                      ${item.path && isActive(item.path)
+                        ? 'bg-blue-700 text-white border-l-orange-500'
+                        : 'text-blue-200 hover:bg-blue-700 hover:text-white hover:border-l-orange-500'
+                      }
+                    `}
+                  >
+                    <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              }
             })}
           </nav>
         </div>
 
-        {/* Logout Button */}
-        <div className="p-4 border-t border-blue-700">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 text-sm font-medium text-blue-200 hover:bg-blue-700 hover:text-white transition-all duration-300 ease-in-out border-l-3 border-transparent hover:border-l-red-500"
-          >
-            <LogOut className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span>Đăng Xuất</span>
-          </button>
-        </div>
       </div>
 
       {/* Mobile Sidebar Overlay */}
