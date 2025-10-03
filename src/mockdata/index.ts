@@ -12,6 +12,7 @@ import { mockBookingRequests, type BookingRequest } from './bookingRequests';
 import { mockAISuggestions, type AISuggestion } from './aiSuggestions';
 import { mockExercises, type Exercise } from './exercises';
 import { mockComplaints, type Complaint } from './complaints';
+import { mockActivityLogs, type ActivityLog } from './activityLogs';
 
 // Re-export all mock data and types
 export { mockUsers, type User };
@@ -27,6 +28,7 @@ export { mockBookingRequests, type BookingRequest };
 export { mockAISuggestions, type AISuggestion };
 export { mockExercises, type Exercise };
 export { mockComplaints, type Complaint };
+export { mockActivityLogs, type ActivityLog };
 
 // Combined mock data object for easy access
 export const mockData = {
@@ -43,6 +45,7 @@ export const mockData = {
   aiSuggestions: mockAISuggestions,
   exercises: mockExercises,
   complaints: mockComplaints,
+  activityLogs: mockActivityLogs,
 };
 
 // Helper functions for mock data
@@ -89,5 +92,6 @@ export const getMockStats = () => {
     totalAISuggestions: mockAISuggestions.length,
     totalExercises: mockExercises.length,
     totalComplaints: mockComplaints.length,
+    totalActivityLogs: mockActivityLogs.length,
   };
 };

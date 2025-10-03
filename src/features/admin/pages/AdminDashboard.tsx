@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -18,8 +19,11 @@ import { mockUsers } from '../../../mockdata/users';
 import { mockPackages } from '../../../mockdata/packages';
 import { mockCheckIns } from '../../../mockdata/checkIns';
 import { mockPayments } from '../../../mockdata/payments';
+import { getRecentActivities, activityTypeDisplay, activityTypeColor } from '../../../mockdata/activityLogs';
 
 export function AdminDashboard() {
+  const navigate = useNavigate();
+  
   // Calculate statistics from mock data
   const totalMembers = mockUsers.filter(user => user.role === 'Member').length;
   const activeMembers = mockUsers.filter(user => user.role === 'Member' && user.status === 'Active').length;
@@ -41,17 +45,40 @@ export function AdminDashboard() {
   
   // Get recent trainers
   const trainers = mockUsers.filter(user => user.role === 'Trainer').slice(0, 3);
+  
+  // Get recent activities
+  const recentActivities = getRecentActivities(5);
 
 
   const quickActions = [
-    { title: 'Thêm Hội Viên Mới', icon: Users, color: 'bg-blue-500' },
-    { title: 'Tạo Gói Tập', icon: Dumbbell, color: 'bg-green-500' },
-    { title: 'Xem Báo Cáo', icon: BarChart3, color: 'bg-orange-500' },
-    { title: 'Quản Lý Lịch PT', icon: Calendar, color: 'bg-purple-500' }
+    { 
+      title: 'Thêm Hội Viên Mới', 
+      icon: Users, 
+      color: 'bg-blue-500',
+      onClick: () => navigate('/admin/members')
+    },
+    { 
+      title: 'Tạo Gói Tập', 
+      icon: Dumbbell, 
+      color: 'bg-green-500',
+      onClick: () => navigate('/admin/packages')
+    },
+    { 
+      title: 'Xem Báo Cáo', 
+      icon: BarChart3, 
+      color: 'bg-orange-500',
+      onClick: () => navigate('/admin/reports')
+    },
+    { 
+      title: 'Quản Lý Lịch PT', 
+      icon: Calendar, 
+      color: 'bg-purple-500',
+      onClick: () => navigate('/admin/pt-schedule')
+    }
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-8">
       {/* Welcome Card */}
       <Card className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
         <CardContent className="p-6">
@@ -103,7 +130,11 @@ export function AdminDashboard() {
                   <Badge variant="secondary">Hoạt động</Badge>
                 </div>
               ))}
-              <Button variant="outline" className="w-full">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate('/admin/staff-pt-management')}
+              >
                 Xem tất cả huấn luyện viên
               </Button>
             </div>
@@ -164,6 +195,7 @@ export function AdminDashboard() {
                     key={index}
                     variant="outline"
                     className="h-20 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-shadow"
+                    onClick={action.onClick}
                   >
                     <div className={`w-8 h-8 ${action.color} rounded-lg flex items-center justify-center`}>
                       <Icon className="w-4 h-4 text-white" />
@@ -187,24 +219,45 @@ export function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[
-              { action: 'Hội viên mới đăng ký', name: 'Nguyễn Văn A', time: '2 phút trước', type: 'success' },
-              { action: 'Thanh toán thành công', name: 'Trần Thị B', time: '15 phút trước', type: 'success' },
-              { action: 'Check-in tại chi nhánh', name: 'Lê Văn C', time: '30 phút trước', type: 'info' },
-              { action: 'Đặt lịch PT mới', name: 'Phạm Thị D', time: '1 giờ trước', type: 'info' },
-              { action: 'Gia hạn gói tập', name: 'Hoàng Văn E', time: '2 giờ trước', type: 'success' }
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className={`w-2 h-2 rounded-full ${
-                  activity.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
-                }`} />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                  <p className="text-sm text-gray-600">{activity.name}</p>
+            {recentActivities.map((activity, index) => {
+              // Get user name from mockUsers
+              const user = mockUsers.find(u => u.id === activity.user_id);
+              const userName = user?.full_name || 'Người dùng';
+              
+              // Format time ago
+              const formatTimeAgo = (dateString: string) => {
+                const now = new Date();
+                const activityDate = new Date(dateString);
+                const diffInMinutes = Math.floor((now.getTime() - activityDate.getTime()) / (1000 * 60));
+                
+                if (diffInMinutes < 60) {
+                  return `${diffInMinutes} phút trước`;
+                } else if (diffInMinutes < 1440) {
+                  const hours = Math.floor(diffInMinutes / 60);
+                  return `${hours} giờ trước`;
+                } else {
+                  const days = Math.floor(diffInMinutes / 1440);
+                  return `${days} ngày trước`;
+                }
+              };
+              
+              const activityType = activityTypeColor[activity.activity_type] || 'info';
+              const activityDisplay = activityTypeDisplay[activity.activity_type] || activity.description;
+              
+              return (
+                <div key={activity.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className={`w-2 h-2 rounded-full ${
+                    activityType === 'success' ? 'bg-green-500' : 
+                    activityType === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                  }`} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{activityDisplay}</p>
+                    <p className="text-sm text-gray-600">{userName}</p>
+                  </div>
+                  <span className="text-xs text-gray-500">{formatTimeAgo(activity.created_at)}</span>
                 </div>
-                <span className="text-xs text-gray-500">{activity.time}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
