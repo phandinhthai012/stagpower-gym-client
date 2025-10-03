@@ -113,13 +113,6 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                 <p className="text-xs text-blue-200">Admin Dashboard</p>
               </div>
               
-              {/* Tooltip for logo - only show when sidebar is collapsed */}
-              {!sidebarOpen && (
-                <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-3 px-4 py-3 bg-blue-600 text-white text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[60] whitespace-nowrap font-medium">
-                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-2 w-3 h-3 bg-blue-600 rotate-45"></div>
-                  StagPower Admin Dashboard
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -160,13 +153,6 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                       </div>
                     </button>
                     
-                    {/* Tooltip for collapsed state - only show when sidebar is collapsed */}
-                    {!sidebarOpen && (
-                      <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-3 px-4 py-3 bg-blue-600 text-white text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[60] whitespace-nowrap font-medium">
-                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-2 w-3 h-3 bg-blue-600 rotate-45"></div>
-                        {item.label}
-                      </div>
-                    )}
                     
                     {/* Sub Menu Items - Only show when expanded and sidebar is open */}
                     {isExpanded && item.subItems && sidebarOpen && (
@@ -219,13 +205,6 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                       <span className={`truncate transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden lg:ml-0' : 'lg:opacity-100 lg:w-auto lg:ml-3'}`}>{item.label}</span>
                     </button>
                     
-                    {/* Tooltip for collapsed state - only show when sidebar is collapsed */}
-                    {!sidebarOpen && (
-                      <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-3 px-4 py-3 bg-blue-600 text-white text-sm rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[60] whitespace-nowrap font-medium">
-                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-2 w-3 h-3 bg-blue-600 rotate-45"></div>
-                        {item.label}
-                      </div>
-                    )}
                   </div>
                 );
               }
