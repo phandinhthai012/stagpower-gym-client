@@ -4,11 +4,23 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { AdminSidebar } from './AdminSidebar';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
-import { Menu, MapPin, Bell, LogOut, Settings } from 'lucide-react';
+import { Menu, MapPin, Bell, LogOut, Settings, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Avatar,
+  AvatarFallback,
+} from '../../../components/ui';
 import LogoStagPower from '../../../assets/Logo_StagPower_4x.png';
 
 export function AdminLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Always open on desktop
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,12 +43,61 @@ export function AdminLayout() {
   };
 
   const [now, setNow] = useState<Date>(new Date());
-  const [profileOpen, setProfileOpen] = useState<boolean>(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const intervalId = setInterval(() => setNow(new Date()), 30 * 1000);
     return () => clearInterval(intervalId);
   }, []);
+
+  // Scroll detection for header visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < lastScrollY || currentScrollY < 10) {
+        // Scrolling up or at top - show header
+        setIsHeaderVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down and past 100px - hide header
+        setIsHeaderVisible(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const getUserDisplayName = (user: any) => {
+    return user?.fullName || user?.full_name || 'Admin';
+  };
+
+  const getUserRoleDisplayName = (user: any) => {
+    return user?.role === 'Admin' ? 'Quản trị viên' : 'Người dùng';
+  };
+
+  const userDisplayName = getUserDisplayName(user);
+  const userRole = getUserRoleDisplayName(user);
+  const userInitials = userDisplayName
+    .split(' ')
+    .map((name: string) => name.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 
   const formatVNTime = (date: Date) => {
     let hours = date.getHours();
@@ -57,20 +118,19 @@ export function AdminLayout() {
     return `${d}/${m}/${y}`;
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
       {/* Header */}
-      <header className="bg-transparent lg:ml-64">
-        <div className="mx-4 my-4 bg-white shadow-sm border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center">
+      <header className={`bg-transparent fixed top-0 left-0 right-0 z-30 transition-all duration-300 ease-in-out ${
+        isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}>
+        <div className={`mt-0 mb-4 bg-white shadow-lg border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center backdrop-blur-sm bg-white/95 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
           {/* Left: Logo and brand */}
           <div className="flex items-center gap-3">
+            {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="sm"
@@ -79,6 +139,17 @@ export function AdminLayout() {
             >
               <Menu className="w-5 h-5" />
             </Button>
+            
+            {/* Desktop sidebar toggle button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="hidden lg:flex text-gray-500 hover:text-gray-700"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            
             <img src={LogoStagPower} alt="StagPower" className="w-16 h-16 rounded-full object-cover" />
             <div>
               <span className="text-xl md:text-2xl font-semibold text-blue-900">StagPower</span>
@@ -104,47 +175,67 @@ export function AdminLayout() {
               <Badge variant="destructive" className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center">5</Badge>
             </Button>
             
-            {/* Profile menu */}
-            <div
-              className="relative"
-              onMouseEnter={() => setProfileOpen(true)}
-            >
-              <button
-                onClick={() => setProfileOpen((v) => !v)}
-                className="flex items-center gap-2 text-sm md:text-base text-blue-900 hover:text-blue-700 font-medium"
-              >
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-sm">
-                    {user?.fullName?.charAt(0) || 'A'}
-                  </span>
-                </div>
-                <span className="hidden md:block">{user?.fullName || 'Admin'}</span>
-              </button>
-              {profileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-20">
-                  <button
-                    onClick={() => navigate('/admin/settings')}
-                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-50"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Cài đặt tài khoản
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Đăng xuất
-                  </button>
-                </div>
-              )}
-            </div>
+            {/* User menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-10 w-auto px-2 sm:px-3"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-xs bg-orange-500 text-white">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden md:flex md:flex-col md:items-start md:text-left">
+                      <span className="text-sm font-medium text-blue-900">
+                        {userDisplayName}
+                      </span>
+                      <span className="text-xs text-gray-600">
+                        {userRole}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm leading-none font-medium">
+                      {userDisplayName}
+                    </p>
+                    <p className="text-xs leading-none text-gray-500">
+                      {user?.email || 'Không có email'}
+                    </p>
+                    <p className="text-xs leading-none text-gray-500">
+                      {userRole}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Cài đặt tài khoản</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="lg:ml-64 p-6">
+      <main className={`p-6 pt-20 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
         <Outlet />
       </main>
     </div>

@@ -14,7 +14,6 @@ import {
   Dumbbell, 
   MessageSquare, 
   Settings, 
-  X,
   DollarSign,
   ChevronDown,
   ChevronRight
@@ -95,12 +94,13 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
     <>
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+        fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-blue-900 to-blue-800 text-white transform transition-all duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-0'} 
         lg:fixed lg:translate-x-0 lg:flex-shrink-0
+        ${sidebarOpen ? 'lg:w-64' : 'lg:w-0 lg:overflow-hidden'}
       `}>
         {/* Sidebar Header */}
-        <div className="px-5 py-5 border-b border-blue-700">
+        <div className={`px-5 py-5 border-b border-blue-700 transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:invisible' : 'lg:opacity-100 lg:visible'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img 
@@ -108,21 +108,15 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                 alt="StagPower Logo" 
                 className="w-24 h-24 object-contain"
               />
-              <div>
+              <div className={`transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'lg:opacity-100 lg:w-auto'}`}>
                 <h2 className="text-lg font-semibold text-white">StagPower</h2>
                 <p className="text-xs text-blue-200">Admin Dashboard</p>
               </div>
             </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-white hover:text-gray-300 p-1"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
         </div>
         {/* Navigation Menu */}
-        <div className="px-0 py-6 flex-1 overflow-y-auto max-h-[calc(100vh-120px)] scrollbar-hide">
+        <div className={`px-0 py-6 flex-1 overflow-y-auto max-h-[calc(100vh-120px)] scrollbar-hide transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:invisible' : 'lg:opacity-100 lg:visible'}`}>
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -147,13 +141,15 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                     >
                       <div className="flex items-center">
                         <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                        <span className="truncate">{item.label}</span>
+                        <span className={`truncate transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'lg:opacity-100 lg:w-auto'}`}>{item.label}</span>
                       </div>
-                      {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 flex-shrink-0" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 flex-shrink-0" />
-                      )}
+                      <div className={`transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'lg:opacity-100 lg:w-auto'}`}>
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                        )}
+                      </div>
                     </button>
                     
                     {/* Sub Menu Items */}
@@ -178,7 +174,7 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                               `}
                             >
                               <SubIcon className="w-4 h-4 mr-3 flex-shrink-0" />
-                              <span className="truncate">{subItem.label}</span>
+                              <span className={`truncate transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'lg:opacity-100 lg:w-auto'}`}>{subItem.label}</span>
                             </button>
                           );
                         })}
@@ -206,7 +202,7 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                     `}
                   >
                     <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                    <span className="truncate">{item.label}</span>
+                    <span className={`truncate transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'lg:opacity-100 lg:w-auto'}`}>{item.label}</span>
                   </button>
                 );
               }
@@ -219,7 +215,7 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
