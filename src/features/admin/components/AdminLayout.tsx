@@ -127,7 +127,7 @@ export function AdminLayout() {
       <header className={`bg-transparent fixed top-0 left-0 right-0 z-30 transition-all duration-300 ease-in-out ${
         isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
       }`}>
-        <div className={`mt-0 mb-4 bg-white shadow-lg border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center backdrop-blur-sm bg-white/95 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
+            <div className={`mt-0 mb-4 bg-white shadow-lg border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center backdrop-blur-sm bg-white/95 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
           {/* Left: Logo and brand */}
           <div className="flex items-center gap-3">
             {/* Mobile menu button */}
@@ -140,15 +140,19 @@ export function AdminLayout() {
               <Menu className="w-5 h-5" />
             </Button>
             
-            {/* Desktop sidebar toggle button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="hidden lg:flex text-gray-500 hover:text-gray-700"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
+                {/* Desktop sidebar toggle button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="hidden lg:flex text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-2"
+                  title={sidebarOpen ? "Thu gọn menu" : "Mở rộng menu"}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="2"/>
+                    <line x1="9" y1="4" x2="9" y2="20" strokeWidth="2"/>
+                  </svg>
+                </Button>
             
             <img src={LogoStagPower} alt="StagPower" className="w-16 h-16 rounded-full object-cover" />
             <div>
@@ -234,8 +238,8 @@ export function AdminLayout() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className={`p-6 pt-20 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-0'}`}>
+          {/* Main Content */}
+          <main className={`p-6 pt-20 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         <Outlet />
       </main>
     </div>
