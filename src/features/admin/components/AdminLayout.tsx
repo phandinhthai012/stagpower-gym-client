@@ -239,7 +239,7 @@ export function AdminLayout() {
       </header>
 
           {/* Main Content */}
-          <main className={`p-6 pt-20 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
+          <main className={`p-6 pt-20 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'} mt-8`}>
         <Outlet />
       </main>
     </div>

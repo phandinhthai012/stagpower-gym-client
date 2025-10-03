@@ -4,6 +4,8 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { ModalCreateMember } from '../components/member-management/ModalCreateMember';
+import { ModalDetailMember } from '../components/member-management/ModalDetailMember';
 import { 
   Users, 
   Search, 
@@ -22,11 +24,23 @@ import {
   UserX,
   AlertTriangle
 } from 'lucide-react';
-import { mockUsers } from '../../../mockdata/users';
+import { mockUsers, User } from '../../../mockdata/users';
 import { mockSubscriptions } from '../../../mockdata/subscriptions';
 import { mockCheckIns } from '../../../mockdata/checkIns';
 
-export function AdminMemberManagement() {
+interface AdminMemberManagementProps {
+  onCreateMember?: () => void;
+  onViewMember?: (member: User) => void;
+  onEditMember?: (member: User) => void;
+  onDeleteMember?: (memberId: string) => void;
+}
+
+export function AdminMemberManagement({ 
+  onCreateMember, 
+  onViewMember, 
+  onEditMember, 
+  onDeleteMember 
+}: AdminMemberManagementProps = {}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [membershipFilter, setMembershipFilter] = useState('all');
@@ -70,6 +84,18 @@ export function AdminMemberManagement() {
     } else {
       setSelectedMembers(filteredMembers.map(member => member.id));
     }
+  };
+
+  const handleViewMember = (member: User) => {
+    onViewMember?.(member);
+  };
+
+  const handleEditMember = (member: User) => {
+    onEditMember?.(member);
+  };
+
+  const handleDeleteMember = (memberId: string) => {
+    onDeleteMember?.(memberId);
   };
 
   const getMemberStatus = (member: any) => {
@@ -154,7 +180,7 @@ export function AdminMemberManagement() {
               </SelectContent>
             </Select>
 
-            <Button className="w-full">
+            <Button className="w-full" onClick={onCreateMember}>
               <Plus className="w-4 h-4 mr-2" />
               Thêm hội viên
             </Button>
@@ -292,16 +318,36 @@ export function AdminMemberManagement() {
                       </td>
                       <td className="p-3">
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewMember(member)}
+                            title="Xem chi tiết"
+                          >
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditMember(member)}
+                            title="Chỉnh sửa"
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            title="Mã QR"
+                          >
                             <QrCode className="w-4 h-4" />
                           </Button>
-                          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDeleteMember(member.id)}
+                            title="Xóa thành viên"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -315,8 +361,63 @@ export function AdminMemberManagement() {
         </CardContent>
       </Card>
 
-      {/* Member Details Modal would go here */}
-      {/* This would be a separate component for viewing/editing member details */}
     </div>
+  );
+}
+
+// Render modal outside of the main component to ensure it's above everything
+export function AdminMemberManagementWithModal() {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<User | null>(null);
+  
+  return (
+    <>
+      <AdminMemberManagement 
+        onCreateMember={() => setIsCreateModalOpen(true)}
+        onViewMember={(member) => {
+          setSelectedMember(member);
+          setIsDetailModalOpen(true);
+        }}
+        onEditMember={(member) => {
+          setSelectedMember(member);
+          setIsDetailModalOpen(false);
+          // TODO: Open edit modal
+        }}
+        onDeleteMember={(memberId) => {
+          // TODO: Implement delete functionality
+          console.log('Delete member:', memberId);
+        }}
+      />
+      
+      {/* Create Member Modal - Rendered at top level */}
+      <ModalCreateMember
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          // Refresh data or show success message
+          console.log('Member created successfully');
+        }}
+      />
+
+      {/* Detail Member Modal - Rendered at top level */}
+      <ModalDetailMember
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedMember(null);
+        }}
+        member={selectedMember}
+        onEdit={(member) => {
+          setIsDetailModalOpen(false);
+          setSelectedMember(null);
+          // TODO: Open edit modal
+        }}
+        onDelete={(memberId) => {
+          // TODO: Implement delete functionality
+          console.log('Delete member:', memberId);
+        }}
+      />
+    </>
   );
 }

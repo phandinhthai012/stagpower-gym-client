@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectWithScrollLock } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
 import { 
   Users, 
@@ -251,28 +251,28 @@ export function AdminStaffPTManagement() {
               />
             </div>
             
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectWithScrollLock value={roleFilter} onValueChange={setRoleFilter} lockScroll={true}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn vai trò" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent lockScroll={true}>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Trainer">PT</SelectItem>
                 <SelectItem value="Staff">Nhân viên</SelectItem>
               </SelectContent>
-            </Select>
+            </SelectWithScrollLock>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectWithScrollLock value={statusFilter} onValueChange={setStatusFilter} lockScroll={true}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn trạng thái" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent lockScroll={true}>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Active">Hoạt động</SelectItem>
                 <SelectItem value="Inactive">Không hoạt động</SelectItem>
                 <SelectItem value="Suspended">Tạm ngưng</SelectItem>
               </SelectContent>
-            </Select>
+            </SelectWithScrollLock>
 
             <Button variant="outline" onClick={() => {
               setSearchTerm('');
@@ -336,19 +336,20 @@ export function AdminStaffPTManagement() {
                 </div>
                 <div>
                   <Label htmlFor="gender">Giới tính</Label>
-                  <Select 
+                  <SelectWithScrollLock 
                     value={formData.gender} 
                     onValueChange={(value: 'Male' | 'Female' | 'Other') => setFormData(prev => ({ ...prev, gender: value }))}
+                    lockScroll={true}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent lockScroll={true}>
                       <SelectItem value="Male">Nam</SelectItem>
                       <SelectItem value="Female">Nữ</SelectItem>
                       <SelectItem value="Other">Khác</SelectItem>
                     </SelectContent>
-                  </Select>
+                  </SelectWithScrollLock>
                 </div>
                 <div>
                   <Label htmlFor="date_of_birth">Ngày sinh</Label>
@@ -361,34 +362,36 @@ export function AdminStaffPTManagement() {
                 </div>
                 <div>
                   <Label htmlFor="role">Vai trò *</Label>
-                  <Select 
+                  <SelectWithScrollLock 
                     value={formData.role} 
                     onValueChange={(value: 'Trainer' | 'Staff') => setFormData(prev => ({ ...prev, role: value }))}
+                    lockScroll={true}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent lockScroll={true}>
                       <SelectItem value="Trainer">PT</SelectItem>
                       <SelectItem value="Staff">Nhân viên</SelectItem>
                     </SelectContent>
-                  </Select>
+                  </SelectWithScrollLock>
                 </div>
                 <div>
                   <Label htmlFor="status">Trạng thái</Label>
-                  <Select 
+                  <SelectWithScrollLock 
                     value={formData.status} 
                     onValueChange={(value: 'Active' | 'Inactive' | 'Suspended') => setFormData(prev => ({ ...prev, status: value }))}
+                    lockScroll={true}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent lockScroll={true}>
                       <SelectItem value="Active">Hoạt động</SelectItem>
                       <SelectItem value="Inactive">Không hoạt động</SelectItem>
                       <SelectItem value="Suspended">Tạm ngưng</SelectItem>
                     </SelectContent>
-                  </Select>
+                  </SelectWithScrollLock>
                 </div>
               </div>
 
@@ -446,21 +449,22 @@ export function AdminStaffPTManagement() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="branch_id">Chi nhánh *</Label>
-                      <Select 
+                      <SelectWithScrollLock 
                         value={formData.branch_id} 
                         onValueChange={(value) => setFormData(prev => ({ ...prev, branch_id: value }))}
+                        lockScroll={true}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Chọn chi nhánh" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent lockScroll={true}>
                           {mockBranches.map((branch) => (
                             <SelectItem key={branch.id} value={branch.id}>
                               {branch.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
-                      </Select>
+                      </SelectWithScrollLock>
                     </div>
                     <div>
                       <Label htmlFor="position">Vị trí</Label>
