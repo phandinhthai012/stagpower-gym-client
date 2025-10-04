@@ -4,6 +4,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { useScrollLock } from '../../../hooks/useScrollLock';
 import { Badge } from '../../../components/ui/badge';
 import { 
   Plus, 
@@ -17,19 +18,50 @@ import {
   Dumbbell,
   Search,
   Filter,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { mockPackages } from '../../../mockdata/packages';
 import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
+import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
 
-export function AdminPackageManagement() {
+interface AdminPackageManagementProps {
+  onCreatePackage?: () => void;
+  onViewPackage?: (pkg: any) => void;
+  onEditPackage?: (pkg: any) => void;
+  onDeletePackage?: (packageId: string) => void;
+}
+
+export function AdminPackageManagement({ 
+  onCreatePackage, 
+  onViewPackage, 
+  onEditPackage, 
+  onDeletePackage 
+}: AdminPackageManagementProps = {}) {
   const [packages] = useState(mockPackages);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [membershipTypeFilter, setMembershipTypeFilter] = useState('all');
+  const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
+  const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
+
+  // Lock scroll when any dropdown is open
+  useScrollLock(openDropdowns.size > 0, { preserveScrollPosition: true });
+
+  // Helper function to handle dropdown open/close
+  const handleDropdownChange = (dropdownId: string) => (open: boolean) => {
+    setOpenDropdowns(prev => {
+      const newSet = new Set(prev);
+      if (open) {
+        newSet.add(dropdownId);
+      } else {
+        newSet.delete(dropdownId);
+      }
+      return newSet;
+    });
+  };
 
   // Filter packages
   const filteredPackages = packages.filter(pkg => {
@@ -58,6 +90,34 @@ export function AdminPackageManagement() {
     setStatusFilter('all');
     setCategoryFilter('all');
     setMembershipTypeFilter('all');
+  };
+
+  const handleSelectPackage = (packageId: string) => {
+    setSelectedPackages(prev => 
+      prev.includes(packageId) 
+        ? prev.filter(id => id !== packageId)
+        : [...prev, packageId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedPackages.length === filteredPackages.length) {
+      setSelectedPackages([]);
+    } else {
+      setSelectedPackages(filteredPackages.map(pkg => pkg.id));
+    }
+  };
+
+  const handleViewPackage = (pkg: any) => {
+    onViewPackage?.(pkg);
+  };
+
+  const handleEditPackage = (pkg: any) => {
+    onEditPackage?.(pkg);
+  };
+
+  const handleDeletePackage = (packageId: string) => {
+    onDeletePackage?.(packageId);
   };
 
   const formatPrice = (price: number) => {
@@ -121,11 +181,15 @@ export function AdminPackageManagement() {
             {/* Type Filter */}
             <div>
               <Label htmlFor="typeFilter">Loại gói</Label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <Select 
+                value={typeFilter} 
+                onValueChange={setTypeFilter}
+                onOpenChange={handleDropdownChange('type')}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn loại" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="Membership">Membership</SelectItem>
                   <SelectItem value="Combo">Combo</SelectItem>
@@ -137,11 +201,15 @@ export function AdminPackageManagement() {
             {/* Status Filter */}
             <div>
               <Label htmlFor="statusFilter">Trạng thái</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select 
+                value={statusFilter} 
+                onValueChange={setStatusFilter}
+                onOpenChange={handleDropdownChange('status')}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="Active">Hoạt động</SelectItem>
                   <SelectItem value="Inactive">Ngừng hoạt động</SelectItem>
@@ -152,11 +220,15 @@ export function AdminPackageManagement() {
             {/* Category Filter */}
             <div>
               <Label htmlFor="categoryFilter">Thời hạn</Label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Select 
+                value={categoryFilter} 
+                onValueChange={setCategoryFilter}
+                onOpenChange={handleDropdownChange('category')}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn thời hạn" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="ShortTerm">Ngắn hạn</SelectItem>
                   <SelectItem value="MediumTerm">Trung hạn</SelectItem>
@@ -172,11 +244,15 @@ export function AdminPackageManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <Label htmlFor="membershipTypeFilter">Loại Membership</Label>
-                <Select value={membershipTypeFilter} onValueChange={setMembershipTypeFilter}>
+                <Select 
+                  value={membershipTypeFilter} 
+                  onValueChange={setMembershipTypeFilter}
+                  onOpenChange={handleDropdownChange('membership')}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn loại membership" />
                   </SelectTrigger>
-                  <SelectContent lockScroll={true}>
+                  <SelectContent>
                     <SelectItem value="all">Tất cả</SelectItem>
                     <SelectItem value="Basic">Basic</SelectItem>
                     <SelectItem value="VIP">VIP</SelectItem>
@@ -209,6 +285,33 @@ export function AdminPackageManagement() {
         </CardContent>
       </Card>
 
+      {/* Bulk Actions */}
+      {selectedPackages.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">
+                Đã chọn {selectedPackages.length} gói tập
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Package className="w-4 h-4 mr-2" />
+                  Kích hoạt
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Xuất dữ liệu
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Xóa
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Packages Table */}
       <Card>
         <CardHeader>
@@ -217,7 +320,7 @@ export function AdminPackageManagement() {
               <Package className="w-5 h-5 text-blue-600" />
               Danh sách gói tập
             </CardTitle>
-            <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center space-x-2">
+            <Button onClick={onCreatePackage} className="flex items-center space-x-2">
               <Plus className="w-4 h-4" />
               <span>Tạo gói tập mới</span>
             </Button>
@@ -228,6 +331,14 @@ export function AdminPackageManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
+                  <th className="text-left p-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedPackages.length === filteredPackages.length && filteredPackages.length > 0}
+                      onChange={handleSelectAll}
+                      className="rounded"
+                    />
+                  </th>
                   <th className="text-left p-3 font-medium text-gray-600">Tên gói</th>
                   <th className="text-left p-3 font-medium text-gray-600">Loại</th>
                   <th className="text-left p-3 font-medium text-gray-600">Thời hạn</th>
@@ -239,6 +350,14 @@ export function AdminPackageManagement() {
               <tbody>
                 {filteredPackages.map((pkg) => (
                   <tr key={pkg.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedPackages.includes(pkg.id)}
+                        onChange={() => handleSelectPackage(pkg.id)}
+                        className="rounded"
+                      />
+                    </td>
                     <td className="p-3">
                       <div>
                         <p className="font-medium text-gray-900">{pkg.name}</p>
@@ -278,13 +397,29 @@ export function AdminPackageManagement() {
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewPackage(pkg)}
+                          title="Xem chi tiết"
+                        >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditPackage(pkg)}
+                          title="Chỉnh sửa"
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleDeletePackage(pkg.id)}
+                          title="Xóa gói tập"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -297,16 +432,63 @@ export function AdminPackageManagement() {
         </CardContent>
       </Card>
 
-      {/* Create Package Modal */}
+    </div>
+  );
+}
+
+// Render modal outside of the main component to ensure it's above everything
+export function AdminPackageManagementWithModal() {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
+  
+  return (
+    <>
+      <AdminPackageManagement 
+        onCreatePackage={() => setIsCreateModalOpen(true)}
+        onViewPackage={(pkg) => {
+          setSelectedPackage(pkg);
+          setIsDetailModalOpen(true);
+        }}
+        onEditPackage={(pkg) => {
+          setSelectedPackage(pkg);
+          setIsDetailModalOpen(false);
+          // TODO: Open edit modal
+        }}
+        onDeletePackage={(packageId) => {
+          // TODO: Implement delete functionality
+          console.log('Delete package:', packageId);
+        }}
+      />
+      
+      {/* Create Package Modal - Rendered at top level */}
       <ModalCreatePackage
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={() => {
-          setIsCreateModalOpen(false);
-          // TODO: Refresh data
+          // Refresh data or show success message
           console.log('Package created successfully');
         }}
       />
-    </div>
+
+      {/* Detail Package Modal */}
+      <ModalDetailPackage
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedPackage(null);
+        }}
+        package={selectedPackage}
+        onEdit={(pkg) => {
+          setIsDetailModalOpen(false);
+          setSelectedPackage(null);
+          // TODO: Open edit modal
+        }}
+        onDelete={(packageId) => {
+          // TODO: Implement delete functionality
+          console.log('Delete package:', packageId);
+        }}
+      />
+    </>
   );
 }

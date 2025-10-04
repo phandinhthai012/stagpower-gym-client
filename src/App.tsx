@@ -13,7 +13,7 @@ import { MemberHistory } from './features/member/pages/MemberHistory';
 import { MemberNotifications } from './features/member/pages/MemberNotifications';
 import { MemberSuggestions } from './features/member/pages/MemberSuggestions';
 import { LandingPage } from './features/landing/page/LandingPage';
-import { AdminDashboard, AdminPackageManagement, AdminAccessControl, AdminMemberManagementWithModal, AdminReports, AdminPTSchedule, AdminStaffPTManagement, AdminInvoicePayment, AdminBranchManagement, AdminExerciseManagement, AdminDiscountManagement, AdminComplaintManagement, AdminAccountSettings } from './features/admin/pages';
+import { AdminDashboard, AdminPackageManagementWithModal, AdminAccessControl, AdminMemberManagementWithModal, AdminReports, AdminPTSchedule, AdminStaffPTManagement, AdminInvoicePayment, AdminBranchManagement, AdminExerciseManagement, AdminDiscountManagement, AdminComplaintManagement, AdminAccountSettings } from './features/admin/pages';
 import { AdminLayout } from './features/admin/components';
 import { StaffDashboard } from './features/staff';
 import { TrainerLayout } from './features/personTrainer/components/TrainerLayout';
@@ -52,7 +52,7 @@ function App() {
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="members" element={<AdminMemberManagementWithModal />} />
-            <Route path="packages" element={<AdminPackageManagement />} />
+            <Route path="packages" element={<AdminPackageManagementWithModal />} />
             <Route path="access-control" element={<AdminAccessControl />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="schedules" element={<AdminPTSchedule />} />

@@ -10,39 +10,38 @@ export const useScrollLock = (
   options: {
     /** Whether to preserve scroll position when locking */
     preserveScrollPosition?: boolean;
-    /** Custom element to apply scroll lock to (defaults to body) */
-    targetElement?: HTMLElement;
   } = {}
 ) => {
-  const {
-    preserveScrollPosition = true,
-    targetElement = document.body
-  } = options;
+  const { preserveScrollPosition = true } = options;
 
   useEffect(() => {
     if (!isLocked) return;
 
     // Save current scroll position
     const scrollY = window.scrollY;
+    const body = document.body;
+    const html = document.documentElement;
     
     // Apply scroll lock
-    targetElement.style.position = 'fixed';
-    targetElement.style.top = preserveScrollPosition ? `-${scrollY}px` : '0';
-    targetElement.style.width = '100%';
-    targetElement.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = preserveScrollPosition ? `-${scrollY}px` : '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    html.style.overflow = 'hidden';
     
     return () => {
       // Restore scroll
-      targetElement.style.position = '';
-      targetElement.style.top = '';
-      targetElement.style.width = '';
-      targetElement.style.overflow = '';
+      body.style.position = '';
+      body.style.top = '';
+      body.style.width = '';
+      body.style.overflow = '';
+      html.style.overflow = '';
       
       if (preserveScrollPosition) {
         window.scrollTo(0, scrollY);
       }
     };
-  }, [isLocked, preserveScrollPosition, targetElement]);
+  }, [isLocked, preserveScrollPosition]);
 };
 
 /**
