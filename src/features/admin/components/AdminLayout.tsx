@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AdminSidebar } from './AdminSidebar';
@@ -19,8 +19,6 @@ import LogoStagPower from '../../../assets/Logo_StagPower_4x.png';
 
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Always open on desktop
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,30 +43,10 @@ export function AdminLayout() {
   const [now, setNow] = useState<Date>(new Date());
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const intervalId = setInterval(() => setNow(new Date()), 30 * 1000);
     return () => clearInterval(intervalId);
   }, []);
-
-  // Scroll detection for header visibility
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY < lastScrollY || currentScrollY < 10) {
-        // Scrolling up or at top - show header
-        setIsHeaderVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        // Scrolling down and past 100px - hide header
-        setIsHeaderVisible(false);
-      }
-      
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
 
   const handleLogout = async () => {
     try {
@@ -124,10 +102,8 @@ export function AdminLayout() {
       <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
       {/* Header */}
-      <header className={`bg-transparent fixed top-0 left-0 right-0 z-30 transition-all duration-300 ease-in-out ${
-        isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
-      }`}>
-            <div className={`mt-0 mb-4 bg-white shadow-lg border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center backdrop-blur-sm bg-white/95 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
+      <header className="bg-transparent lg:ml-64">
+        <div className="mx-4 my-4 bg-white shadow-sm border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center">
           {/* Left: Logo and brand */}
           <div className="flex items-center gap-3">
             {/* Mobile menu button */}
@@ -238,8 +214,8 @@ export function AdminLayout() {
         </div>
       </header>
 
-          {/* Main Content */}
-          <main className={`p-6 pt-20 transition-all duration-300 ease-in-out ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'} mt-8`}>
+      {/* Main Content */}
+      <main className="lg:ml-64 p-6">
         <Outlet />
       </main>
     </div>

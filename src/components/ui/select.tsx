@@ -157,7 +157,7 @@ const SelectWithScrollLock = React.forwardRef<
     /** Whether to lock scroll when dropdown is open */
     lockScroll?: boolean;
   }
->(({ lockScroll = false, ...props }, ref) => {
+>(({ lockScroll = false, onOpenChange, ...props }, ref) => {
   const [isOpen, setIsOpen] = React.useState(false);
   
   // Lock scroll when dropdown is open
@@ -165,11 +165,16 @@ const SelectWithScrollLock = React.forwardRef<
     preserveScrollPosition: true
   });
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    onOpenChange?.(open);
+  };
+
   return (
     <div ref={ref}>
       <SelectPrimitive.Root
         {...props}
-        onOpenChange={setIsOpen}
+        onOpenChange={handleOpenChange}
       />
     </div>
   );

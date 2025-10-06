@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { useScrollLock } from '../../../hooks/useScrollLock';
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectWithScrollLock } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
 import { 
   Plus, 
@@ -22,8 +21,8 @@ import {
   Download
 } from 'lucide-react';
 import { mockPackages } from '../../../mockdata/packages';
-import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
-import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
+// import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
+// import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
 
 interface AdminPackageManagementProps {
   onCreatePackage?: () => void;
@@ -45,23 +44,6 @@ export function AdminPackageManagement({
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [membershipTypeFilter, setMembershipTypeFilter] = useState('all');
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
-  const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
-
-  // Lock scroll when any dropdown is open
-  useScrollLock(openDropdowns.size > 0, { preserveScrollPosition: true });
-
-  // Helper function to handle dropdown open/close
-  const handleDropdownChange = (dropdownId: string) => (open: boolean) => {
-    setOpenDropdowns(prev => {
-      const newSet = new Set(prev);
-      if (open) {
-        newSet.add(dropdownId);
-      } else {
-        newSet.delete(dropdownId);
-      }
-      return newSet;
-    });
-  };
 
   // Filter packages
   const filteredPackages = packages.filter(pkg => {
@@ -181,61 +163,49 @@ export function AdminPackageManagement({
             {/* Type Filter */}
             <div>
               <Label htmlFor="typeFilter">Loại gói</Label>
-              <Select 
-                value={typeFilter} 
-                onValueChange={setTypeFilter}
-                onOpenChange={handleDropdownChange('type')}
+              <select
+                id="typeFilter"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn loại" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="Membership">Membership</SelectItem>
-                  <SelectItem value="Combo">Combo</SelectItem>
-                  <SelectItem value="PT">PT</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="all">Tất cả</option>
+                <option value="Membership">Membership</option>
+                <option value="Combo">Combo</option>
+                <option value="PT">PT</option>
+              </select>
             </div>
 
             {/* Status Filter */}
             <div>
               <Label htmlFor="statusFilter">Trạng thái</Label>
-              <Select 
-                value={statusFilter} 
-                onValueChange={setStatusFilter}
-                onOpenChange={handleDropdownChange('status')}
+              <select
+                id="statusFilter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="Active">Hoạt động</SelectItem>
-                  <SelectItem value="Inactive">Ngừng hoạt động</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="all">Tất cả</option>
+                <option value="Active">Hoạt động</option>
+                <option value="Inactive">Ngừng hoạt động</option>
+              </select>
             </div>
 
             {/* Category Filter */}
             <div>
               <Label htmlFor="categoryFilter">Thời hạn</Label>
-              <Select 
-                value={categoryFilter} 
-                onValueChange={setCategoryFilter}
-                onOpenChange={handleDropdownChange('category')}
+              <select
+                id="categoryFilter"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn thời hạn" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả</SelectItem>
-                  <SelectItem value="ShortTerm">Ngắn hạn</SelectItem>
-                  <SelectItem value="MediumTerm">Trung hạn</SelectItem>
-                  <SelectItem value="LongTerm">Dài hạn</SelectItem>
-                  <SelectItem value="Trial">Gói thử</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="all">Tất cả</option>
+                <option value="ShortTerm">Ngắn hạn</option>
+                <option value="MediumTerm">Trung hạn</option>
+                <option value="LongTerm">Dài hạn</option>
+                <option value="Trial">Gói thử</option>
+              </select>
             </div>
           </div>
 
@@ -244,21 +214,17 @@ export function AdminPackageManagement({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <Label htmlFor="membershipTypeFilter">Loại Membership</Label>
-                <Select 
-                  value={membershipTypeFilter} 
-                  onValueChange={setMembershipTypeFilter}
-                  onOpenChange={handleDropdownChange('membership')}
+                <select
+                  id="membershipTypeFilter"
+                  value={membershipTypeFilter}
+                  onChange={(e) => setMembershipTypeFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn loại membership" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả</SelectItem>
-                    <SelectItem value="Basic">Basic</SelectItem>
-                    <SelectItem value="VIP">VIP</SelectItem>
-                    <SelectItem value="none">Không có</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="all">Tất cả</option>
+                  <option value="Basic">Basic</option>
+                  <option value="VIP">VIP</option>
+                  <option value="none">Không có</option>
+                </select>
               </div>
 
               {/* Clear Filters Button */}
@@ -462,33 +428,37 @@ export function AdminPackageManagementWithModal() {
       />
       
       {/* Create Package Modal - Rendered at top level */}
-      <ModalCreatePackage
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={() => {
-          // Refresh data or show success message
-          console.log('Package created successfully');
-        }}
-      />
+      {/* {isCreateModalOpen && (
+        <ModalCreatePackage
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={() => {
+            // Refresh data or show success message
+            console.log('Package created successfully');
+          }}
+        />
+      )} */}
 
       {/* Detail Package Modal */}
-      <ModalDetailPackage
-        isOpen={isDetailModalOpen}
-        onClose={() => {
-          setIsDetailModalOpen(false);
-          setSelectedPackage(null);
-        }}
-        package={selectedPackage}
-        onEdit={(pkg) => {
-          setIsDetailModalOpen(false);
-          setSelectedPackage(null);
-          // TODO: Open edit modal
-        }}
-        onDelete={(packageId) => {
-          // TODO: Implement delete functionality
-          console.log('Delete package:', packageId);
-        }}
-      />
+      {/* {isDetailModalOpen && selectedPackage && (
+        <ModalDetailPackage
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedPackage(null);
+          }}
+          package={selectedPackage}
+          onEdit={(pkg) => {
+            setIsDetailModalOpen(false);
+            setSelectedPackage(null);
+            // TODO: Open edit modal
+          }}
+          onDelete={(packageId) => {
+            // TODO: Implement delete functionality
+            console.log('Delete package:', packageId);
+          }}
+        />
+      )} */}
     </>
   );
 }
