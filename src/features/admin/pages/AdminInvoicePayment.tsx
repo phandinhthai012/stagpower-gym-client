@@ -58,7 +58,7 @@ export function AdminInvoicePayment() {
     
     return {
       id: payment.invoice_number,
-      member: member?.full_name || 'Unknown',
+      member: member?.fullName || 'Unknown',
       package: packageInfo?.name || 'Unknown Package',
       amount: payment.amount,
       originalAmount: payment.original_amount,
@@ -374,7 +374,7 @@ export function AdminInvoicePayment() {
                       <SelectContent>
                         {mockUsers.filter(user => user.role === 'Member').map((member) => (
                           <SelectItem key={member.id} value={member.id}>
-                            {member.full_name} - {member.id.slice(-4)}
+                            {member.fullName} - {member.id.slice(-4)}
                           </SelectItem>
                         ))}
                       </SelectContent>

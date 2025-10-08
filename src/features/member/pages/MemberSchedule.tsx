@@ -171,7 +171,7 @@ export function MemberSchedule() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h4 className="font-medium text-sm md:text-base truncate">Buổi PT với {trainer?.full_name}</h4>
+                          <h4 className="font-medium text-sm md:text-base truncate">Buổi PT với {trainer?.fullName}</h4>
                           <Badge variant="outline" className={`${getStatusColor(schedule.status)} px-2 py-0.5 text-[10px] md:text-xs`}>{schedule.status}</Badge>
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-600">
@@ -211,7 +211,7 @@ export function MemberSchedule() {
                           <Calendar className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
-                          <h4 className="font-medium text-sm md:text-base">Buổi PT với {trainer?.full_name}</h4>
+                          <h4 className="font-medium text-sm md:text-base">Buổi PT với {trainer?.fullName}</h4>
                           <div className="flex items-center space-x-4 text-xs md:text-sm text-gray-600 mt-1">
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
@@ -270,7 +270,7 @@ export function MemberSchedule() {
                           {getStatusIcon(schedule.status)}
                         </div>
                         <div>
-                          <h4 className="font-medium text-sm md:text-base">Buổi PT với {trainer?.full_name}</h4>
+                          <h4 className="font-medium text-sm md:text-base">Buổi PT với {trainer?.fullName}</h4>
                           <div className="flex items-center space-x-4 text-xs md:text-sm text-gray-600 mt-1">
                             <div className="flex items-center space-x-1">
                               <Clock className="h-3 w-3" />
@@ -318,7 +318,7 @@ export function MemberSchedule() {
                     <User className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h4 className="font-medium">{trainer.full_name}</h4>
+                    <h4 className="font-medium">{trainer.fullName}</h4>
                     <p className="text-sm text-gray-600">Huấn luyện viên</p>
                   </div>
                 </div>

@@ -122,9 +122,9 @@ export const Header: React.FC = () => {
                 <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   <button
                     onClick={() => {
-                      const dashboardPath = user?.role === 'Admin' ? '/admin' :
-                                          user?.role === 'Staff' ? '/staff' :
-                                          user?.role === 'Trainer' ? '/trainer' :
+                      const dashboardPath = user?.role === 'admin' ? '/admin' :
+                                          user?.role === 'staff' ? '/staff' :
+                                          user?.role === 'trainer' ? '/trainer' :
                                           '/member';
                       navigate(dashboardPath);
                       setIsUserMenuOpen(false);

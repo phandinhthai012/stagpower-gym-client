@@ -33,7 +33,7 @@ import { StaffPTDetailModal } from '../components/StaffPTDetailModal';
 
 interface StaffPTFormData {
   id?: string;
-  full_name: string;
+  fullName: string;
   email: string;
   phone: string;
   gender: 'Male' | 'Female' | 'Other';
@@ -66,7 +66,7 @@ export function AdminStaffPTManagement() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<StaffPTFormData>({
-    full_name: '',
+    fullName: '',
     email: '',
     phone: '',
     gender: 'Male',
@@ -90,7 +90,7 @@ export function AdminStaffPTManagement() {
   // Filter data based on search and filters
   const filteredData = useMemo(() => {
     return staffAndTrainers.filter(user => {
-      const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            user.phone.includes(searchTerm);
       const matchesRole = roleFilter === 'all' || user.role === roleFilter;
@@ -102,7 +102,7 @@ export function AdminStaffPTManagement() {
 
   const handleAddNew = () => {
     setFormData({
-      full_name: '',
+      fullName: '',
       email: '',
       phone: '',
       gender: 'Male',
@@ -126,7 +126,7 @@ export function AdminStaffPTManagement() {
   const handleEdit = (user: any) => {
     setFormData({
       id: user.id,
-      full_name: user.full_name,
+      fullName: user.fullName,
       email: user.email,
       phone: user.phone,
       gender: user.gender,
@@ -163,7 +163,7 @@ export function AdminStaffPTManagement() {
     e.preventDefault();
     
     // Validation
-    if (!formData.full_name || !formData.email || !formData.phone) {
+    if (!formData.fullName || !formData.email || !formData.phone) {
       alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
       return;
     }
@@ -299,11 +299,11 @@ export function AdminStaffPTManagement() {
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="full_name">Họ và tên *</Label>
+                  <Label htmlFor="fullName">Họ và tên *</Label>
                   <Input
-                    id="full_name"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                    id="fullName"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
                     required
                   />
                 </div>
@@ -522,10 +522,10 @@ export function AdminStaffPTManagement() {
                     <td className="p-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                          {user.full_name.charAt(0)}
+                          {user.fullName.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{user.full_name}</p>
+                          <p className="font-medium text-gray-900">{user.fullName}</p>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Mail className="w-3 h-3" />
                             {user.email}

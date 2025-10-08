@@ -46,7 +46,7 @@ export function TrainerDashboardPage() {
         minute: '2-digit' 
       }),
       date: "Hôm nay",
-      member: member?.full_name || 'Unknown',
+      member: member?.fullName || 'Unknown',
       type: packageType === 'PT' ? 'PT cá nhân' : packageType === 'Combo' ? 'PT combo' : 'Membership',
       duration: `${schedule.duration_minutes} phút`,
       status: schedule.status.toLowerCase(),
@@ -67,8 +67,8 @@ export function TrainerDashboardPage() {
     
     return {
       id: member.id,
-      name: member.full_name,
-      avatar: member.full_name.split(' ').map(n => n[0]).join('').substring(0, 2),
+      name: member.fullName,
+      avatar: member.fullName.split(' ').map(n => n[0]).join('').substring(0, 2),
       lastSession: lastSessionTime,
       status: member.status.toLowerCase(),
       sessions: memberSchedules.filter(s => s.status === 'Completed').length

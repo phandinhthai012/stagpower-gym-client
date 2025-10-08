@@ -28,7 +28,7 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
   const [activeTab, setActiveTab] = useState<'basic' | 'health'>('basic');
   const [formData, setFormData] = useState({
     // Basic info
-    full_name: '',
+    fullName: '',
     email: '',
     phone: '',
     gender: '',
@@ -74,18 +74,18 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="full_name">Họ và tên <span className="text-red-500">*</span></Label>
+            <Label htmlFor="fullName">Họ và tên <span className="text-red-500">*</span></Label>
             <Input
-              id="full_name"
-              value={formData.full_name}
-              onChange={(e) => handleInputChange('full_name', e.target.value)}
+              id="fullName"
+              value={formData.fullName}
+              onChange={(e) => handleInputChange('fullName', e.target.value)}
               placeholder="Nhập họ và tên"
-              className={errors.full_name ? 'border-red-500' : ''}
+              className={errors.fullName ? 'border-red-500' : ''}
             />
-            {errors.full_name && (
+              {errors.fullName && (
               <p className="text-sm text-red-500 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
-                {errors.full_name}
+                {errors.fullName}
               </p>
             )}
           </div>
@@ -403,7 +403,7 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
     const newErrors: Record<string, string> = {};
 
     // Required fields validation
-    if (!formData.full_name.trim()) newErrors.full_name = 'Họ tên là bắt buộc';
+    if (!formData.fullName.trim()) newErrors.fullName = 'Họ tên là bắt buộc';
     if (!formData.email.trim()) newErrors.email = 'Email là bắt buộc';
     if (!formData.phone.trim()) newErrors.phone = 'Số điện thoại là bắt buộc';
     if (!formData.gender) newErrors.gender = 'Giới tính là bắt buộc';
@@ -469,7 +469,7 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
       const memberData = {
         // Basic user info
         role: 'Member',
-        full_name: formData.full_name.trim(),
+        fullName: formData.fullName.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         gender: formData.gender,
@@ -517,7 +517,7 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
       
       // Reset form
       setFormData({
-        full_name: '',
+        fullName: '',
         email: '',
         phone: '',
         gender: '',

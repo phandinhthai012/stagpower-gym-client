@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   role: 'Member' | 'Trainer' | 'Staff' | 'Admin';
-  full_name: string;
+  fullName: string;
   email: string;
   phone: string;
   gender: 'Male' | 'Female' | 'Other';
@@ -10,7 +10,7 @@ export interface User {
   cccd: string;
   photo: string;
   join_date: string;
-  status: 'Active' | 'Inactive' | 'Suspended';
+  status: 'active' | 'inactive' | 'suspended';
   created_at: string;
   updated_at: string;
   
@@ -52,7 +52,7 @@ export const mockUsers: User[] = [
   {
     id: '507f1f77bcf86cd799439011',
     role: 'Member',
-    full_name: 'Nguyễn Văn An',
+    fullName: 'Nguyễn Văn An',
     email: 'nguyenvanan@gmail.com',
     phone: '0901234567',
     gender: 'Male',
@@ -61,7 +61,7 @@ export const mockUsers: User[] = [
     cccd: '123456789012',
     photo: 'https://via.placeholder.com/150/007bff/ffffff?text=NA',
     join_date: '2024-01-15',
-    status: 'Active',
+    status: 'active',
     created_at: '2024-01-15T08:00:00Z',
     updated_at: '2024-01-15T08:00:00Z',
     member_info: {
@@ -78,7 +78,7 @@ export const mockUsers: User[] = [
   {
     id: '507f1f77bcf86cd799439012',
     role: 'Member',
-    full_name: 'Trần Thị Bình',
+    fullName: 'Trần Thị Bình',
     email: 'tranthibinh@gmail.com',
     phone: '0901234568',
     gender: 'Female',
@@ -87,7 +87,7 @@ export const mockUsers: User[] = [
     cccd: '123456789013',
     photo: 'https://via.placeholder.com/150/28a745/ffffff?text=TB',
     join_date: '2024-02-01',
-    status: 'Active',
+    status: 'active',
     created_at: '2024-02-01T09:00:00Z',
     updated_at: '2024-02-01T09:00:00Z',
     member_info: {
@@ -104,7 +104,7 @@ export const mockUsers: User[] = [
   {
     id: '507f1f77bcf86cd799439013',
     role: 'Member',
-    full_name: 'Lê Văn Cường',
+    fullName: 'Lê Văn Cường',
     email: 'levancuong@gmail.com',
     phone: '0901234569',
     gender: 'Male',
@@ -113,7 +113,7 @@ export const mockUsers: User[] = [
     cccd: '123456789014',
     photo: 'https://via.placeholder.com/150/dc3545/ffffff?text=LC',
     join_date: '2024-01-20',
-    status: 'Active',
+    status: 'active',
     created_at: '2024-01-20T10:00:00Z',
     updated_at: '2024-01-20T10:00:00Z',
     member_info: {
@@ -130,7 +130,7 @@ export const mockUsers: User[] = [
   {
     id: '507f1f77bcf86cd799439014',
     role: 'Member',
-    full_name: 'Phạm Thị Dung',
+    fullName: 'Phạm Thị Dung',
     email: 'phamthidung@gmail.com',
     phone: '0901234570',
     gender: 'Female',
@@ -139,7 +139,7 @@ export const mockUsers: User[] = [
     cccd: '123456789015',
     photo: 'https://via.placeholder.com/150/6f42c1/ffffff?text=PD',
     join_date: '2024-03-01',
-    status: 'Inactive',
+    status: 'inactive',
     created_at: '2024-03-01T11:00:00Z',
     updated_at: '2024-03-01T11:00:00Z',
     member_info: {
@@ -158,7 +158,7 @@ export const mockUsers: User[] = [
   {
     id: '507f1f77bcf86cd799439015',
     role: 'Trainer',
-    full_name: 'Hoàng Văn Em',
+    fullName: 'Hoàng Văn Em',
     email: 'hoangvanem@gmail.com',
     phone: '0901234571',
     gender: 'Male',
@@ -167,7 +167,7 @@ export const mockUsers: User[] = [
     cccd: '123456789016',
     photo: 'https://via.placeholder.com/150/17a2b8/ffffff?text=HE',
     join_date: '2023-06-01',
-    status: 'Active',
+    status: 'active',
     created_at: '2023-06-01T12:00:00Z',
     updated_at: '2023-06-01T12:00:00Z',
     trainer_info: {
@@ -183,7 +183,7 @@ export const mockUsers: User[] = [
   {
     id: '507f1f77bcf86cd799439016',
     role: 'Trainer',
-    full_name: 'Võ Thị Phương',
+    fullName: 'Võ Thị Phương',
     email: 'vothiphuong@gmail.com',
     phone: '0901234572',
     gender: 'Female',
@@ -192,7 +192,7 @@ export const mockUsers: User[] = [
     cccd: '123456789017',
     photo: 'https://via.placeholder.com/150/fd7e14/ffffff?text=VP',
     join_date: '2023-08-15',
-    status: 'Active',
+    status: 'active',
     created_at: '2023-08-15T13:00:00Z',
     updated_at: '2023-08-15T13:00:00Z',
     trainer_info: {
@@ -210,7 +210,7 @@ export const mockUsers: User[] = [
   {
     id: '507f1f77bcf86cd799439017',
     role: 'Staff',
-    full_name: 'Đặng Văn Giang',
+    fullName: 'Đặng Văn Giang',
     email: 'dangvangiang@gmail.com',
     phone: '0901234573',
     gender: 'Male',
@@ -219,7 +219,7 @@ export const mockUsers: User[] = [
     cccd: '123456789018',
     photo: 'https://via.placeholder.com/150/20c997/ffffff?text=DG',
     join_date: '2023-10-01',
-    status: 'Active',
+    status: 'active',
     created_at: '2023-10-01T14:00:00Z',
     updated_at: '2023-10-01T14:00:00Z',
     staff_info: {
@@ -230,7 +230,7 @@ export const mockUsers: User[] = [
   {
     id: '507f1f77bcf86cd799439018',
     role: 'Staff',
-    full_name: 'Bùi Thị Hoa',
+    fullName: 'Bùi Thị Hoa',
     email: 'buithihoa@gmail.com',
     phone: '0901234574',
     gender: 'Female',
@@ -239,7 +239,7 @@ export const mockUsers: User[] = [
     cccd: '123456789019',
     photo: 'https://via.placeholder.com/150/e83e8c/ffffff?text=BH',
     join_date: '2023-11-15',
-    status: 'Active',
+    status: 'active',
     created_at: '2023-11-15T15:00:00Z',
     updated_at: '2023-11-15T15:00:00Z',
     staff_info: {
@@ -252,7 +252,7 @@ export const mockUsers: User[] = [
   {
     id: '507f1f77bcf86cd799439019',
     role: 'Admin',
-    full_name: 'Nguyễn Văn Admin',
+    fullName: 'Nguyễn Văn Admin',
     email: 'admin@stagpower.com',
     phone: '0901234575',
     gender: 'Male',
@@ -261,7 +261,7 @@ export const mockUsers: User[] = [
     cccd: '123456789020',
     photo: 'https://via.placeholder.com/150/6c757d/ffffff?text=AD',
     join_date: '2023-01-01',
-    status: 'Active',
+    status: 'active',
     created_at: '2023-01-01T16:00:00Z',
     updated_at: '2023-01-01T16:00:00Z',
     admin_info: {

@@ -21,7 +21,7 @@ export function MemberTable() {
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor('full_name', {
+      columnHelper.accessor('fullName', {
         header: 'Tên',
         cell: (info) => (
           <div className="tw-flex items-center space-x-3">
@@ -57,8 +57,8 @@ export function MemberTable() {
         header: 'Trạng thái',
         cell: (info) => {
           const status = info.getValue();
-          const variant = status === 'Active' ? 'success' : 
-                         status === 'Inactive' ? 'secondary' : 'destructive';
+          const variant = status === 'active' ? 'success' : 
+                         status === 'inactive' ? 'secondary' : 'destructive';
           return <Badge variant={variant}>{status}</Badge>;
         },
       }),

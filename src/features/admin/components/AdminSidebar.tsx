@@ -114,10 +114,10 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
               <img 
                 src="/Logo_StagPower_4x.png" 
                 alt="StagPower Logo" 
-                className={`w-24 h-24 object-contain transition-all duration-300 ${!sidebarOpen ? 'lg:w-8 lg:h-8' : 'lg:w-24 lg:h-24'}`}
+                className={`w-16 h-16 sm:w-20 sm:h-20 object-contain transition-all duration-300 ${!sidebarOpen ? 'lg:w-8 lg:h-8' : 'lg:w-24 lg:h-24'}`}
               />
-              <div className={`transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'lg:opacity-100 lg:w-auto'}`}>
-                <h2 className="text-lg font-semibold text-white">StagPower</h2>
+              <div className={`hidden md:block transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'lg:opacity-100 lg:w-auto'}`}>
+                <h2 className="text-sm sm:text-lg font-semibold text-white">StagPower</h2>
                 <p className="text-xs text-blue-200">Admin Dashboard</p>
               </div>
               

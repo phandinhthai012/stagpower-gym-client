@@ -50,9 +50,9 @@ export function ModalDetailMember({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800';
-      case 'Inactive': return 'bg-gray-100 text-gray-800';
-      case 'Suspended': return 'bg-red-100 text-red-800';
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'inactive': return 'bg-gray-100 text-gray-800';
+      case 'suspended': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -101,7 +101,7 @@ export function ModalDetailMember({
                 Chi tiết thành viên
               </h2>
               <p className="text-sm text-gray-500">
-                Thông tin chi tiết về {member.full_name}
+                Thông tin chi tiết về {member.fullName}
               </p>
             </div>
           </div>
@@ -143,7 +143,7 @@ export function ModalDetailMember({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium text-gray-500">Họ và tên</label>
-                      <p className="text-sm text-gray-900 font-medium">{member.full_name}</p>
+                      <p className="text-sm text-gray-900 font-medium">{member.fullName}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Email</label>
@@ -187,8 +187,8 @@ export function ModalDetailMember({
                       <label className="text-sm font-medium text-gray-500">Trạng thái</label>
                       <div className="mt-1">
                         <Badge className={getStatusColor(member.status)}>
-                          {member.status === 'Active' ? 'Hoạt động' : 
-                           member.status === 'Inactive' ? 'Không hoạt động' : 'Tạm ngưng'}
+                          {member.status === 'active' ? 'Hoạt động' : 
+                           member.status === 'inactive' ? 'Không hoạt động' : 'Tạm ngưng'}
                         </Badge>
                       </div>
                     </div>
@@ -282,7 +282,7 @@ export function ModalDetailMember({
                       {member.photo ? (
                         <img 
                           src={member.photo} 
-                          alt={member.full_name}
+                          alt={member.fullName}
                           className="w-24 h-24 rounded-full object-cover"
                         />
                       ) : (

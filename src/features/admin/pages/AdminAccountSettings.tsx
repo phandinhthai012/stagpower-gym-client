@@ -8,14 +8,17 @@ import { User, Mail, Phone, MapPin, Save, Key } from 'lucide-react';
 
 export function AdminAccountSettings() {
   const { user } = useAuth();
+  console.log('user', user);
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
     email: user?.email || '',
-    phone: '',
-    address: '',
+    phone: user?.phone || '',
+    gender: user?.gender || '',
+    dateOfBirth: user?.dateOfBirth || '',
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    address: '',
   });
 
   const handleInputChange = (field: string, value: string) => {

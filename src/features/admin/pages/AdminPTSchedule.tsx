@@ -157,7 +157,7 @@ export function AdminPTSchedule() {
                   <SelectContent>
                     {staffAndTrainers.map((staff) => (
                       <SelectItem key={staff.id} value={staff.id}>
-                        {staff.full_name} - {staff.role === 'Trainer' ? 'PT' : 'Nhân viên'}
+                        {staff.fullName} - {staff.role === 'Trainer' ? 'PT' : 'Nhân viên'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -260,7 +260,7 @@ export function AdminPTSchedule() {
                   <SelectContent>
                     {trainers.map((trainer) => (
                       <SelectItem key={trainer.id} value={trainer.id}>
-                        {trainer.full_name} - PT
+                        {trainer.fullName} - PT
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -284,7 +284,7 @@ export function AdminPTSchedule() {
                       const remainingSessions = activeSub?.pt_sessions_remaining || 0;
                       return (
                         <SelectItem key={member.id} value={member.id}>
-                          {member.full_name} - {member.member_info?.membership_level} (Còn {remainingSessions} buổi)
+                          {member.fullName} - {member.member_info?.membership_level} (Còn {remainingSessions} buổi)
                         </SelectItem>
                       );
                     })}
@@ -418,7 +418,7 @@ export function AdminPTSchedule() {
                   <tr key={schedule.id} className="border-b hover:bg-gray-50">
                     <td className="p-3">
                       <div>
-                        <p className="font-medium text-gray-900">{schedule.trainer?.full_name}</p>
+                        <p className="font-medium text-gray-900">{schedule.trainer?.fullName}</p>
                         <p className="text-sm text-gray-500">{schedule.trainer?.role === 'Trainer' ? 'PT' : 'NV'}</p>
                       </div>
                     </td>
@@ -436,7 +436,7 @@ export function AdminPTSchedule() {
                     <td className="p-3">
                       {schedule.member ? (
                         <div>
-                          <p className="font-medium text-gray-900">{schedule.member.full_name}</p>
+                          <p className="font-medium text-gray-900">{schedule.member.fullName}</p>
                           {schedule.subscription && (
                             <div className="bg-blue-50 p-2 rounded text-xs mt-1">
                               <p><strong>Gói:</strong> {schedule.subscription.type} | <strong>Còn:</strong> {schedule.subscription.pt_sessions_remaining} buổi</p>

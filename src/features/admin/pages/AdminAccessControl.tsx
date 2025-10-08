@@ -46,7 +46,7 @@ export function AdminAccessControl() {
     setSearchTerm(term);
     if (term.length >= 3) {
       const foundMember = membersWithActiveSubs.find(member => 
-        member.full_name.toLowerCase().includes(term.toLowerCase()) ||
+        member.fullName.toLowerCase().includes(term.toLowerCase()) ||
         member.email.toLowerCase().includes(term.toLowerCase()) ||
         member.phone.includes(term)
       );
@@ -214,11 +214,11 @@ export function AdminAccessControl() {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-semibold text-lg">
-                        {selectedMember.full_name.charAt(0)}
+                        {selectedMember.fullName.charAt(0)}
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">{selectedMember.full_name}</h3>
+                      <h3 className="font-medium text-gray-900">{selectedMember.fullName}</h3>
                       <p className="text-sm text-gray-600">{selectedMember.email}</p>
                       <p className="text-sm text-gray-600">{selectedMember.phone}</p>
                     </div>
@@ -307,11 +307,11 @@ export function AdminAccessControl() {
                     <div key={checkIn.id} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
                       <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
-                          {member.full_name.charAt(0)}
+                          {member.fullName.charAt(0)}
                         </span>
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{member.full_name}</h4>
+                        <h4 className="font-medium text-gray-900">{member.fullName}</h4>
                         <p className="text-sm text-gray-600">
                           Check-in: {new Date(checkIn.check_in_time).toLocaleTimeString('vi-VN')}
                         </p>
@@ -384,11 +384,11 @@ export function AdminAccessControl() {
                 <div key={checkIn.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold text-sm">
-                      {member.full_name.charAt(0)}
+                      {member.fullName.charAt(0)}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{member.full_name}</h4>
+                    <h4 className="font-medium text-gray-900">{member.fullName}</h4>
                     <p className="text-sm text-gray-600">
                       {new Date(checkIn.check_in_time).toLocaleString('vi-VN')}
                     </p>

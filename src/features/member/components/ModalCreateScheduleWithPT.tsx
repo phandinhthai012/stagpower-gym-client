@@ -69,7 +69,7 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
                   </SelectTrigger>
                   <SelectContent>
                     {trainers.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+                      <SelectItem key={t.id} value={t.id}>{t.fullName}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
