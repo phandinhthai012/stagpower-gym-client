@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { mockUsers } from '../mockdata/index';
+import authService from '../services/auth.service';
 
-export type UserRole = 'Admin' | 'Staff' | 'Trainer' | 'Member';
+export type UserRole = 'admin' | 'staff' | 'trainer' | 'member';
 
 export interface User {
   id: string;
@@ -9,14 +10,23 @@ export interface User {
   fullName: string;
   role: UserRole;
   avatar?: string;
+  phone?: string;
+  gender?: string;
+  dateOfBirth?: string;
+}
+
+export interface AuthError {
+  message: string;
+  code?: string;
+  details?: any;
 }
 
 export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: any) => Promise<boolean>;
+  login: (FormLogin: { email: string; password: string }) => Promise<{ success: boolean; data?: any; error?: AuthError }>;
+  register: (userData: any) => Promise<any>;
   logout: () => void;
   hasRole: (role: UserRole) => boolean;
 }
@@ -50,74 +60,122 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (FormLogin: { email: string; password: string }): Promise<{ success: boolean; data?: any; error?: any }> => {
     try {
       setIsLoading(true);
-      
-      // TODO: Replace with actual API call
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Find user in mock data
-      const foundUser = mockUsers.find(u => 
-        u.email === email && u.password === password
-      );
 
-      if (!foundUser) {
-        return false;
+      // Import authService dynamically to avoid circular dependency
+      const response = await authService.login(FormLogin);
+      console.log('response', response);
+      if (response && response.success) {
+        const loggedInUser = response.data.user;
+        // const loggedInUser: User = {
+        //   id: userData.id,
+        //   email: userData.email,
+        //   fullName: userData.fullName || userData.email,
+        //   phone: userData.phone,
+        //   gender: userData.gender,
+        //   dateOfBirth: userData.dateOfBirth,
+        //   role: userData.role as UserRole,
+        //   avatar: userData.avatar
+        // };
+        setUser(loggedInUser);
+
+        // Lưu user data
+        localStorage.setItem('stagpower_user', JSON.stringify(loggedInUser));
+
+        // Lưu tokens
+        localStorage.setItem('accessToken', response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+
+        return { success: true, data: response };
+      } else {
+        return {
+          success: false,
+          error: {
+            message: response?.message || 'Đăng nhập thất bại',
+            code: response?.code || 'LOGIN_FAILED',
+            details: response?.error
+          }
+        };
       }
-
-      // Convert mock user to AuthContext User format
-      const mockUser: User = {
-        id: foundUser.id,
-        email: foundUser.email,
-        fullName: foundUser.full_name,
-        role: foundUser.role as UserRole,
-        avatar: undefined
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error?.message || 'Đã xảy ra lỗi. Vui lòng thử lại.',
+          code: 'UNKNOWN_ERROR',
+          details: error
+        }
       };
-
-      setUser(mockUser);
-      localStorage.setItem('stagpower_user', JSON.stringify(mockUser));
-      return true;
-    } catch (error) {
-      console.error('Login failed:', error);
-      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (userData: any): Promise<boolean> => {
+  const register = async (userData: any): Promise<any> => {
     try {
       setIsLoading(true);
-      
-      // TODO: Replace with actual API call
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock user data for demo
-      const mockUser: User = {
-        id: Date.now().toString(),
-        email: userData.email,
-        fullName: userData.full_name,
-        role: 'Member', // Default role for new registrations
-        avatar: undefined
-      };
 
-      setUser(mockUser);
-      localStorage.setItem('stagpower_user', JSON.stringify(mockUser));
-      return true;
-    } catch (error) {
-      console.error('Registration failed:', error);
-      return false;
+      // Call actual API
+      const response = await authService.register({
+        fullName: userData.fullName,
+        email: userData.email,
+        phone: userData.phone,
+        password: userData.password,
+        role: 'member', // Default role for new registrations
+        gender: userData.gender || 'other',
+        dateOfBirth: userData.dateOfBirth
+      });
+
+      if (response && response.success) {
+        console.log('Registration successful:', response);
+        return response;
+      } else {
+        return {
+          success: false,
+          error: {
+            message: response?.message || 'Đăng ký thất bại',
+            code: response?.code || 'REGISTER_FAILED',
+            details: response?.error
+          }
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        error: {
+          message: error?.message || 'Đã xảy ra lỗi. Vui lòng thử lại.',
+          code: 'UNKNOWN_ERROR',
+          details: error
+        }
+      };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('stagpower_user');
+  const logout = async () => {
+    try {
+      setIsLoading(true);
+      const refreshToken = localStorage.getItem('refreshToken');
+      const response = await authService.logout(refreshToken || '');
+      console.log('Logout response:', response);
+      if (response && response.success) {
+        setUser(null);
+        localStorage.removeItem('stagpower_user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      } else {
+        localStorage.clear();
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+      localStorage.clear();
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const hasRole = (role: UserRole): boolean => {

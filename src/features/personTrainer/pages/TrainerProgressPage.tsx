@@ -64,8 +64,8 @@ export function TrainerProgressPage() {
 
     return {
       id: member.id,
-      clientName: member.full_name,
-      avatar: member.full_name.split(' ').map(n => n[0]).join('').substring(0, 2),
+      clientName: member.fullName,
+      avatar: member.fullName.split(' ').map(n => n[0]).join('').substring(0, 2),
       goal: memberHealthInfo?.goal || 'Health',
       startDate: member.join_date,
       currentProgress: progress,

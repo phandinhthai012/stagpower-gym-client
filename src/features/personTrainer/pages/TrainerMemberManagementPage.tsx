@@ -44,8 +44,8 @@ export function TrainerMemberManagementPage() {
     
     return {
       id: member.id,
-      name: member.full_name,
-      avatar: member.full_name.split(' ').map(n => n[0]).join('').substring(0, 2),
+      name: member.fullName,
+      avatar: member.fullName.split(' ').map(n => n[0]).join('').substring(0, 2),
       email: member.email,
       phone: member.phone,
       package: memberSubscription?.type?.toLowerCase() || 'membership',

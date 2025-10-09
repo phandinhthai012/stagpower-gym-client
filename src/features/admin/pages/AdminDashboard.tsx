@@ -26,7 +26,7 @@ export function AdminDashboard() {
   
   // Calculate statistics from mock data
   const totalMembers = mockUsers.filter(user => user.role === 'Member').length;
-  const activeMembers = mockUsers.filter(user => user.role === 'Member' && user.status === 'Active').length;
+  const activeMembers = mockUsers.filter(user => user.role === 'Member' && user.status === 'active').length;
   const totalTrainers = mockUsers.filter(user => user.role === 'Trainer').length;
   const totalStaff = mockUsers.filter(user => user.role === 'Staff').length;
   
@@ -118,11 +118,11 @@ export function AdminDashboard() {
                 <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold text-sm">
-                      {trainer.full_name.charAt(0)}
+                      {trainer.fullName.charAt(0)}
                     </span>
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{trainer.full_name}</h4>
+                    <h4 className="font-medium text-gray-900">{trainer.fullName}</h4>
                     <p className="text-sm text-gray-600">
                       {trainer.trainer_info?.specialty?.join(', ') || 'PT'}
                     </p>
@@ -222,7 +222,7 @@ export function AdminDashboard() {
             {recentActivities.map((activity, index) => {
               // Get user name from mockUsers
               const user = mockUsers.find(u => u.id === activity.user_id);
-              const userName = user?.full_name || 'Người dùng';
+              const userName = user?.fullName || 'Người dùng';
               
               // Format time ago
               const formatTimeAgo = (dateString: string) => {

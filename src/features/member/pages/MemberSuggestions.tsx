@@ -42,7 +42,7 @@ export function MemberSuggestions() {
       .sort((a: any, b: any) => new Date(b.recommendation_date).getTime() - new Date(a.recommendation_date).getTime());
   }, [user?.id]);
 
-  const memberName = useMemo(() => (user as any)?.full_name || (user as any)?.fullName || 'bạn', [user]);
+  const memberName = useMemo(() => (user as any)?.fullName || (user as any)?.fullName || 'bạn', [user]);
 
   const quickChips = [
     { key: 'loss', label: 'Giảm cân', icon: <Flame className="h-4 w-4" /> },

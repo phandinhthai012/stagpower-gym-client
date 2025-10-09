@@ -42,7 +42,7 @@ export function AdminReports() {
 
   // Calculate member statistics
   const totalMembers = mockUsers.filter(user => user.role === 'Member').length;
-  const activeMembers = mockUsers.filter(user => user.role === 'Member' && user.status === 'Active').length;
+  const activeMembers = mockUsers.filter(user => user.role === 'Member' && user.status === 'active').length;
   const newMembersThisMonth = mockUsers.filter(user => {
     const joinDate = new Date(user.join_date);
     const now = new Date();
@@ -491,7 +491,7 @@ export function AdminReports() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">
-                        {member?.full_name || 'Hội viên'}
+                        {member?.fullName || 'Hội viên'}
                       </p>
                       <p className="text-sm text-gray-600">
                         {formatPrice(payment.amount)} • {payment.payment_method}
@@ -525,7 +525,7 @@ export function AdminReports() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-gray-900">
-                        {member?.full_name || 'Hội viên'}
+                        {member?.fullName || 'Hội viên'}
                       </p>
                       <p className="text-sm text-gray-600">
                         {new Date(checkIn.check_in_time).toLocaleString('vi-VN')}

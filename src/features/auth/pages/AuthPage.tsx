@@ -8,6 +8,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import LogoDumbbell from '../../../assets/Logo_dumbbell.png';
 import LogoStagPower4x from '../../../assets/Logo_StagPower_4x.png';
 import { useAuth } from '../../../contexts/AuthContext';
+import { validateRegisterData, RegisterData } from '../utils/validation';
 
 type AuthMode = 'login' | 'register';
 
@@ -34,10 +35,10 @@ export function AuthPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       // Redirect based on user role
-      const dashboardPath = user.role === 'Admin' ? '/admin' :
-                           user.role === 'Staff' ? '/staff' :
-                           user.role === 'Trainer' ? '/trainer' :
-                           '/member';
+      const dashboardPath = user.role === 'admin' ? '/admin' :
+        user.role === 'staff' ? '/staff' :
+          user.role === 'trainer' ? '/trainer' :
+            '/member';
       navigate(dashboardPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
@@ -49,12 +50,14 @@ export function AuthPage() {
   });
 
   // Register form data
-  const [registerData, setRegisterData] = useState({
-    full_name: '',
+  const [registerData, setRegisterData] = useState<RegisterData>({
+    fullName: '',
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    gender: 'male',
+    dateOfBirth: ''
   });
 
   const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,18 +77,11 @@ export function AuthPage() {
     }));
     setError('');
   };
-
+  // validate thêm phone, gender, dateOfBirth
   const validateRegisterForm = (): boolean => {
-    if (!registerData.full_name || !registerData.email || !registerData.phone || !registerData.password || !registerData.confirmPassword) {
-      setError('Vui lòng điền đầy đủ thông tin bắt buộc');
-      return false;
-    }
-    if (registerData.password !== registerData.confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
-      return false;
-    }
-    if (registerData.password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+    const result = validateRegisterData(registerData);
+    if (!result.isValid) {
+      setError(result.error);
       return false;
     }
     return true;
@@ -93,50 +89,39 @@ export function AuthPage() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await login({
+        email: loginData.email,
+        password: loginData.password
+      });
 
-      // Find user in mock data
-      const user = mockUsers.find(u => 
-        u.email === loginData.email && 
-        u.password === loginData.password
-      );
-
-      if (user) {
-        const success = await login(loginData.email, loginData.password);
-        
-        if (success) {
-          // Redirect based on user role
-          switch (user.role) {
-            case 'Admin':
-              navigate('/admin');
-              break;
-            case 'Staff':
-              navigate('/staff');
-              break;
-            case 'Trainer':
-              navigate('/trainer');
-              break;
-            case 'Member':
-              navigate('/member');
-              break;
-            default:
-              navigate('/member');
-          }
-        } else {
-          setError('Email hoặc mật khẩu không đúng');
+      if (result.success) {
+        // Redirect based on user role
+        const userRole = result.data?.user?.role;
+        switch (userRole) {
+          case 'admin':
+            navigate('/admin');
+            break;
+          case 'staff':
+            navigate('/staff');
+            break;
+          case 'trainer':
+            navigate('/trainer');
+            break;
+          case 'member':
+            navigate('/member');
+            break;
+          default:
+            navigate('/member');
         }
       } else {
-        setError('Email hoặc mật khẩu không đúng');
+        console.log('result', result);
+        setError(result?.error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
       }
     } catch (err) {
       setError('Đã xảy ra lỗi. Vui lòng thử lại.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -144,26 +129,21 @@ export function AuthPage() {
     e.preventDefault();
     if (!validateRegisterForm()) return;
 
-    setIsLoading(true);
     setError('');
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await register(registerData);
 
-      // Use AuthContext register function
-      const success = await register(registerData);
-      
-      if (success) {
-        // Navigate to success page
+      if (response.success) {
+        localStorage.setItem('stagpower_user_register', JSON.stringify(response.data));
         navigate('/registration-success');
       } else {
-        setError('Đăng ký thất bại. Vui lòng thử lại.');
+        console.log('response', response);
+        setError(response.error.message);
       }
-    } catch (err) {
-      setError('Đã xảy ra lỗi. Vui lòng thử lại.');
-    } finally {
-      setIsLoading(false);
+    } catch (err: any) {
+      console.log('err', err);
+      setError(err.message);
     }
   };
 
@@ -186,12 +166,12 @@ export function AuthPage() {
         />
       </div>
 
-        {/* Password Input */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-              Password <span className="text-red-500">*</span>
-            </Label>
+      {/* Password Input */}
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+            Password <span className="text-red-500">*</span>
+          </Label>
           <button
             type="button"
             onClick={() => navigate('/forgot-password')}
@@ -241,28 +221,28 @@ export function AuthPage() {
 
   const renderRegisterForm = () => (
     <form onSubmit={handleRegisterSubmit} className="space-y-6">
-        {/* Full Name */}
-        <div className="space-y-2">
-          <Label htmlFor="full_name" className="text-sm font-medium text-gray-700">
-            Họ Tên <span className="text-red-500">*</span>
-          </Label>
+      {/* Full Name */}
+      <div className="space-y-2">
+        <Label htmlFor="full_name" className="text-sm font-medium text-gray-700">
+          Họ Tên <span className="text-red-500">*</span>
+        </Label>
         <Input
-          id="full_name"
-          name="full_name"
+          id="fullName"
+          name="fullName"
           type="text"
           placeholder="Nhập họ và tên đầy đủ"
-          value={registerData.full_name}
+          value={registerData.fullName}
           onChange={handleRegisterInputChange}
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           required
         />
       </div>
 
-        {/* Email */}
-        <div className="space-y-2">
-          <Label htmlFor="register_email" className="text-sm font-medium text-gray-700">
-            Email <span className="text-red-500">*</span>
-          </Label>
+      {/* Email */}
+      <div className="space-y-2">
+        <Label htmlFor="register_email" className="text-sm font-medium text-gray-700">
+          Email <span className="text-red-500">*</span>
+        </Label>
         <Input
           id="register_email"
           name="email"
@@ -275,11 +255,11 @@ export function AuthPage() {
         />
       </div>
 
-        {/* Phone */}
-        <div className="space-y-2">
-          <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
-            Số Điện Thoại <span className="text-red-500">*</span>
-          </Label>
+      {/* Phone */}
+      <div className="space-y-2">
+        <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+          Số Điện Thoại <span className="text-red-500">*</span>
+        </Label>
         <Input
           id="phone"
           name="phone"
@@ -292,11 +272,47 @@ export function AuthPage() {
         />
       </div>
 
-        {/* Password */}
+      {/* Gender + Date of Birth */}
+      <div className="flex space-x-2 w-full">
         <div className="space-y-2">
-          <Label htmlFor="register_password" className="text-sm font-medium text-gray-700">
-            Mật Khẩu <span className="text-red-500">*</span>
+          <Label htmlFor="gender" className="text-sm font-medium text-gray-700">
+            Giới Tính <span className="text-red-500">*</span>
           </Label>
+          <select
+            id="gender"
+            name="gender"
+            value={registerData.gender}
+            onChange={(e) => setRegisterData({ ...registerData, gender: e.target.value })}
+            className="w-full px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="male">Nam</option>
+            <option value="female">Nữ</option>
+            <option value="other">Khác</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="dateOfBirth" className="text-sm font-medium text-gray-700">
+            Ngày Sinh <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="dateOfBirth"
+            name="dateOfBirth"
+            type="date"
+            placeholder="Ví dụ: 01/01/2000"
+            value={registerData.dateOfBirth}
+            onChange={handleRegisterInputChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          />
+        </div>
+       </div>
+      
+
+      {/* Password */}
+      <div className="space-y-2">
+        <Label htmlFor="register_password" className="text-sm font-medium text-gray-700">
+          Mật Khẩu <span className="text-red-500">*</span>
+        </Label>
         <div className="relative">
           <Input
             id="register_password"
@@ -318,11 +334,11 @@ export function AuthPage() {
         </div>
       </div>
 
-        {/* Confirm Password */}
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-            Xác Nhận Mật Khẩu <span className="text-red-500">*</span>
-          </Label>
+      {/* Confirm Password */}
+      <div className="space-y-2">
+        <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+          Xác Nhận Mật Khẩu <span className="text-red-500">*</span>
+        </Label>
         <div className="relative">
           <Input
             id="confirmPassword"
@@ -395,21 +411,19 @@ export function AuthPage() {
         <div className="flex space-x-8 mb-8">
           <button
             onClick={() => navigate('/register')}
-            className={`pb-2 font-medium transition-colors ${
-              authMode === 'register'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`pb-2 font-medium transition-colors ${authMode === 'register'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
           >
             Đăng Ký
           </button>
           <button
             onClick={() => navigate('/login')}
-            className={`pb-2 font-medium transition-colors ${
-              authMode === 'login'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`pb-2 font-medium transition-colors ${authMode === 'login'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
           >
             Đăng Nhập
           </button>

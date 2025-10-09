@@ -77,10 +77,10 @@ export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModal
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
-              {user.full_name.charAt(0)}
+              {user.fullName.charAt(0)}
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{user.full_name}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{user.fullName}</h2>
               <div className="flex items-center gap-2 mt-1">
                 {getRoleBadge(user.role)}
                 {getStatusBadge(user.status)}

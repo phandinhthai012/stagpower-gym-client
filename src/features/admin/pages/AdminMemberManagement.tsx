@@ -24,9 +24,12 @@ import {
   UserX,
   AlertTriangle
 } from 'lucide-react';
-import { mockUsers, User } from '../../../mockdata/users';
+import { User } from '../../../mockdata/users';
 import { mockSubscriptions } from '../../../mockdata/subscriptions';
 import { mockCheckIns } from '../../../mockdata/checkIns';
+import { useMembers } from '../../../hooks/queries/useUsers';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 
 interface AdminMemberManagementProps {
   onCreateMember?: () => void;
@@ -47,13 +50,14 @@ export function AdminMemberManagement({
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
   // Filter members
-  const members = mockUsers.filter(user => user.role === 'Member');
-  
-  const filteredMembers = members.filter(member => {
-    const matchesSearch = member.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  // const members = mockUsers.filter(user => user.role === 'Member');
+  const {data: response, isLoading, isError} = useMembers();
+  const members = response?.data || [];
+  console.log('members', members);
+  const filteredMembers = members.filter((member: any) => {
+    const matchesSearch = member.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.phone.includes(searchTerm);
-    
     const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
     
     const matchesMembership = membershipFilter === 'all' || 
@@ -65,15 +69,15 @@ export function AdminMemberManagement({
 
   // Calculate statistics
   const totalMembers = members.length;
-  const activeMembers = members.filter(member => member.status === 'Active').length;
-  const vipMembers = members.filter(member => member.member_info?.membership_level === 'VIP').length;
-  const hssvMembers = members.filter(member => member.member_info?.is_hssv).length;
+  const activeMembers = members.filter((member: any) => member.status === 'Active').length;
+  const vipMembers = members.filter((member: any) => member.member_info?.membership_level === 'VIP').length;
+  const hssvMembers = members.filter((member: any) => member.member_info?.is_hssv).length;
 
 
   const handleSelectMember = (memberId: string) => {
     setSelectedMembers(prev => 
       prev.includes(memberId) 
-        ? prev.filter(id => id !== memberId)
+        ? prev.filter((id: string) => id !== memberId)
         : [...prev, memberId]
     );
   };
@@ -82,7 +86,7 @@ export function AdminMemberManagement({
     if (selectedMembers.length === filteredMembers.length) {
       setSelectedMembers([]);
     } else {
-      setSelectedMembers(filteredMembers.map(member => member.id));
+      setSelectedMembers(filteredMembers.map((member: any) => member._id));
     }
   };
 
@@ -100,7 +104,7 @@ export function AdminMemberManagement({
 
   const getMemberStatus = (member: any) => {
     const activeSub = mockSubscriptions.find(sub => 
-      sub.member_id === member.id && sub.status === 'Active'
+      sub.member_id === member._id && sub.status === 'Active'
     );
     
     if (!activeSub) return { status: 'No Subscription', color: 'bg-red-100 text-red-800' };
@@ -163,9 +167,9 @@ export function AdminMemberManagement({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                <SelectItem value="Active">Hoạt động</SelectItem>
-                <SelectItem value="Inactive">Không hoạt động</SelectItem>
-                <SelectItem value="Suspended">Tạm ngưng</SelectItem>
+                <SelectItem value="active">Hoạt động</SelectItem>
+                <SelectItem value="inactive">Không hoạt động</SelectItem>
+                <SelectItem value="suspended">Tạm ngưng</SelectItem>
               </SelectContent>
             </Select>
 
@@ -220,7 +224,7 @@ export function AdminMemberManagement({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-blue-600" />
-            Danh sách hội viên ({filteredMembers.length})
+            Danh sách hội viên ({members.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -245,7 +249,7 @@ export function AdminMemberManagement({
                 </tr>
               </thead>
               <tbody>
-                {filteredMembers.map((member) => {
+                {filteredMembers.map((member: any) => {
                   const memberStatus = getMemberStatus(member);
                   const activeSub = mockSubscriptions.find(sub => 
                     sub.member_id === member.id && sub.status === 'Active'
@@ -256,8 +260,8 @@ export function AdminMemberManagement({
                       <td className="p-3">
                         <input
                           type="checkbox"
-                          checked={selectedMembers.includes(member.id)}
-                          onChange={() => handleSelectMember(member.id)}
+                          checked={selectedMembers.includes(member._id)}
+                          onChange={() => handleSelectMember(member._id)}
                           className="rounded"
                         />
                       </td>
@@ -265,12 +269,12 @@ export function AdminMemberManagement({
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
                             <span className="text-white font-semibold text-sm">
-                              {member.full_name.charAt(0)}
+                              {member.fullName.charAt(0)}
                             </span>
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{member.full_name}</p>
-                            <p className="text-sm text-gray-500">ID: {member.id.slice(-8)}</p>
+                            <p className="font-medium text-gray-900">{member.fullName}</p>
+                            <p className="text-sm text-gray-500">ID: {member.uid}</p>
                             {member.member_info?.is_hssv && (
                               <Badge className="bg-blue-100 text-blue-800 text-xs">HSSV</Badge>
                             )}
@@ -355,6 +359,7 @@ export function AdminMemberManagement({
                     </tr>
                   );
                 })}
+                
               </tbody>
             </table>
           </div>

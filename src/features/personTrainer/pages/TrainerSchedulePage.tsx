@@ -39,7 +39,7 @@ export function TrainerSchedulePage() {
         hour: '2-digit',
         minute: '2-digit'
       }),
-      member: member?.full_name || 'Unknown',
+      member: member?.fullName || 'Unknown',
       type: subscription?.type?.toLowerCase() || 'pt',
       duration: schedule.duration_minutes,
       status: schedule.status.toLowerCase(),

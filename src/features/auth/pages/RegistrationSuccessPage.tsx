@@ -12,14 +12,14 @@ export function RegistrationSuccessPage() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // Check if user just completed registration
-    if (!authUser) {
+    const savedUser = localStorage.getItem('stagpower_user_register');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    } else {
+      // If no user data, redirect to register
       navigate('/register');
-      return;
     }
-
-    setUser(authUser);
-  }, [authUser, navigate]);
+  }, [navigate]);
 
   const handleDownloadQR = () => {
     // In a real app, this would generate and download the actual QR code
@@ -27,7 +27,8 @@ export function RegistrationSuccessPage() {
   };
 
   const handleGoToDashboard = () => {
-    navigate('/member');
+    // navigate('/member');
+    alert('Tính năng này sẽ được triển khai trong phiên bản thực tế');
   };
 
   if (!user) {
@@ -55,7 +56,7 @@ export function RegistrationSuccessPage() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng ký thành công!</h1>
           <p className="text-gray-600 text-lg">
-            Chào mừng <strong>{user.full_name}</strong> đến với StagPower Gym
+            Chào mừng <strong>{user.fullName}</strong> đến với StagPower Gym
           </p>
         </div>
 
@@ -72,7 +73,7 @@ export function RegistrationSuccessPage() {
             <CardContent className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Họ tên:</span>
-                <span className="font-medium">{user.full_name}</span>
+                <span className="font-medium">{user.fullName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Email:</span>
@@ -83,13 +84,25 @@ export function RegistrationSuccessPage() {
                 <span className="font-medium">{user.phone}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-gray-600">Giới tính:</span>
+                <span className="font-medium">
+                  {user.gender === 'male' ? 'Nam' : user.gender === 'female' ? 'Nữ' : 'Khác'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Ngày sinh:</span>
+                <span className="font-medium">
+                  {user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-gray-600">Trạng thái:</span>
                 <Badge variant="success">Hoạt động</Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Ngày tham gia:</span>
                 <span className="font-medium">
-                  {new Date(user.join_date).toLocaleDateString('vi-VN')}
+                  {new Date().toLocaleDateString('vi-VN')}
                 </span>
               </div>
             </CardContent>
@@ -195,13 +208,16 @@ export function RegistrationSuccessPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button onClick={handleGoToDashboard} size="lg">
+          {/* <Button onClick={handleGoToDashboard} size="lg">
             Vào Dashboard
-          </Button>
+          </Button> */}
           <Button 
             variant="outline" 
             size="lg" 
-            onClick={() => navigate('/login')}
+            onClick={() => {
+              localStorage.removeItem('stagpower_user_register');
+              navigate('/login');
+            }}
           >
             Đăng nhập
           </Button>
