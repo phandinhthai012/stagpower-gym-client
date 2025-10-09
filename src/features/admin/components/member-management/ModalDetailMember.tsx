@@ -162,7 +162,7 @@ export function ModalDetailMember({
                     <div>
                       <label className="text-sm font-medium text-gray-500">Giới tính</label>
                       <p className="text-sm text-gray-900">
-                        {member.gender === 'Male' ? 'Nam' : member.gender === 'Female' ? 'Nữ' : 'Khác'}
+                        {member.gender === 'male' ? 'Nam' : member.gender === 'female' ? 'Nữ' : 'Khác'}
                       </p>
                     </div>
                     <div>

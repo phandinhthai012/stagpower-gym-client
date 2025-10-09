@@ -25,13 +25,31 @@ export const API_ENDPOINTS = {
        GET_ALL_USERS_WITH_PAGINATION: `${API_PREFIX}/user/paginated`,
        GET_ALL_MEMBERS: `${API_PREFIX}/user/members`,
        GET_ALL_STAFFS: `${API_PREFIX}/user/staffs`,
+       // update các field của user các field trong info thì không được
        UPDATE_MY_PROFILE: `${API_PREFIX}/user/me/profile`,
        CHANGE_USER_STATUS: (userId: string) => `${API_PREFIX}/user/${userId}/status`, // admin only
        GET_USER_BY_ID: (userId: string) => `${API_PREFIX}/user/${userId}`,
+       UPDATE_USER: (userId: string) => `${API_PREFIX}/user/${userId}`,
        CREATE_MEMBER: `${API_PREFIX}/user/createMember`,
        CREATE_TRAINER: `${API_PREFIX}/user/createTrainer`,
        CREATE_STAFF: `${API_PREFIX}/user/createStaff`,
        CREATE_ADMIN: `${API_PREFIX}/user/createAdmin`,
+    },
+    CHECK_IN: {
+        CREATE_CHECK_IN: `${API_PREFIX}/check-ins`,
+        GET_ALL_CHECK_INS: `${API_PREFIX}/check-ins`,
+        GET_CHECK_IN_BY_ID: (checkInId: string) => `${API_PREFIX}/check-ins/${checkInId}`,
+        UPDATE_CHECK_IN_BY_ID: (checkInId: string) => `${API_PREFIX}/check-ins/${checkInId}`,
+        GET_CHECK_IN_BY_MEMBER_ID: (memberId: string) => `${API_PREFIX}/check-ins/member/${memberId}`,
+        GET_CHECK_IN_BY_CHECK_IN_TIME: (checkInTime: string) => `${API_PREFIX}/check-ins/checkInTime/${checkInTime}`,
+        CHECK_OUT_CHECK_IN: (checkInId: string) => `${API_PREFIX}/check-ins/${checkInId}/checkOut`,
+    },
+    PACKAGE: {
+        GET_ALL_PACKAGES: `${API_PREFIX}/packages`,
+        GET_PACKAGE_BY_ID: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
+        CREATE_PACKAGE: `${API_PREFIX}/packages`,
+        UPDATE_PACKAGE: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
+        DELETE_PACKAGE: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
     },
     // bookingrequest, package, payment, discount, payment, heathInfo, schedule, checkin, branch, 
    

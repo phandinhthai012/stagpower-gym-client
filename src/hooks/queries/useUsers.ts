@@ -11,13 +11,13 @@ export const useUsers = (params: { page: number; limit: number }) => {
   });
 }
 
-// 2. GET - Lấy danh sách members
-export const useMembers = () => {
-  return useQuery({
-    queryKey: queryKeys.members,
-    queryFn: userService.getAllMembers
-  });
-};
+// // 2. GET - Lấy danh sách members
+// export const useMembers = () => {
+//   return useQuery({
+//     queryKey: queryKeys.members,
+//     queryFn: userService.getAllMembers
+//   });
+// };
 
 
 // 3. GET - Lấy danh sách staffs

@@ -24,6 +24,8 @@ import { mockPackages } from '../../../mockdata/packages';
 // import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
 // import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
 
+import { usePackages } from '../../../hooks/queries/usePackages';
+
 interface AdminPackageManagementProps {
   onCreatePackage?: () => void;
   onViewPackage?: (pkg: any) => void;
@@ -37,7 +39,11 @@ export function AdminPackageManagement({
   onEditPackage, 
   onDeletePackage 
 }: AdminPackageManagementProps = {}) {
-  const [packages] = useState(mockPackages);
+
+  const {data:response, isLoading, isError} = usePackages();
+  console.log(response);
+
+  const [packages] = useState(response.data || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -52,10 +58,10 @@ export function AdminPackageManagement({
     
     const matchesType = typeFilter === 'all' || pkg.type === typeFilter;
     const matchesStatus = statusFilter === 'all' || pkg.status === statusFilter;
-    const matchesCategory = categoryFilter === 'all' || pkg.package_category === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || pkg.packageCategory === categoryFilter;
     const matchesMembershipType = membershipTypeFilter === 'all' || 
-                                 (pkg.membership_type && pkg.membership_type === membershipTypeFilter) ||
-                                 (!pkg.membership_type && membershipTypeFilter === 'none');
+                                 (pkg.membershipType && pkg.membershipType === membershipTypeFilter) ||
+                                 (!pkg.membershipType && membershipTypeFilter === 'none');
 
     return matchesSearch && matchesType && matchesStatus && matchesCategory && matchesMembershipType;
   });

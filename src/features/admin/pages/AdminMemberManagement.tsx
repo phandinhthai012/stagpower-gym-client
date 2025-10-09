@@ -27,7 +27,7 @@ import {
 import { User } from '../../../mockdata/users';
 import { mockSubscriptions } from '../../../mockdata/subscriptions';
 import { mockCheckIns } from '../../../mockdata/checkIns';
-import { useMembers } from '../../../hooks/queries/useUsers';
+import { useMembers } from '../../../hooks/queries/useMembers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 
@@ -52,8 +52,18 @@ export function AdminMemberManagement({
   // Filter members
   // const members = mockUsers.filter(user => user.role === 'Member');
   const {data: response, isLoading, isError} = useMembers();
-  const members = response?.data || [];
+  const members = response?.success ? response.data || [] : [];
   console.log('members', members);
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Đang tải...</div>;
+  }
+
+  if (isError || !response?.success) {
+    return <div className="flex justify-center items-center h-64 text-red-600">
+      {response?.message || 'Có lỗi xảy ra khi tải danh sách thành viên'}
+    </div>;
+  }
   const filteredMembers = members.filter((member: any) => {
     const matchesSearch = member.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||

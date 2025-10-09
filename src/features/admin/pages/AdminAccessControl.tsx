@@ -23,12 +23,16 @@ import {
 import { mockUsers } from '../../../mockdata/users';
 import { mockCheckIns } from '../../../mockdata/checkIns';
 import { mockSubscriptions } from '../../../mockdata/subscriptions';
+import { useCheckIns } from '../../../hooks/queries/useCheckIns';
 
 export function AdminAccessControl() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [checkInStatus, setCheckInStatus] = useState<'idle' | 'success' | 'error' | 'warning'>('idle');
   const [validationMessage, setValidationMessage] = useState('');
+
+  const { data: response, isLoading, isError } = useCheckIns();
+  console.log(response);
 
   // Get active check-ins
   const activeCheckIns = mockCheckIns.filter(checkIn => checkIn.status === 'Active');
