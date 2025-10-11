@@ -52,16 +52,16 @@ export function AdminMemberManagement({
   // Filter members
   // const members = mockUsers.filter(user => user.role === 'Member');
   const {data: response, isLoading, isError} = useMembers();
-  const members = response?.success ? response.data || [] : [];
+  const members = response && 'success' in response && response.success ? response.data || [] : [];
   console.log('members', members);
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64">Đang tải...</div>;
   }
 
-  if (isError || !response?.success) {
+  if (isError || !response || !('success' in response) || !response.success) {
     return <div className="flex justify-center items-center h-64 text-red-600">
-      {response?.message || 'Có lỗi xảy ra khi tải danh sách thành viên'}
+      {response && 'message' in response ? response.message : 'Có lỗi xảy ra khi tải danh sách thành viên'}
     </div>;
   }
   const filteredMembers = members.filter((member: any) => {

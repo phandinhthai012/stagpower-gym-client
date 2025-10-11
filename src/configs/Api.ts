@@ -51,7 +51,15 @@ export const API_ENDPOINTS = {
         UPDATE_PACKAGE: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
         DELETE_PACKAGE: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
     },
-    // bookingrequest, package, payment, discount, payment, heathInfo, schedule, checkin, branch, 
+    HEALTH_INFO: {
+        GET_ALL: `${API_PREFIX}/health-info`,
+        GET_BY_ID: (healthInfoId: string) => `${API_PREFIX}/health-info/${healthInfoId}`,
+        GET_BY_ME: `${API_PREFIX}/health-info/me`,
+        GET_BY_MEMBER_ID: (memberId: string) => `${API_PREFIX}/health-info/member/${memberId}`,
+        CREATE: (memberId: string) => `${API_PREFIX}/health-info/${memberId}`,
+        UPDATE: (healthInfoId: string) => `${API_PREFIX}/health-info/${healthInfoId}`,
+    },
+    // bookingrequest, package, payment, discount, payment, schedule, checkin, branch, 
    
 }
 

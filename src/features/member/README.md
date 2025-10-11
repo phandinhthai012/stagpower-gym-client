@@ -1,161 +1,219 @@
-# Member Feature - StagPower Gym Management System
+# Member Feature
 
-## Tổng quan
-
-Feature Member cung cấp giao diện hoàn chỉnh cho hội viên phòng gym với các chức năng quản lý tài khoản, check-in, đặt lịch PT, xem lịch sử và nhận gợi ý AI.
-
-## Cấu trúc thư mục
+## Cấu trúc thư mục (Refactored theo pattern YBA)
 
 ```
 src/features/member/
-├── components/
-│   ├── MemberLayout.tsx      # Layout chính với sidebar navigation
-│   ├── MemberTable.tsx       # Component table cho admin (legacy)
+├── api/                 # API Layer
+│   ├── healthInfo.api.ts
+│   ├── healthInfo.queries.ts
+│   ├── user.api.ts
+│   ├── user.queries.ts
 │   └── index.ts
-├── pages/
-│   ├── MemberDashboard.tsx   # Trang tổng quan
-│   ├── MemberProfile.tsx     # Quản lý thông tin cá nhân
-│   ├── MemberCheckin.tsx     # Check-in và lịch sử
-│   ├── MemberPackages.tsx    # Quản lý gói tập
-│   ├── MemberPayments.tsx    # Lịch sử thanh toán
-│   ├── MemberSchedule.tsx    # Đặt lịch PT
-│   ├── MemberHistory.tsx     # Lịch sử tập luyện
-│   ├── MemberNotifications.tsx # Thông báo
-│   ├── MemberSuggestions.tsx # Gợi ý AI
-│   ├── MemberPage.tsx        # Legacy page
+├── components/          # UI Components
+│   ├── MemberLayout.tsx
+│   ├── MemberSidebar.tsx
+│   ├── MemberTable.tsx
+│   ├── ModalCreateScheduleWithPT.tsx
+│   ├── ModalPayment.tsx
 │   └── index.ts
-└── index.ts
+├── config/             # Configuration
+│   ├── healthInfo-form-fields.ts
+│   ├── user-form-fields.ts
+│   └── index.ts
+├── docs/               # Documentation
+│   └── API_INTEGRATION.md
+├── pages/              # Page Components
+│   ├── MemberDashboard.tsx
+│   ├── MemberProfile.tsx
+│   ├── MemberCheckin.tsx
+│   ├── MemberPackages.tsx
+│   ├── MemberPayments.tsx
+│   ├── MemberSchedule.tsx
+│   ├── MemberHistory.tsx
+│   ├── MemberNotifications.tsx
+│   ├── MemberSuggestions.tsx
+│   └── index.ts
+├── schemas/            # Validation Schemas
+│   ├── healthInfo.schema.ts
+│   ├── user.schema.ts
+│   └── index.ts
+├── transformers/       # Data Transformers
+│   ├── healthInfo.transformers.ts
+│   ├── user.transformers.ts
+│   └── index.ts
+├── types/              # TypeScript Types
+├── utils/              # Utility Functions
+│   ├── healthInfo.utils.ts
+│   ├── user.utils.ts
+│   └── index.ts
+├── index.ts            # Main exports
+└── README.md           # This file
 ```
 
-## Routing
+## API Layer
 
-Hệ thống sử dụng nested routing với cấu trúc:
+### HealthInfo API
+- **File**: `api/healthInfo.api.ts`
+- **Chức năng**: API functions cho health info
+- **Methods**:
+  - `getMyHealthInfo()` - Lấy thông tin sức khỏe hiện tại
+  - `getHealthInfoByMemberId(memberId)` - Lấy thông tin sức khỏe theo member ID
+  - `createHealthInfo(memberId, data)` - Tạo thông tin sức khỏe mới
+  - `updateHealthInfo(healthInfoId, data)` - Cập nhật thông tin sức khỏe
+  - `getHealthInfoById(healthInfoId)` - Lấy thông tin sức khỏe theo ID
 
-```
-/member
-├── /dashboard          # Trang tổng quan (default)
-├── /profile           # Thông tin cá nhân
-├── /checkin           # Check-in
-├── /packages          # Gói tập
-├── /payments          # Thanh toán
-├── /schedule          # Đặt lịch PT
-├── /history           # Lịch sử tập luyện
-├── /notifications     # Thông báo
-└── /suggestions       # Gợi ý AI
-```
+### User API
+- **File**: `api/user.api.ts`
+- **Chức năng**: API functions cho user
+- **Methods**:
+  - `getMe()` - Lấy thông tin user hiện tại
+  - `getUserById(userId)` - Lấy thông tin user theo ID
+  - `updateMyProfile(data)` - Cập nhật profile hiện tại
+  - `updateUser(userId, data)` - Cập nhật user khác
+  - `changeUserStatus(userId, status)` - Thay đổi trạng thái user
+  - `getMembers(page, limit)` - Lấy danh sách members
+  - `getStaffs()` - Lấy danh sách staff
+  - `getUsersWithPagination(page, limit)` - Lấy users với phân trang
 
-## Các tính năng chính
+## React Query Hooks
 
-### 1. MemberDashboard
-- **Overview Cards**: Hiển thị thống kê tổng quan
-- **Active Subscription**: Thông tin gói tập hiện tại
-- **Recent Check-ins**: Lịch sử check-in gần đây
-- **Upcoming PT Sessions**: Buổi PT sắp tới
-- **AI Suggestions**: Gợi ý AI mới nhất
-- **Quick Actions**: Các thao tác nhanh
+### HealthInfo Queries
+- **File**: `api/healthInfo.queries.ts`
+- **Chức năng**: React Query hooks cho health info
+- **Hooks**:
+  - `useHealthInfo(memberId?)` - Query hook
+  - `useCreateHealthInfo()` - Mutation hook tạo mới
+  - `useUpdateHealthInfo()` - Mutation hook cập nhật
 
-### 2. MemberProfile
-- **Personal Information**: Thông tin cá nhân có thể chỉnh sửa
-- **Health Information**: Thông tin sức khỏe và BMI
-- **Avatar Management**: Quản lý ảnh đại diện
-- **Membership Status**: Trạng thái thành viên
+### User Queries
+- **File**: `api/user.queries.ts`
+- **Chức năng**: React Query hooks cho user
+- **Hooks**:
+  - `useMe()` - Query hook lấy thông tin hiện tại
+  - `useUser(userId)` - Query hook lấy user theo ID
+  - `useUpdateMyProfile()` - Mutation hook cập nhật profile
+  - `useUpdateUser()` - Mutation hook cập nhật user
+  - `useChangeUserStatus()` - Mutation hook thay đổi trạng thái
 
-### 3. MemberCheckin
-- **QR Code Scanner**: Mô phỏng quét QR code
-- **Check-in/Check-out**: Xử lý check-in và check-out
-- **Check-in History**: Lịch sử check-in chi tiết
-- **Statistics**: Thống kê thời gian tập luyện
+## Schemas (Validation)
 
-### 4. MemberPackages
-- **Current Package**: Thông tin gói tập hiện tại
-- **Package Progress**: Tiến độ sử dụng gói
-- **Available Packages**: Danh sách gói có sẵn
-- **Subscription History**: Lịch sử đăng ký gói
+### HealthInfo Schema
+- **File**: `schemas/healthInfo.schema.ts`
+- **Chức năng**: Zod validation schemas cho health info
+- **Schemas**:
+  - `healthInfoSchema` - Schema chính
+  - `createHealthInfoSchema` - Schema tạo mới
+  - `updateHealthInfoSchema` - Schema cập nhật
 
-### 5. MemberPayments
-- **Payment History**: Lịch sử thanh toán chi tiết
-- **Payment Methods**: Thống kê phương thức thanh toán
-- **Monthly Spending**: Chi tiêu theo tháng
-- **Transaction Details**: Chi tiết giao dịch
+### User Schema
+- **File**: `schemas/user.schema.ts`
+- **Chức năng**: Zod validation schemas cho user
+- **Schemas**:
+  - `userProfileSchema` - Schema profile cơ bản
+  - `memberInfoSchema` - Schema thông tin member
+  - `trainerInfoSchema` - Schema thông tin trainer
+  - `staffInfoSchema` - Schema thông tin staff
+  - `adminInfoSchema` - Schema thông tin admin
 
-### 6. MemberSchedule
-- **Today's Schedule**: Lịch tập hôm nay
-- **Upcoming Sessions**: Buổi PT sắp tới
-- **Available Trainers**: Danh sách huấn luyện viên
-- **Schedule Management**: Quản lý lịch tập
+## Transformers
 
-### 7. MemberHistory
-- **Workout Statistics**: Thống kê tập luyện
-- **Check-in History**: Lịch sử check-in
-- **PT History**: Lịch sử buổi PT
-- **Monthly Activity**: Hoạt động theo tháng
+### HealthInfo Transformers
+- **File**: `transformers/healthInfo.transformers.ts`
+- **Chức năng**: Transform data giữa API và UI
+- **Methods**:
+  - `toDisplay()` - Transform cho hiển thị
+  - `toApi()` - Transform cho API
+  - `toForm()` - Transform cho form
 
-### 8. MemberNotifications
-- **Notification Management**: Quản lý thông báo
-- **Filter Options**: Lọc theo trạng thái
-- **Mark as Read**: Đánh dấu đã đọc
-- **Notification Types**: Các loại thông báo khác nhau
+### User Transformers
+- **File**: `transformers/user.transformers.ts`
+- **Chức năng**: Transform data giữa API và UI
+- **Methods**:
+  - `toDisplay()` - Transform cho hiển thị
+  - `toApi()` - Transform cho API
+  - `toForm()` - Transform cho form
 
-### 9. MemberSuggestions
-- **AI Recommendations**: Gợi ý từ AI
-- **Exercise Plans**: Kế hoạch tập luyện
-- **Nutrition Plans**: Kế hoạch dinh dưỡng
-- **Goal Tracking**: Theo dõi mục tiêu
+## Utils
 
-## Sử dụng Mock Data
+### HealthInfo Utils
+- **File**: `utils/healthInfo.utils.ts`
+- **Chức năng**: Utility functions cho health info
+- **Methods**:
+  - `calculateBMI()` - Tính BMI
+  - `getBMICategory()` - Lấy danh mục BMI
+  - `getBMIColor()` - Lấy màu BMI
+  - `getGoalText()` - Lấy text mục tiêu
+  - `validateHealthInfo()` - Validate dữ liệu
 
-Tất cả các trang đều sử dụng mock data từ `src/mockdata/`:
+### User Utils
+- **File**: `utils/user.utils.ts`
+- **Chức năng**: Utility functions cho user
+- **Methods**:
+  - `getStatusText()` - Lấy text trạng thái
+  - `getRoleText()` - Lấy text vai trò
+  - `getInitials()` - Lấy chữ cái đầu
+  - `calculateAge()` - Tính tuổi
+  - `validateUser()` - Validate dữ liệu
 
-- `mockUsers`: Thông tin người dùng
-- `mockSubscriptions`: Thông tin đăng ký gói
-- `mockCheckIns`: Lịch sử check-in
-- `mockSchedules`: Lịch trình PT
-- `mockPayments`: Lịch sử thanh toán
-- `mockAISuggestions`: Gợi ý AI
-- `mockBranches`: Thông tin chi nhánh
-- `mockHealthInfo`: Thông tin sức khỏe
+## Config
 
-## Components sử dụng
+### Form Fields Config
+- **File**: `config/healthInfo-form-fields.ts`
+- **Chức năng**: Cấu hình form fields cho health info
+- **File**: `config/user-form-fields.ts`
+- **Chức năng**: Cấu hình form fields cho user
 
-- **shadcn/ui**: Button, Card, Badge, Progress, Input, Label
-- **Lucide React**: Icons
-- **React Router DOM**: Navigation và routing
-- **Tailwind CSS**: Styling
+## Pages
 
-## Responsive Design
-
-Tất cả các trang đều được thiết kế responsive với:
-- Mobile-first approach
-- Breakpoints: sm, md, lg, xl
-- Touch-friendly interface
-- Optimized for mobile devices
-
-## Authentication
-
-Hệ thống sử dụng `ProtectedRoute` để bảo vệ các trang member:
-- Yêu cầu đăng nhập
-- Kiểm tra role "Member"
-- Redirect về login nếu chưa đăng nhập
-
-## State Management
-
-- Sử dụng React hooks (useState, useMemo, useEffect)
-- Context API cho authentication
-- Local state cho UI interactions
-- Mock data cho demo purposes
+### MemberProfile
+- **File**: `pages/MemberProfile.tsx`
+- **Chức năng**: Màn hình thông tin cá nhân và sức khỏe
+- **Tính năng**:
+  - Hiển thị thông tin cá nhân từ API
+  - Hiển thị thông tin sức khỏe từ API
+  - Chỉnh sửa thông tin cá nhân
+  - Tạo/cập nhật thông tin sức khỏe
+  - Loading states và error handling
+  - Toast notifications
 
 ## Cách sử dụng
 
-1. Đăng nhập với tài khoản có role "Member"
-2. Truy cập `/member` để vào dashboard
-3. Sử dụng sidebar để điều hướng giữa các trang
-4. Tất cả dữ liệu hiển thị từ mock data
+### Import Services
+```typescript
+import { healthInfoApi, userApi } from '@/features/member/api';
+```
 
-## Tương lai
+### Import Hooks
+```typescript
+import { useHealthInfo, useMe, useUpdateMyProfile } from '@/features/member/hooks';
+```
 
-Khi tích hợp API thật:
-- Thay thế mock data bằng API calls
-- Thêm error handling
-- Thêm loading states
-- Thêm real-time updates
-- Thêm push notifications
+### Import Components
+```typescript
+import { MemberProfile } from '@/features/member/pages';
+```
+
+## API Endpoints
+
+### Health Info
+- `GET /api/health-info/me` - Lấy thông tin sức khỏe hiện tại
+- `GET /api/health-info/member/{memberId}` - Lấy thông tin sức khỏe theo member ID
+- `POST /api/health-info/{memberId}` - Tạo thông tin sức khỏe mới
+- `PUT /api/health-info/{healthInfoId}` - Cập nhật thông tin sức khỏe
+
+### User
+- `GET /api/auth/me` - Lấy thông tin user hiện tại
+- `PUT /api/user/me/profile` - Cập nhật profile hiện tại
+- `GET /api/user/{userId}` - Lấy thông tin user theo ID
+- `PUT /api/user/{userId}` - Cập nhật user
+- `PUT /api/user/{userId}/status` - Thay đổi trạng thái user
+
+## Dependencies
+
+- `@tanstack/react-query` - Data fetching và caching
+- `axios` - HTTP client
+- `sonner` - Toast notifications
+- `lucide-react` - Icons
+- `react-hook-form` - Form handling
+- `zod` - Validation

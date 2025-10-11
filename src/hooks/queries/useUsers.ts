@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { queryKeys } from '../../constants/queryKeys';
-import userService from '../../services/user.service';
+import { userApi } from '../../features/member/api/user.api';
 
 // 1. GET - Lấy danh sách users với pagination
 export const useUsers = (params: { page: number; limit: number }) => {
   return useQuery({
     queryKey: queryKeys.usersPaginated(params),
-    queryFn: () => userService.getAllUsersWithPagination(params),
+    queryFn: () => userApi.getUsersWithPagination(params.page, params.limit),
     placeholderData: keepPreviousData,
   });
 }
@@ -15,7 +15,7 @@ export const useUsers = (params: { page: number; limit: number }) => {
 // export const useMembers = () => {
 //   return useQuery({
 //     queryKey: queryKeys.members,
-//     queryFn: userService.getAllMembers
+//     queryFn: userApi.getAllMembers
 //   });
 // };
 
@@ -24,7 +24,7 @@ export const useUsers = (params: { page: number; limit: number }) => {
 export const useStaffs = () => {
   return useQuery({
     queryKey: queryKeys.staffs,
-    queryFn: userService.getAllStaffs,
+    queryFn: userApi.getStaffs,
   });
 };
 
@@ -33,50 +33,10 @@ export const useStaffs = () => {
 export const useUserById = (userId: string) => {
   return useQuery({
     queryKey: queryKeys.userById(userId),
-    queryFn: () => userService.getUserById(userId),
+    queryFn: () => userApi.getUserById(userId),
   });
 };
 
-// mutation create member
-export const useCreateMember = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: userService.createMember,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.members });
-      queryClient.invalidateQueries({ queryKey: queryKeys.users });
-    },
-    onError: (error) => {
-      console.log(error);
-    },
-  });
-};
-
-// mutation create trainer
-export const useCreateTrainer = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: userService.createTrainer,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users });
-    },
-    onError: (error) => {
-      console.log(error);
-    },
-  });
-};
-
-// mutation create staff
-export const useCreateStaff = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: userService.createStaff,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users });
-    },
-    onError: (error) => {
-      console.log(error);
-    },
-  });
-};
+// Note: Create mutations are not available in userApi
+// These would need to be implemented in the backend API first
 

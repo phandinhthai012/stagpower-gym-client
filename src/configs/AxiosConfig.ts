@@ -17,9 +17,10 @@ apiClient.interceptors.request.use(
         if (accessToken) {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
-        if (refreshToken) {
-            config.headers.RefreshToken = `Bearer ${refreshToken}`;
-        }
+        // Temporarily disable refresh-token header to avoid CORS issues
+        // if (refreshToken) {
+        //     config.headers['refresh-token'] = refreshToken;
+        // }
         return config;
     },
     (error) => {
@@ -56,7 +57,8 @@ apiClient.interceptors.response.use(
                 localStorage.setItem('accessToken', accessToken);
                 localStorage.setItem('refreshToken', refreshToken);
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-                originalRequest.headers.Refreshtoken = `Bearer ${refreshToken}`;
+                // Temporarily disable refresh-token header to avoid CORS issues
+                // originalRequest.headers['refresh-token'] = refreshToken;
                 return apiClient(originalRequest);
             } catch (error) {
                 console.error('Refresh token error:', error);

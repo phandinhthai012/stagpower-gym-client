@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { queryKeys } from '../../constants/queryKeys';
-import userService from '../../services/user.service';
-import  memberService  from '../../services/member.service';
+import { userApi } from '../../features/member/api/user.api';
+import memberService from '../../services/member.service';
 
 
 export const useMembers = () => {
