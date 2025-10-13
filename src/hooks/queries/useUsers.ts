@@ -38,13 +38,14 @@ export const useUserById = (userId: string) => {
 };
 
 // mutation create member
-export const useCreateMember = () => {
+export const useCreateUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: userService.createMember,
+    mutationFn: userService.createUser,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users });
       queryClient.invalidateQueries({ queryKey: queryKeys.members });
-      queryClient.invalidateQueries({ queryKey: queryKeys.users });
+      queryClient.invalidateQueries({ queryKey: queryKeys.staffs });
     },
     onError: (error) => {
       console.log(error);
@@ -52,31 +53,31 @@ export const useCreateMember = () => {
   });
 };
 
-// mutation create trainer
-export const useCreateTrainer = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: userService.createTrainer,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users });
-    },
-    onError: (error) => {
-      console.log(error);
-    },
-  });
-};
+// // mutation create trainer
+// export const useCreateTrainer = () => {
+//   const queryClient = useQueryClient();
+//   return useMutation({
+//     mutationFn: userService.createTrainer,
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({ queryKey: queryKeys.users });
+//     },
+//     onError: (error) => {
+//       console.log(error);
+//     },
+//   });
+// };
 
-// mutation create staff
-export const useCreateStaff = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: userService.createStaff,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users });
-    },
-    onError: (error) => {
-      console.log(error);
-    },
-  });
-};
+// // mutation create staff
+// export const useCreateStaff = () => {
+//   const queryClient = useQueryClient();
+//   return useMutation({
+//     mutationFn: userService.createStaff,
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({ queryKey: queryKeys.users });
+//     },
+//     onError: (error) => {
+//       console.log(error);
+//     },
+//   });
+// };
 

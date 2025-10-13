@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { LoadingSpinner } from '../../../components/common';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -21,8 +22,8 @@ import {
   Download
 } from 'lucide-react';
 import { mockPackages } from '../../../mockdata/packages';
-// import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
-// import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
+import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
+import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
 
 import { usePackages } from '../../../hooks/queries/usePackages';
 
@@ -41,9 +42,8 @@ export function AdminPackageManagement({
 }: AdminPackageManagementProps = {}) {
 
   const {data:response, isLoading, isError} = usePackages();
-  console.log(response);
-
-  const [packages] = useState(response.data || []);
+  
+  const [packages,setPackages] = useState( response?.data || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -51,7 +51,17 @@ export function AdminPackageManagement({
   const [membershipTypeFilter, setMembershipTypeFilter] = useState('all');
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
 
-  // Filter packages
+  // modal create and view detail package
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+
+  useEffect(() => {
+   if(response?.data) {
+    setPackages(response.data);
+   }
+  }, [response?.data]);
+  console.log(packages);
   const filteredPackages = packages.filter(pkg => {
     const matchesSearch = pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          pkg.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -96,8 +106,10 @@ export function AdminPackageManagement({
     }
   };
 
-  const handleViewPackage = (pkg: any) => {
-    onViewPackage?.(pkg);
+  const handleViewPackage = (pkgId: any) => {
+    console.log(pkgId);
+    setSelectedPackageId(pkgId);
+    setIsDetailModalOpen(true);
   };
 
   const handleEditPackage = (pkg: any) => {
@@ -298,6 +310,14 @@ export function AdminPackageManagement({
             </Button>
           </div>
         </CardHeader>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-screen">
+            <LoadingSpinner 
+              size="md"
+              className="mx-auto"
+            />
+          </div>
+        ) : (
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -372,7 +392,7 @@ export function AdminPackageManagement({
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleViewPackage(pkg)}
+                          onClick={() => handleViewPackage(pkg._id)}
                           title="Xem chi tiết"
                         >
                           <Eye className="w-4 h-4" />
@@ -402,7 +422,13 @@ export function AdminPackageManagement({
             </table>
           </div>
         </CardContent>
+        )}
       </Card>
+      <ModalDetailPackage
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        packageId={selectedPackageId}
+      />
 
     </div>
   );

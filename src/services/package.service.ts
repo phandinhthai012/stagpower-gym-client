@@ -3,22 +3,22 @@ import { API_ENDPOINTS } from "../configs/Api";
 
 
 interface Package {
-   _id: string;
-   name: string;
-   type: string;
-   packageCategory: string;
-   durationMonths: number;
-   membershipType: string;
-   price: number;
-   ptSessions: number;
-   ptSessionDuration: number;
-   branchAccess: string;
-   isTrial: boolean;
-   maxTrialDays: number;
-   description: string;
-   status: string;
-   createdAt: string;
-   updatedAt: string;
+    _id: string;
+    name: string;
+    type: string;
+    packageCategory: string;
+    durationMonths: number;
+    membershipType: string;
+    price: number;
+    ptSessions: number;
+    ptSessionDuration: number;
+    branchAccess: string;
+    isTrial: boolean;
+    maxTrialDays: number;
+    description: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 const packageService = {
@@ -78,6 +78,20 @@ const packageService = {
             return {
                 success: false,
                 message: error?.response?.data?.message || error?.message || 'Xóa gói tập thất bại',
+                error: error?.response?.data || error
+            };
+        }
+    },
+    changePackageStatus: async (payload: { packageId: string, status: string }): Promise<any> => {
+        try {
+            const response = await apiClient.put(API_ENDPOINTS.PACKAGE.CHANGE_PACKAGE_STATUS(payload.packageId), {
+                status: payload.status
+            });
+            return response.data;
+        } catch (error) {
+            return {
+                success: false,
+                message: error?.response?.data?.message || error?.message || 'Thay đổi trạng thái gói tập thất bại',
                 error: error?.response?.data || error
             };
         }
