@@ -24,7 +24,7 @@ interface Package {
 const packageService = {
     getAllPackages: async (): Promise<any> => {
         try {
-            const response = await apiClient.get(API_ENDPOINTS.PACKAGE.GET_ALL_PACKAGES);
+            const response = await apiClient.get(API_ENDPOINTS.PACKAGES.GET_ALL);
             return response.data;
         } catch (error) {
             return {
@@ -36,7 +36,7 @@ const packageService = {
     },
     getPackageById: async (packageId: string): Promise<any> => {
         try {
-            const response = await apiClient.get(API_ENDPOINTS.PACKAGE.GET_PACKAGE_BY_ID(packageId));
+            const response = await apiClient.get(API_ENDPOINTS.PACKAGES.GET_BY_ID(packageId));
             return response.data;
         } catch (error) {
             return {
@@ -48,7 +48,7 @@ const packageService = {
     },
     createPackage: async (packageData: Package): Promise<any> => {
         try {
-            const response = await apiClient.post(API_ENDPOINTS.PACKAGE.CREATE_PACKAGE, packageData);
+            const response = await apiClient.post(API_ENDPOINTS.PACKAGES.CREATE, packageData);
             return response.data;
         } catch (error) {
             return {
@@ -60,7 +60,7 @@ const packageService = {
     },
     updatePackageById: async (packageId: string, packageData: Package): Promise<any> => {
         try {
-            const response = await apiClient.put(API_ENDPOINTS.PACKAGE.UPDATE_PACKAGE(packageId), packageData);
+            const response = await apiClient.put(API_ENDPOINTS.PACKAGES.UPDATE(packageId), packageData);
             return response.data;
         } catch (error) {
             return {
@@ -72,7 +72,7 @@ const packageService = {
     },
     deletePackageById: async (packageId: string): Promise<any> => {
         try {
-            const response = await apiClient.delete(API_ENDPOINTS.PACKAGE.DELETE_PACKAGE(packageId));
+            const response = await apiClient.delete(API_ENDPOINTS.PACKAGES.DELETE(packageId));
             return response.data;
         } catch (error) {
             return {

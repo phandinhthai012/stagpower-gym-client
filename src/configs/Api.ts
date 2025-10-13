@@ -44,12 +44,22 @@ export const API_ENDPOINTS = {
         GET_CHECK_IN_BY_CHECK_IN_TIME: (checkInTime: string) => `${API_PREFIX}/check-ins/checkInTime/${checkInTime}`,
         CHECK_OUT_CHECK_IN: (checkInId: string) => `${API_PREFIX}/check-ins/${checkInId}/checkOut`,
     },
-    PACKAGE: {
-        GET_ALL_PACKAGES: `${API_PREFIX}/packages`,
-        GET_PACKAGE_BY_ID: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
-        CREATE_PACKAGE: `${API_PREFIX}/packages`,
-        UPDATE_PACKAGE: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
-        DELETE_PACKAGE: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
+    PACKAGES: {
+        GET_ALL: `${API_PREFIX}/packages`,
+        GET_BY_ID: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
+        CREATE: `${API_PREFIX}/packages`,
+        UPDATE: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
+        DELETE: (packageId: string) => `${API_PREFIX}/packages/${packageId}`,
+    },
+    SUBSCRIPTIONS: {
+        GET_ALL: `${API_PREFIX}/subscriptions`,
+        GET_BY_ID: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}`,
+        GET_BY_MEMBER_ID: (memberId: string) => `${API_PREFIX}/subscriptions/member/${memberId}`,
+        CREATE: `${API_PREFIX}/subscriptions`,
+        UPDATE: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}`,
+        DELETE: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}`,
+        SUSPEND: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}/suspend`,
+        UNSUSPEND: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}/unsuspend`,
     },
     HEALTH_INFO: {
         GET_ALL: `${API_PREFIX}/health-info`,

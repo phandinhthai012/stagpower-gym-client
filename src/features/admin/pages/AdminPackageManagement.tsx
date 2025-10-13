@@ -43,13 +43,25 @@ export function AdminPackageManagement({
   const {data:response, isLoading, isError} = usePackages();
   console.log(response);
 
-  const [packages] = useState(response.data || []);
+  // Safely extract packages from response
+  const packages = response?.data || [];
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [membershipTypeFilter, setMembershipTypeFilter] = useState('all');
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
+
+  // Loading and error states
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Đang tải...</div>;
+  }
+
+  if (isError || !response) {
+    return <div className="flex justify-center items-center h-64 text-red-600">
+      Có lỗi xảy ra khi tải danh sách gói tập
+    </div>;
+  }
 
   // Filter packages
   const filteredPackages = packages.filter(pkg => {
