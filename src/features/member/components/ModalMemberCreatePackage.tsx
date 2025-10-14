@@ -11,8 +11,8 @@ import {
   SelectValue,
 } from '../../../components/ui/select';
 import { CalendarIcon, Package, CreditCard, MapPin, Clock, X } from 'lucide-react';
-import { usePackages } from '../api/package.queries';
-import { useCreateSubscription } from '../api/subscription.queries';
+import { usePackages } from '../hooks/usePackages';
+import { useCreateSubscription } from '../hooks/useSubscriptions';
 import { toast } from 'sonner';
 
 interface ModalMemberCreatePackageProps {
@@ -156,8 +156,8 @@ export function ModalMemberCreatePackage({ isOpen, onClose }: ModalMemberCreateP
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-xl">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Package className="h-5 w-5" />
@@ -168,7 +168,9 @@ export function ModalMemberCreatePackage({ isOpen, onClose }: ModalMemberCreateP
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
           {/* Package Selection */}
           <div className="space-y-2">
             <Label htmlFor="package">Chọn gói tập *</Label>
@@ -298,19 +300,39 @@ export function ModalMemberCreatePackage({ isOpen, onClose }: ModalMemberCreateP
             </div>
           </div>
 
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={onClose}>
+            </form>
+          </div>
+          
+          {/* Fixed Footer with Action Buttons */}
+          <div className="flex gap-3 justify-end p-6 pt-4 border-t border-gray-200 bg-gray-50">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+              className="px-6 py-2"
+            >
               Hủy
             </Button>
             <Button 
               type="submit" 
               disabled={createSubscriptionMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              onClick={handleSubmit}
             >
-              {createSubscriptionMutation.isPending ? 'Đang xử lý...' : 'Đăng ký gói tập'}
+              {createSubscriptionMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Đang xử lý...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Đăng ký gói tập
+                </div>
+              )}
             </Button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

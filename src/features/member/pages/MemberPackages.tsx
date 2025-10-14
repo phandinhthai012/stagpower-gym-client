@@ -26,8 +26,8 @@ import {
 } from '../../../mockdata';
 import { formatDate } from '../../../lib/date-utils';
 import { ModalMemberCreatePackage } from '../components/ModalMemberCreatePackage';
-import { usePackages } from '../api/package.queries';
-import { useSubscriptionsByMemberId } from '../api/subscription.queries';
+import { usePackages } from '../hooks/usePackages';
+import { useSubscriptionsByMemberId } from '../hooks/useSubscriptions';
 
 export function MemberPackages() {
   const { user } = useAuth();

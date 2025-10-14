@@ -1,54 +1,6 @@
 import apiClient from '../../../configs/AxiosConfig';
 import { API_ENDPOINTS } from '../../../configs/Api';
-
-// Types
-export interface Package {
-  _id: string;
-  name: string;
-  type: 'Membership' | 'Combo' | 'PT';
-  packageCategory: string;
-  durationMonths: number;
-  membershipType: 'Basic' | 'VIP';
-  price: number;
-  branchAccess: 'All' | 'Single';
-  isTrial: boolean;
-  maxTrialDays?: number;
-  description: string;
-  status: 'Active' | 'Inactive';
-  ptSessions?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreatePackageRequest {
-  name: string;
-  type: 'Membership' | 'Combo' | 'PT';
-  packageCategory: string;
-  durationMonths: number;
-  membershipType: 'Basic' | 'VIP';
-  price: number;
-  branchAccess: 'All' | 'Single';
-  isTrial: boolean;
-  maxTrialDays?: number;
-  description: string;
-  status: 'Active' | 'Inactive';
-  ptSessions?: number;
-}
-
-export interface UpdatePackageRequest {
-  name?: string;
-  type?: 'Membership' | 'Combo' | 'PT';
-  packageCategory?: string;
-  durationMonths?: number;
-  membershipType?: 'Basic' | 'VIP';
-  price?: number;
-  branchAccess?: 'All' | 'Single';
-  isTrial?: boolean;
-  maxTrialDays?: number;
-  description?: string;
-  status?: 'Active' | 'Inactive';
-  ptSessions?: number;
-}
+import { Package, CreatePackageRequest, UpdatePackageRequest } from '../../../types/package.types';
 
 // API functions
 export const packageApi = {

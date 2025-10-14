@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { queryKeys } from '../../constants/queryKeys';
-import checkInService from '../../services/checkIn.service';
-
+import { queryKeys } from '../../../constants/queryKeys';
+import checkInService from '../services/checkIn.service';
 
 export const useCheckIns = () => {
     return useQuery({

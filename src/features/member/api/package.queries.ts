@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { packageApi, Package, CreatePackageRequest, UpdatePackageRequest } from './package.api';
+import { packageApi } from './package.api';
+import { Package, CreatePackageRequest, UpdatePackageRequest } from '../../../types/package.types';
 
 // Query keys
 export const packageQueryKeys = {

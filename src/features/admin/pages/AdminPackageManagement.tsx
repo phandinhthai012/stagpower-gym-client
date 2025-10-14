@@ -21,10 +21,10 @@ import {
   Download
 } from 'lucide-react';
 import { mockPackages } from '../../../mockdata/packages';
-// import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
+import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
 // import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
 
-import { usePackages } from '../../../hooks/queries/usePackages';
+import { usePackages } from '../hooks/usePackages';
 
 interface AdminPackageManagementProps {
   onCreatePackage?: () => void;
@@ -446,7 +446,7 @@ export function AdminPackageManagementWithModal() {
       />
       
       {/* Create Package Modal - Rendered at top level */}
-      {/* {isCreateModalOpen && (
+      {isCreateModalOpen && (
         <ModalCreatePackage
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
@@ -455,7 +455,7 @@ export function AdminPackageManagementWithModal() {
             console.log('Package created successfully');
           }}
         />
-      )} */}
+      )}
 
       {/* Detail Package Modal */}
       {/* {isDetailModalOpen && selectedPackage && (

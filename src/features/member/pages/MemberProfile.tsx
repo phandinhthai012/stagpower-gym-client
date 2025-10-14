@@ -22,8 +22,8 @@ import {
   CheckCircle,
   Loader2
 } from 'lucide-react';
-import { useMe, useUpdateMyProfile } from '../api/user.queries';
-import { useHealthInfo, useCreateHealthInfo, useUpdateHealthInfo } from '../api/healthInfo.queries';
+import { useMe, useUpdateProfile } from '../hooks/useMembers';
+import { useHealthInfo, useCreateHealthInfo, useUpdateHealthInfo } from '../hooks/useHealthInfo';
 import { formatDate } from '../../../lib/date-utils';
 import { toast } from 'sonner';
 
@@ -38,7 +38,7 @@ export function MemberProfile() {
   // API hooks
   const { data: userData, isLoading: userLoading, error: userError } = useMe();
   const { data: healthInfo, isLoading: healthLoading, error: healthError } = useHealthInfo();
-  const updateProfileMutation = useUpdateMyProfile();
+  const updateProfileMutation = useUpdateProfile();
   const createHealthInfoMutation = useCreateHealthInfo();
   const updateHealthInfoMutation = useUpdateHealthInfo();
   

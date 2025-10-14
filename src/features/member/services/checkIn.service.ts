@@ -1,7 +1,6 @@
-import apiClient from "../configs/AxiosConfig";
-import { API_ENDPOINTS } from "../configs/Api";
-import { ApiResponse,ApiError,ApiResult } from "../types/api.types";
-
+import apiClient from "../../../configs/AxiosConfig";
+import { API_ENDPOINTS } from "../../../configs/Api";
+import { ApiResponse,ApiError,ApiResult } from "../../../types/api.types";
 
 interface CheckIn {
     memberId: string;

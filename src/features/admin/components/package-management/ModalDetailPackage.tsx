@@ -20,21 +20,7 @@ import {
 } from 'lucide-react';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
 
-interface Package {
-  id: string;
-  name: string;
-  description: string;
-  type: 'Membership' | 'Combo' | 'PT';
-  package_category: 'ShortTerm' | 'MediumTerm' | 'LongTerm' | 'Trial';
-  price: number;
-  duration_months: number;
-  status: 'Active' | 'Inactive';
-  membership_type?: 'Basic' | 'VIP';
-  pt_sessions?: number;
-  features?: string[];
-  created_at: string;
-  updated_at: string;
-}
+import { Package } from '../../../../types/package.types';
 
 interface ModalDetailPackageProps {
   isOpen: boolean;
@@ -141,9 +127,9 @@ export function ModalDetailPackage({
                 <Badge className={`${getPackageTypeColor(pkg.type)}`}>
                   {pkg.type}
                 </Badge>
-                {pkg.membership_type && (
-                  <Badge className={`${getMembershipTypeColor(pkg.membership_type)}`}>
-                    {pkg.membership_type}
+                {pkg.membershipType && (
+                  <Badge className={`${getMembershipTypeColor(pkg.membershipType)}`}>
+                    {pkg.membershipType}
                   </Badge>
                 )}
                 <Badge className={getStatusColor(pkg.status)}>
@@ -180,11 +166,11 @@ export function ModalDetailPackage({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Thời hạn:</span>
-                  <span className="text-sm text-gray-900">{pkg.duration_months} tháng</span>
+                  <span className="text-sm text-gray-900">{pkg.durationMonths} tháng</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Phân loại:</span>
-                  <span className="text-sm text-gray-900">{getCategoryDisplay(pkg.package_category)}</span>
+                  <span className="text-sm text-gray-900">{getCategoryDisplay(pkg.packageCategory)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Trạng thái:</span>
@@ -192,11 +178,11 @@ export function ModalDetailPackage({
                     {getStatusDisplay(pkg.status)}
                   </Badge>
                 </div>
-                {pkg.membership_type && (
+                {pkg.membershipType && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-600">Loại Membership:</span>
-                    <Badge className={`${getMembershipTypeColor(pkg.membership_type)}`}>
-                      {pkg.membership_type}
+                    <Badge className={`${getMembershipTypeColor(pkg.membershipType)}`}>
+                      {pkg.membershipType}
                     </Badge>
                   </div>
                 )}
@@ -220,25 +206,25 @@ export function ModalDetailPackage({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Thời hạn:</span>
-                  <span className="text-sm text-gray-900">{pkg.duration_months} tháng</span>
+                  <span className="text-sm text-gray-900">{pkg.durationMonths} tháng</span>
                 </div>
-                {pkg.pt_sessions && (
+                {pkg.ptSessions && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-600">Buổi PT:</span>
-                    <span className="text-sm text-gray-900">{pkg.pt_sessions} buổi</span>
+                    <span className="text-sm text-gray-900">{pkg.ptSessions} buổi</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Giá/ tháng:</span>
                   <span className="text-sm text-gray-900">
-                    {formatPrice(pkg.price / pkg.duration_months)}
+                    {formatPrice(pkg.price / pkg.durationMonths)}
                   </span>
                 </div>
-                {pkg.pt_sessions && (
+                {pkg.ptSessions && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-600">Giá/ buổi PT:</span>
                     <span className="text-sm text-gray-900">
-                      {formatPrice(pkg.price / pkg.pt_sessions)}
+                      {formatPrice(pkg.price / pkg.ptSessions)}
                     </span>
                   </div>
                 )}
@@ -280,7 +266,7 @@ export function ModalDetailPackage({
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-600">Ngày tạo:</span>
                 <span className="text-sm text-gray-900">
-                  {new Date(pkg.created_at).toLocaleDateString('vi-VN', {
+                  {new Date(pkg.createdAt).toLocaleDateString('vi-VN', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -292,7 +278,7 @@ export function ModalDetailPackage({
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-600">Cập nhật lần cuối:</span>
                 <span className="text-sm text-gray-900">
-                  {new Date(pkg.updated_at).toLocaleDateString('vi-VN', {
+                  {new Date(pkg.updatedAt).toLocaleDateString('vi-VN', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -325,7 +311,7 @@ export function ModalDetailPackage({
                   variant="outline"
                   onClick={() => {
                     // TODO: Implement duplicate functionality
-                    console.log('Duplicate package:', pkg.id);
+                    console.log('Duplicate package:', pkg._id);
                   }}
                   className="flex items-center space-x-2"
                 >
@@ -336,7 +322,7 @@ export function ModalDetailPackage({
                   variant="outline"
                   onClick={() => {
                     // TODO: Implement toggle status functionality
-                    console.log('Toggle status:', pkg.id);
+                    console.log('Toggle status:', pkg._id);
                   }}
                   className="flex items-center space-x-2"
                 >
@@ -347,7 +333,7 @@ export function ModalDetailPackage({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => onDelete?.(pkg.id)}
+                  onClick={() => onDelete?.(pkg._id)}
                   className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Trash2 className="w-4 h-4" />

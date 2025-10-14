@@ -27,7 +27,7 @@ import {
 import { User } from '../../../mockdata/users';
 import { mockSubscriptions } from '../../../mockdata/subscriptions';
 import { mockCheckIns } from '../../../mockdata/checkIns';
-import { useMembers } from '../../../hooks/queries/useMembers';
+import { useMembers } from '../../member/hooks/useMembers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 

@@ -23,7 +23,7 @@ import {
 import { mockUsers } from '../../../mockdata/users';
 import { mockCheckIns } from '../../../mockdata/checkIns';
 import { mockSubscriptions } from '../../../mockdata/subscriptions';
-import { useCheckIns } from '../../../hooks/queries/useCheckIns';
+import { useCheckIns } from '../../member/hooks/useCheckIns';
 
 export function AdminAccessControl() {
   const [searchTerm, setSearchTerm] = useState('');

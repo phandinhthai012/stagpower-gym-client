@@ -61,6 +61,14 @@ export const API_ENDPOINTS = {
         SUSPEND: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}/suspend`,
         UNSUSPEND: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}/unsuspend`,
     },
+    BRANCHES: {
+        GET_ALL: `${API_PREFIX}/branches`,
+        GET_BY_ID: (branchId: string) => `${API_PREFIX}/branches/${branchId}`,
+        CREATE: `${API_PREFIX}/branches`,
+        UPDATE: (branchId: string) => `${API_PREFIX}/branches/${branchId}`,
+        DELETE: (branchId: string) => `${API_PREFIX}/branches/${branchId}`,
+        CHANGE_STATUS: (branchId: string) => `${API_PREFIX}/branches/${branchId}/status`,
+    },
     HEALTH_INFO: {
         GET_ALL: `${API_PREFIX}/health-info`,
         GET_BY_ID: (healthInfoId: string) => `${API_PREFIX}/health-info/${healthInfoId}`,
