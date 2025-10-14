@@ -6,30 +6,30 @@ import { Package, CreatePackageRequest, UpdatePackageRequest } from '../../../ty
 export const packageApi = {
   // Get all packages
   getAllPackages: async (): Promise<Package[]> => {
-    const response = await apiClient.get(API_ENDPOINTS.PACKAGES.GET_ALL);
+    const response = await apiClient.get(API_ENDPOINTS.PACKAGE.GET_ALL_PACKAGES);
     return response.data.data;
   },
 
   // Get package by ID
   getPackageById: async (packageId: string): Promise<Package> => {
-    const response = await apiClient.get(API_ENDPOINTS.PACKAGES.GET_BY_ID(packageId));
+    const response = await apiClient.get(API_ENDPOINTS.PACKAGE.GET_PACKAGE_BY_ID(packageId));
     return response.data.data;
   },
 
   // Create new package
   createPackage: async (data: CreatePackageRequest): Promise<Package> => {
-    const response = await apiClient.post(API_ENDPOINTS.PACKAGES.CREATE, data);
+    const response = await apiClient.post(API_ENDPOINTS.PACKAGE.CREATE_PACKAGE, data);
     return response.data.data;
   },
 
   // Update package
   updatePackage: async (packageId: string, data: UpdatePackageRequest): Promise<Package> => {
-    const response = await apiClient.put(API_ENDPOINTS.PACKAGES.UPDATE(packageId), data);
+    const response = await apiClient.put(API_ENDPOINTS.PACKAGE.UPDATE_PACKAGE(packageId), data);
     return response.data.data;
   },
 
   // Delete package
   deletePackage: async (packageId: string): Promise<void> => {
-    await apiClient.delete(API_ENDPOINTS.PACKAGES.DELETE(packageId));
+    await apiClient.delete(API_ENDPOINTS.PACKAGE.DELETE_PACKAGE(packageId));
   },
 };

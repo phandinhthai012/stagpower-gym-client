@@ -6,7 +6,7 @@ import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
-import { usePackageById, useUpdatePackage } from '../../../../hooks/queries/usePackages';
+import { usePackageById, useUpdatePackage } from '../../hooks/usePackages';
 import { useToast } from '../../../../hooks/useToast';
 import {
     X,
@@ -67,8 +67,8 @@ export function ModalEditPackage({ isOpen, onClose, packageId, onSuccess }: Moda
     const updatePackageMutation = useUpdatePackage();
     // ✅ Populate form when data loads
     useEffect(() => {
-        if (response?.success && response.data) {
-            const pkg = response.data;
+        if ((response as any)?.success && (response as any).data) {
+            const pkg = (response as any).data;
             setFormData({
                 name: pkg.name || '',
                 type: pkg.type || '',
@@ -84,7 +84,7 @@ export function ModalEditPackage({ isOpen, onClose, packageId, onSuccess }: Moda
                 description: pkg.description || ''
             });
         }
-    }, [response?.success, response?.data]);
+    }, [(response as any)?.success, (response as any)?.data]);
 
     useScrollLock(isOpen, { preserveScrollPosition: true });
 

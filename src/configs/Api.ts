@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
        GET_ALL_STAFFS: `${API_PREFIX}/user/staffs`,
        CREATE_USER: `${API_PREFIX}/user/create`,
        UPDATE_USER: (userId: string) => `${API_PREFIX}/user/${userId}/profile`,
+       UPDATE_MY_PROFILE: `${API_PREFIX}/user/profile`,
        CHANGE_USER_STATUS: (userId: string) => `${API_PREFIX}/user/${userId}/status`,
        GET_USER_BY_ID: (userId: string) => `${API_PREFIX}/user/${userId}`,
        // paginated

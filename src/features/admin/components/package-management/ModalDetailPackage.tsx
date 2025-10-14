@@ -19,7 +19,7 @@ import {
   Info
 } from 'lucide-react';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
-import { usePackageById, useUpdatePackage } from '../../../../hooks/queries/usePackages';
+import { usePackageById, useUpdatePackage } from '../../hooks/usePackages';
 import { LoadingSpinner } from '../../../../components/common/LoadingSpinner';
 import { ModalEditPackage } from './ModalEditPackage';
 
@@ -71,8 +71,8 @@ export function ModalDetailPackage({
   const [pkg, setPkg] = useState<any | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   useEffect(() => {
-    if (response?.success && response.data) {
-      setPkg(response.data);
+    if ((response as any)?.success && (response as any).data) {
+      setPkg((response as any).data);
     }
   }, [response]);
 
@@ -90,7 +90,7 @@ export function ModalDetailPackage({
     )
   }
 
-  if (isError || !response?.success || !pkg) {
+  if (isError || !(response as any)?.success || !pkg) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
@@ -101,7 +101,7 @@ export function ModalDetailPackage({
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi tải dữ liệu</h3>
             <p className="text-gray-600 mb-4">
-              {response?.message || 'Không thể tải thông tin gói tập'}
+              {(response as any)?.message || 'Không thể tải thông tin gói tập'}
             </p>
             <Button onClick={onClose} variant="outline">
               Đóng

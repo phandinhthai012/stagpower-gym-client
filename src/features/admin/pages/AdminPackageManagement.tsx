@@ -26,7 +26,7 @@ import { mockPackages } from '../../../mockdata/packages';
 import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
 import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
 import { ModalEditPackage } from '../components/package-management/ModalEditPackage';
-import { usePackages, useDeletePackage } from '../../../hooks/queries/usePackages';
+import { usePackages, useDeletePackage } from '../hooks/usePackages';
 import { useToast } from '../../../hooks/useToast';
 
 interface AdminPackageManagementProps {

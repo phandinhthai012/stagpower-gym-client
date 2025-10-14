@@ -26,7 +26,6 @@ import { TrainerProfilePage } from './features/personTrainer/pages/TrainerProfil
 import { TrainerNotificationsPage } from './features/personTrainer/pages/TrainerNotificationsPage';
 import { TrainerSessionDetailPage } from './features/personTrainer/pages/TrainerSessionDetailPage';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
-import { Toaster } from 'sonner'
 
 function App() {
   // Set dynamic title based on current page

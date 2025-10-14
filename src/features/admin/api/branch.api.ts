@@ -35,36 +35,36 @@ export interface UpdateBranchRequest {
 export const branchApi = {
   // Get all branches
   getAllBranches: async (): Promise<Branch[]> => {
-    const response = await apiClient.get(API_ENDPOINTS.BRANCHES.GET_ALL);
+    const response = await apiClient.get(API_ENDPOINTS.BRANCH.GET_ALL_BRANCHES);
     return response.data.data;
   },
 
   // Get branch by ID
   getBranchById: async (branchId: string): Promise<Branch> => {
-    const response = await apiClient.get(API_ENDPOINTS.BRANCHES.GET_BY_ID(branchId));
+    const response = await apiClient.get(API_ENDPOINTS.BRANCH.GET_BRANCH_BY_ID(branchId));
     return response.data.data;
   },
 
   // Create new branch
   createBranch: async (data: CreateBranchRequest): Promise<Branch> => {
-    const response = await apiClient.post(API_ENDPOINTS.BRANCHES.CREATE, data);
+    const response = await apiClient.post(API_ENDPOINTS.BRANCH.CREATE_BRANCH, data);
     return response.data.data;
   },
 
   // Update branch
   updateBranch: async (branchId: string, data: UpdateBranchRequest): Promise<Branch> => {
-    const response = await apiClient.put(API_ENDPOINTS.BRANCHES.UPDATE(branchId), data);
+    const response = await apiClient.put(API_ENDPOINTS.BRANCH.UPDATE_BRANCH(branchId), data);
     return response.data.data;
   },
 
   // Delete branch
   deleteBranch: async (branchId: string): Promise<void> => {
-    await apiClient.delete(API_ENDPOINTS.BRANCHES.DELETE(branchId));
+    await apiClient.delete(API_ENDPOINTS.BRANCH.DELETE_BRANCH(branchId));
   },
 
   // Change branch status
   changeBranchStatus: async (branchId: string, status: 'Active' | 'Inactive'): Promise<Branch> => {
-    const response = await apiClient.put(API_ENDPOINTS.BRANCHES.CHANGE_STATUS(branchId), { status });
+    const response = await apiClient.put(API_ENDPOINTS.BRANCH.CHANGE_BRANCH_STATUS(branchId), { status });
     return response.data.data;
   },
 };

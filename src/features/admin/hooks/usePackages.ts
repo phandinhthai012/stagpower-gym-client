@@ -10,10 +10,11 @@ export const usePackages = () => {
     });
 }
 
-export const usePackageById = (packageId: string) => {
+export const usePackageById = (packageId: string, options?: any) => {
     return useQuery({
         queryKey: queryKeys.package(packageId),
         queryFn: () => packageService.getPackageById(packageId),
+        ...options
     });
 }
 
