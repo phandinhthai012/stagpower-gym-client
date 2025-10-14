@@ -8,9 +8,9 @@ import { useScrollLock } from '../../../../hooks/useScrollLock';
 import { useCreatePackage } from '../../hooks/usePackages';
 import { useBranches } from '../../hooks/useBranches';
 import { toast } from 'sonner';
-import { 
-  X, 
-  Package, 
+import {
+  X,
+  Package,
   DollarSign,
   Calendar,
   Users,
@@ -113,7 +113,6 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Form submitted!', formData);
-    
     if (!validateForm()) {
       console.log('Form validation failed');
       console.log('Current errors:', errors);
@@ -183,11 +182,11 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={handleClose}
       />
-      
+
       {/* Modal */}
       <div className="relative w-full max-w-4xl max-h-[90vh] mx-4 bg-white rounded-lg shadow-xl overflow-hidden">
         {/* Header */}

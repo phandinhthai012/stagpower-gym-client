@@ -56,7 +56,7 @@ const memberService ={
     },
     createMember: async (member: Member): Promise<ApiResult<Member>> => {
         try {
-            const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_MEMBER, member);
+            const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_USER, member);
             return response.data;
         } catch (error) {
             return {

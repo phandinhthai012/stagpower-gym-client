@@ -1,11 +1,29 @@
 import apiClient from "../../../configs/AxiosConfig";
 import { API_ENDPOINTS } from "../../../configs/Api";
-import { Package } from "../../../types/package.types";
+
+interface Package {
+    _id: string;
+    name: string;
+    type: string;
+    packageCategory: string;
+    durationMonths: number;
+    membershipType: string;
+    price: number;
+    ptSessions: number;
+    ptSessionDuration: number;
+    branchAccess: string;
+    isTrial: boolean;
+    maxTrialDays: number;
+    description: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+}
 
 const packageService = {
     getAllPackages: async (): Promise<any> => {
         try {
-            const response = await apiClient.get(API_ENDPOINTS.PACKAGES.GET_ALL);
+            const response = await apiClient.get(API_ENDPOINTS.PACKAGE.GET_ALL_PACKAGES);
             return response.data;
         } catch (error) {
             return {
@@ -17,7 +35,7 @@ const packageService = {
     },
     getPackageById: async (packageId: string): Promise<any> => {
         try {
-            const response = await apiClient.get(API_ENDPOINTS.PACKAGES.GET_BY_ID(packageId));
+            const response = await apiClient.get(API_ENDPOINTS.PACKAGE.GET_PACKAGE_BY_ID(packageId));
             return response.data;
         } catch (error) {
             return {
@@ -29,7 +47,7 @@ const packageService = {
     },
     createPackage: async (packageData: Package): Promise<any> => {
         try {
-            const response = await apiClient.post(API_ENDPOINTS.PACKAGES.CREATE, packageData);
+            const response = await apiClient.post(API_ENDPOINTS.PACKAGE.CREATE_PACKAGE, packageData);
             return response.data;
         } catch (error) {
             console.error('Error creating package:', error);
@@ -41,7 +59,7 @@ const packageService = {
     },
     updatePackageById: async (packageId: string, packageData: Package): Promise<any> => {
         try {
-            const response = await apiClient.put(API_ENDPOINTS.PACKAGES.UPDATE(packageId), packageData);
+            const response = await apiClient.put(API_ENDPOINTS.PACKAGE.UPDATE_PACKAGE(packageId), packageData);
             return response.data;
         } catch (error) {
             return {
@@ -53,12 +71,26 @@ const packageService = {
     },
     deletePackageById: async (packageId: string): Promise<any> => {
         try {
-            const response = await apiClient.delete(API_ENDPOINTS.PACKAGES.DELETE(packageId));
+            const response = await apiClient.delete(API_ENDPOINTS.PACKAGE.DELETE_PACKAGE(packageId));
             return response.data;
         } catch (error) {
             return {
                 success: false,
                 message: error?.response?.data?.message || error?.message || 'Xóa gói tập thất bại',
+                error: error?.response?.data || error
+            };
+        }
+    },
+    changePackageStatus: async (payload: { packageId: string, status: string }): Promise<any> => {
+        try {
+            const response = await apiClient.put(API_ENDPOINTS.PACKAGE.CHANGE_PACKAGE_STATUS(payload.packageId), {
+                status: payload.status
+            });
+            return response.data;
+        } catch (error) {
+            return {
+                success: false,
+                message: error?.response?.data?.message || error?.message || 'Thay đổi trạng thái gói tập thất bại',
                 error: error?.response?.data || error
             };
         }

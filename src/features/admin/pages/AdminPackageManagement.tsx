@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { LoadingSpinner } from '../../../components/common';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectWithScrollLock } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
-import { 
-  Plus, 
-  Package, 
-  Edit, 
-  Trash2, 
+import { DeleteConfirmationDialog } from '../../../components/common/DeleteConfirmationDialog';
+import {
+  Plus,
+  Package,
+  Edit,
+  Trash2,
   Eye,
   DollarSign,
   Calendar,
@@ -22,9 +24,10 @@ import {
 } from 'lucide-react';
 import { mockPackages } from '../../../mockdata/packages';
 import { ModalCreatePackage } from '../components/package-management/ModalCreatePackage';
-// import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
-
-import { usePackages } from '../hooks/usePackages';
+import { ModalDetailPackage } from '../components/package-management/ModalDetailPackage';
+import { ModalEditPackage } from '../components/package-management/ModalEditPackage';
+import { usePackages, useDeletePackage } from '../../../hooks/queries/usePackages';
+import { useToast } from '../../../hooks/useToast';
 
 interface AdminPackageManagementProps {
   onCreatePackage?: () => void;
@@ -33,18 +36,17 @@ interface AdminPackageManagementProps {
   onDeletePackage?: (packageId: string) => void;
 }
 
-export function AdminPackageManagement({ 
-  onCreatePackage, 
-  onViewPackage, 
-  onEditPackage, 
-  onDeletePackage 
+export function AdminPackageManagement({
+  onCreatePackage,
+  onViewPackage,
+  onEditPackage,
+  onDeletePackage
 }: AdminPackageManagementProps = {}) {
 
-  const {data:response, isLoading, isError} = usePackages();
-  console.log(response);
-
-  // Safely extract packages from response
-  const packages = response?.data || [];
+  const { data: response, isLoading, isError } = usePackages();
+  const mutateDeletePackage = useDeletePackage();
+  const toast = useToast();
+  const [packages, setPackages] = useState(response?.data || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -52,28 +54,36 @@ export function AdminPackageManagement({
   const [membershipTypeFilter, setMembershipTypeFilter] = useState('all');
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
 
-  // Loading and error states
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Đang tải...</div>;
-  }
+  // modal create and view detail package
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  if (isError || !response) {
-    return <div className="flex justify-center items-center h-64 text-red-600">
-      Có lỗi xảy ra khi tải danh sách gói tập
-    </div>;
-  }
+  //state confirm delete package
+  const [deleteDialog, setDeleteDialog] = useState({
+    isOpen: false,
+    packageId: null as string | null,
+    packageName: '',
+    isLoading: false
+  });
 
-  // Filter packages
+  useEffect(() => {
+    if (response?.data) {
+      setPackages(response.data);
+    }
+  }, [response?.data]);
+  console.log(packages);
   const filteredPackages = packages.filter(pkg => {
     const matchesSearch = pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pkg.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      pkg.description.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesType = typeFilter === 'all' || pkg.type === typeFilter;
     const matchesStatus = statusFilter === 'all' || pkg.status === statusFilter;
     const matchesCategory = categoryFilter === 'all' || pkg.packageCategory === categoryFilter;
-    const matchesMembershipType = membershipTypeFilter === 'all' || 
-                                 (pkg.membershipType && pkg.membershipType === membershipTypeFilter) ||
-                                 (!pkg.membershipType && membershipTypeFilter === 'none');
+    const matchesMembershipType = membershipTypeFilter === 'all' ||
+      (pkg.membershipType && pkg.membershipType === membershipTypeFilter) ||
+      (!pkg.membershipType && membershipTypeFilter === 'none');
 
     return matchesSearch && matchesType && matchesStatus && matchesCategory && matchesMembershipType;
   });
@@ -93,8 +103,8 @@ export function AdminPackageManagement({
   };
 
   const handleSelectPackage = (packageId: string) => {
-    setSelectedPackages(prev => 
-      prev.includes(packageId) 
+    setSelectedPackages(prev =>
+      prev.includes(packageId)
         ? prev.filter(id => id !== packageId)
         : [...prev, packageId]
     );
@@ -108,17 +118,57 @@ export function AdminPackageManagement({
     }
   };
 
-  const handleViewPackage = (pkg: any) => {
-    onViewPackage?.(pkg);
+  const handleViewPackage = (pkgId: any) => {
+    console.log(pkgId);
+    setSelectedPackageId(pkgId);
+    setIsDetailModalOpen(true);
   };
 
-  const handleEditPackage = (pkg: any) => {
-    onEditPackage?.(pkg);
+  const handleEditPackage = (pkgId: string) => {
+    setSelectedPackageId(pkgId);
+    setIsEditModalOpen(true);
   };
 
-  const handleDeletePackage = (packageId: string) => {
-    onDeletePackage?.(packageId);
+  const handleDeletePackage = (packageId: string, packageName: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      packageId: packageId,
+      packageName: packageName,
+      isLoading: false
+    });
   };
+
+  const handleCancelDelete = () => {
+    setDeleteDialog({
+      isOpen: false,
+      packageId: null,
+      packageName: '',
+      isLoading: false
+    });
+  };
+
+  const handleConfirmDeletePackage = async () => {
+    if (!deleteDialog.packageId) return;
+
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
+    try {
+      await mutateDeletePackage.mutateAsync(deleteDialog.packageId);
+      toast.success('Xóa thành công! 🔥', `Gói tập "${deleteDialog.packageName}" đã bị xóa`);
+      handleCancelDelete();
+
+      onDeletePackage?.(deleteDialog.packageId);
+    } catch (error) {
+      toast.error('Xóa thất bại! 😭', `Gói tập "${deleteDialog.packageName}" đã bị xóa`);
+      handleCancelDelete();
+    } finally {
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const handleCreatePackage = () => {
+    setIsCreateModalOpen(true);
+  };
+
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -177,7 +227,7 @@ export function AdminPackageManagement({
                 />
               </div>
             </div>
-            
+
             {/* Type Filter */}
             <div>
               <Label htmlFor="typeFilter">Loại gói</Label>
@@ -304,117 +354,157 @@ export function AdminPackageManagement({
               <Package className="w-5 h-5 text-blue-600" />
               Danh sách gói tập
             </CardTitle>
-            <Button onClick={onCreatePackage} className="flex items-center space-x-2">
+            <Button onClick={handleCreatePackage} className="flex items-center space-x-2">
               <Plus className="w-4 h-4" />
               <span>Tạo gói tập mới</span>
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedPackages.length === filteredPackages.length && filteredPackages.length > 0}
-                      onChange={handleSelectAll}
-                      className="rounded"
-                    />
-                  </th>
-                  <th className="text-left p-3 font-medium text-gray-600">Tên gói</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Loại</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Thời hạn</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Giá</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Trạng thái</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPackages.map((pkg) => (
-                  <tr key={pkg.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-screen">
+            <LoadingSpinner
+              size="md"
+              className="mx-auto"
+            />
+          </div>
+        ) : (
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-3">
                       <input
                         type="checkbox"
-                        checked={selectedPackages.includes(pkg.id)}
-                        onChange={() => handleSelectPackage(pkg.id)}
+                        checked={selectedPackages.length === filteredPackages.length && filteredPackages.length > 0}
+                        onChange={handleSelectAll}
                         className="rounded"
                       />
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        <p className="font-medium text-gray-900">{pkg.name}</p>
-                        <p className="text-sm text-gray-500">{pkg.description}</p>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex flex-col gap-1">
-                        <Badge className={`w-fit ${getPackageTypeColor(pkg.type)}`}>
-                          {pkg.type}
-                        </Badge>
-                        {pkg.membership_type && (
-                          <Badge className={`w-fit ${getMembershipTypeColor(pkg.membership_type)}`}>
-                            {pkg.membership_type}
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        <p className="text-sm text-gray-900">{pkg.duration_months} tháng</p>
-                        <p className="text-xs text-gray-500">{pkg.package_category}</p>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        <p className="font-medium text-gray-900">{formatPrice(pkg.price)}</p>
-                        {pkg.pt_sessions && (
-                          <p className="text-sm text-gray-500">{pkg.pt_sessions} buổi PT</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <Badge className={pkg.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                        {pkg.status === 'Active' ? 'Hoạt động' : 'Ngừng hoạt động'}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewPackage(pkg)}
-                          title="Xem chi tiết"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditPackage(pkg)}
-                          title="Chỉnh sửa"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDeletePackage(pkg.id)}
-                          title="Xóa gói tập"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
+                    </th>
+                    <th className="text-left p-3 font-medium text-gray-600">Tên gói</th>
+                    <th className="text-left p-3 font-medium text-gray-600">Loại</th>
+                    <th className="text-left p-3 font-medium text-gray-600">Thời hạn</th>
+                    <th className="text-left p-3 font-medium text-gray-600">Giá</th>
+                    <th className="text-left p-3 font-medium text-gray-600">Trạng thái</th>
+                    <th className="text-left p-3 font-medium text-gray-600">Thao tác</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
+                </thead>
+                <tbody>
+                  {filteredPackages.map((pkg) => (
+                    <tr key={pkg.id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedPackages.includes(pkg._id)}
+                          onChange={() => handleSelectPackage(pkg._id)}
+                          className="rounded"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <div>
+                          <p className="font-medium text-gray-900">{pkg.name}</p>
+                          <p className="text-sm text-gray-500">{pkg.description}</p>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex flex-col gap-1">
+                          <Badge className={`w-fit ${getPackageTypeColor(pkg.type)}`}>
+                            {pkg.type}
+                          </Badge>
+                          {pkg.membershipType && (
+                            <Badge className={`w-fit ${getMembershipTypeColor(pkg.membershipType)}`}>
+                              {pkg.membershipType}
+                            </Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div>
+                          <p className="text-sm text-gray-900">{pkg.durationMonths} tháng</p>
+                          <p className="text-xs text-gray-500">{pkg.packageCategory}</p>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div>
+                          <p className="font-medium text-gray-900">{formatPrice(pkg.price)}</p>
+                          {pkg.ptSessions && (
+                            <p className="text-sm text-gray-500">{pkg.ptSessions} buổi PT</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <Badge className={pkg.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                          {pkg.status === 'Active' ? 'Hoạt động' : 'Ngừng hoạt động'}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewPackage(pkg._id)}
+                            title="Xem chi tiết"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditPackage(pkg._id)}
+                            title="Chỉnh sửa"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDeletePackage(pkg._id, pkg.name)}
+                            title="Xóa gói tập"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        )}
       </Card>
+      <ModalCreatePackage
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          // Refresh data or show success message
+          console.log('Package created successfully');
+        }}
+      />
+      <ModalDetailPackage
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedPackageId(null);
+        }}
+        packageId={selectedPackageId}
+      />
+      <ModalEditPackage
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedPackageId(null);
+        }}
+        packageId={selectedPackageId}
+      />
+      <DeleteConfirmationDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDeletePackage}
+        title="Xóa gói tập"
+        description="Bạn có chắc chắn muốn xóa gói tập này không?(xóa gói tập sẽ xóa khỏi hệ thống và không thể khôi phục)"
+      />
 
     </div>
   );
@@ -425,10 +515,10 @@ export function AdminPackageManagementWithModal() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
-  
+
   return (
     <>
-      <AdminPackageManagement 
+      <AdminPackageManagement
         onCreatePackage={() => setIsCreateModalOpen(true)}
         onViewPackage={(pkg) => {
           setSelectedPackage(pkg);
@@ -444,7 +534,7 @@ export function AdminPackageManagementWithModal() {
           console.log('Delete package:', packageId);
         }}
       />
-      
+
       {/* Create Package Modal - Rendered at top level */}
       {isCreateModalOpen && (
         <ModalCreatePackage
