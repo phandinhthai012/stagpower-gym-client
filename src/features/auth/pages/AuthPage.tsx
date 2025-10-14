@@ -9,7 +9,7 @@ import LogoDumbbell from '../../../assets/Logo_dumbbell.png';
 import LogoStagPower4x from '../../../assets/Logo_StagPower_4x.png';
 import { useAuth } from '../../../contexts/AuthContext';
 import { validateRegisterData, RegisterData } from '../utils/validation';
-
+import { useToast } from '../../../hooks/useToast';
 type AuthMode = 'login' | 'register';
 
 export function AuthPage() {
@@ -21,7 +21,7 @@ export function AuthPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  const toast = useToast();
   // Set auth mode based on current route
   useEffect(() => {
     if (location.pathname === '/register') {
@@ -99,6 +99,7 @@ export function AuthPage() {
 
       if (result.success) {
         // Redirect based on user role
+        toast.success('Đăng nhập thành công');
         const userRole = result.data?.user?.role;
         switch (userRole) {
           case 'admin':
@@ -116,12 +117,15 @@ export function AuthPage() {
           default:
             navigate('/member');
         }
+
       } else {
         console.log('result', result);
         setError(result?.error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+        toast.error('Đăng nhập thất bại. Vui lòng thử lại.');
       }
     } catch (err) {
       setError('Đã xảy ra lỗi. Vui lòng thử lại.');
+      toast.error('Đã xảy ra lỗi. Vui lòng thử lại.');
     }
   };
 

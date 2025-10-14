@@ -19,9 +19,9 @@ import {
   Info
 } from 'lucide-react';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
-import { usePackageById } from '../../../../hooks/queries/usePackages';
+import { usePackageById, useUpdatePackage } from '../../../../hooks/queries/usePackages';
 import { LoadingSpinner } from '../../../../components/common/LoadingSpinner';
-
+import { ModalEditPackage } from './ModalEditPackage';
 interface Package {
   _id: string;
   name: string;
@@ -58,22 +58,25 @@ export function ModalDetailPackage({
   onDelete
 }: ModalDetailPackageProps) {
   useScrollLock(isOpen, { preserveScrollPosition: true });
-
   const {
     data: response,
     isLoading,
     isError,
     error
-  } = usePackageById(packageId,);
-  console.log(response);
+  } = usePackageById(packageId, {
+    enabled: isOpen && !!packageId
+  });
 
   const [pkg, setPkg] = useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   useEffect(() => {
     if (response?.success && response.data) {
       setPkg(response.data);
     }
   }, [response]);
+
   if (!isOpen || !packageId) return null;
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -121,6 +124,7 @@ export function ModalDetailPackage({
       case 'Membership': return 'bg-blue-100 text-blue-800';
       case 'Combo': return 'bg-orange-100 text-orange-800';
       case 'PT': return 'bg-purple-100 text-purple-800';
+      case 'Trial': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -150,6 +154,11 @@ export function ModalDetailPackage({
   const getStatusColor = (status: string) => {
     return status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
+  
+  const handleUpdatePackage = () => {
+    console.log('Updating package:', pkg);
+    setIsEditModalOpen(true);
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -195,9 +204,9 @@ export function ModalDetailPackage({
                 <Badge className={`${getPackageTypeColor(pkg.type)}`}>
                   {pkg.type}
                 </Badge>
-                {pkg.membership_type && (
-                  <Badge className={`${getMembershipTypeColor(pkg.membership_type)}`}>
-                    {pkg.membership_type}
+                {pkg.membershipType && (
+                  <Badge className={`${getMembershipTypeColor(pkg.membershipType)}`}>
+                    {pkg.membershipType}
                   </Badge>
                 )}
                 <Badge className={getStatusColor(pkg.status)}>
@@ -254,6 +263,12 @@ export function ModalDetailPackage({
                     </Badge>
                   </div>
                 )}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600">Quyền truy cập:</span>
+                  <Badge className={pkg.branchAccess === 'All' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+                    {pkg.branchAccess === 'All' ? 'Tất cả chi nhánh' : 'Chi nhánh đơn'}
+                  </Badge>
+                </div>
               </CardContent>
             </Card>
 
@@ -282,6 +297,13 @@ export function ModalDetailPackage({
                     <span className="text-sm text-gray-900">{pkg.ptSessions} buổi</span>
                   </div>
                 )}
+                {pkg.ptSessionDuration && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">Thời gian/buổi PT:</span>
+                    <span className="text-sm text-gray-900">{pkg.ptSessionDuration} phút</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Giá/ tháng:</span>
                   <span className="text-sm text-gray-900">
@@ -299,7 +321,7 @@ export function ModalDetailPackage({
               </CardContent>
             </Card>
           </div>
-
+                
           {/* Features */}
           {pkg.features && pkg?.features?.length > 0 && (
             <Card>
@@ -369,7 +391,7 @@ export function ModalDetailPackage({
             <CardContent>
               <div className="flex flex-wrap gap-3">
                 <Button
-                  onClick={() => onEdit?.(pkg)}
+                  onClick={handleUpdatePackage}
                   className="flex items-center space-x-2"
                 >
                   <Edit className="w-4 h-4" />
@@ -410,6 +432,11 @@ export function ModalDetailPackage({
               </div>
             </CardContent>
           </Card>
+          <ModalEditPackage 
+            isOpen={isEditModalOpen} 
+            onClose={() => setIsEditModalOpen(false)} 
+            packageId={pkg._id}
+          />
         </div>
       </div>
     </div>
