@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { Progress } from '../../../components/ui/progress';
+import { LoadingSpinner } from '../../../components/common';
 import { 
-  Package, 
+  Package as PackageIcon, 
   Calendar, 
   Clock, 
   MapPin, 
@@ -19,39 +20,42 @@ import {
   Crown,
   Pause
 } from 'lucide-react';
-import { 
-  mockPackages, 
-  mockSubscriptions,
-  getMockDataByMemberId 
-} from '../../../mockdata';
+import { usePackages } from '../hooks/usePackages';
+import { useSubscriptionsByMemberId } from '../hooks/useSubscriptions';
 import { formatDate } from '../../../lib/date-utils';
+import { Package, Subscription } from '../types';
+import { ModalRegisPackage } from '../components/member-package/ModalRegisPackage';
 
 export function MemberPackages() {
   const { user } = useAuth();
   const [filterType, setFilterType] = useState<'All' | 'Membership' | 'Combo' | 'PT'>('All');
   const [filterTier, setFilterTier] = useState<'All' | 'Basic' | 'VIP'>('All');
   const [visibleCount, setVisibleCount] = useState<number>(3);
+  const [isRegisModalOpen, setIsRegisModalOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<Package | undefined>();
 
-  // Get member's subscription data
-  const memberSubscriptions = useMemo(() => {
-    if (!user?.id) return [];
-    return getMockDataByMemberId('subscriptions', user.id);
-  }, [user?.id]);
+  // API hooks
+  const { data: packagesResponse, isLoading: packagesLoading, isError: packagesError } = usePackages();
+  const { data: subscriptionsResponse, isLoading: subscriptionsLoading, isError: subscriptionsError } = useSubscriptionsByMemberId(user?.id || '');
+
+  // Get data from API responses
+  const packages: Package[] = packagesResponse?.data || [];
+  const memberSubscriptions: Subscription[] = subscriptionsResponse?.data || [];
 
   // Get active subscription
   const activeSubscription = useMemo(() => {
-    return memberSubscriptions.find(sub => sub.status === 'Active');
+    return memberSubscriptions.find((sub: Subscription) => sub.status === 'Active');
   }, [memberSubscriptions]);
 
   // Get subscription history
   const subscriptionHistory = useMemo(() => {
     return memberSubscriptions
-      .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+      .sort((a: Subscription, b: Subscription) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
   }, [memberSubscriptions]);
 
   // Get package info
   const getPackageInfo = (packageId: string) => {
-    return mockPackages.find(pkg => pkg.id === packageId);
+    return packages.find((pkg: Package) => pkg._id === packageId);
   };
 
   const getDaysUntilExpiry = (endDate: string) => {
@@ -62,9 +66,9 @@ export function MemberPackages() {
     return diffDays;
   };
 
-  const getSubscriptionProgress = (subscription: any) => {
-    const startDate = new Date(subscription.start_date);
-    const endDate = new Date(subscription.end_date);
+  const getSubscriptionProgress = (subscription: Subscription) => {
+    const startDate = new Date(subscription.startDate);
+    const endDate = new Date(subscription.endDate);
     const today = new Date();
     const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const usedDays = Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -95,6 +99,47 @@ export function MemberPackages() {
     return type === 'VIP' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
   };
 
+  const handleOpenRegisModal = (pkg?: Package) => {
+    setSelectedPackage(pkg);
+    setIsRegisModalOpen(true);
+  };
+
+  const handleCloseRegisModal = () => {
+    setIsRegisModalOpen(false);
+    setSelectedPackage(undefined);
+  };
+
+  const handleRegisSuccess = () => {
+    // Refresh data after successful registration
+    window.location.reload();
+  };
+
+  // Loading state
+  if (packagesLoading || subscriptionsLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <LoadingSpinner />
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (packagesError || subscriptionsError) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertTriangle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Có lỗi xảy ra</h3>
+            <p className="text-gray-500">Không thể tải dữ liệu gói tập. Vui lòng thử lại sau.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -103,8 +148,8 @@ export function MemberPackages() {
           <h1 className="text-3xl font-bold text-gray-900">Gói tập của tôi</h1>
           <p className="text-gray-600 mt-1">Quản lý gói tập và đăng ký mới</p>
         </div>
-        <Button>
-          <Package className="h-4 w-4 mr-2" />
+        <Button onClick={() => handleOpenRegisModal()}>
+          <PackageIcon className="h-4 w-4 mr-2" />
           Đăng ký gói mới
         </Button>
       </div>
@@ -114,8 +159,8 @@ export function MemberPackages() {
         <Card>
           <CardContent className="p-6">
             {(() => {
-              const packageInfo = getPackageInfo(activeSubscription.package_id);
-              const daysLeft = getDaysUntilExpiry(activeSubscription.end_date);
+              const packageInfo = getPackageInfo(activeSubscription.packageId);
+              const daysLeft = getDaysUntilExpiry(activeSubscription.endDate);
               return (
                 <div className="space-y-6">
                   {/* Header row */}
@@ -126,7 +171,7 @@ export function MemberPackages() {
                       </div>
                       <div>
                         <h3 className="text-xl font-semibold text-blue-900">{packageInfo?.name || 'Gói tập'}</h3>
-                        <p className="text-gray-600">{activeSubscription.membership_type === 'VIP' ? 'Tập tại tất cả chi nhánh' : 'Tập tại 1 chi nhánh'}{activeSubscription.pt_sessions_remaining ? ` + ${activeSubscription.pt_sessions_remaining} buổi PT` : ''}</p>
+                        <p className="text-gray-600">{activeSubscription.membershipType === 'VIP' ? 'Tập tại tất cả chi nhánh' : 'Tập tại 1 chi nhánh'}{activeSubscription.ptsessionsRemaining ? ` + ${activeSubscription.ptsessionsRemaining} buổi PT` : ''}</p>
                         <Badge className="mt-2 bg-green-100 text-green-700">Đang hoạt động</Badge>
                       </div>
                     </div>
@@ -136,15 +181,15 @@ export function MemberPackages() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
                       <div className="text-sm font-semibold text-blue-900 mb-1">Ngày bắt đầu</div>
-                      <div className="text-gray-700">{formatDate(activeSubscription.start_date)}</div>
+                      <div className="text-gray-700">{formatDate(activeSubscription.startDate)}</div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
                       <div className="text-sm font-semibold text-blue-900 mb-1">Ngày hết hạn</div>
-                      <div className="text-gray-700">{formatDate(activeSubscription.end_date)}</div>
+                      <div className="text-gray-700">{formatDate(activeSubscription.endDate)}</div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
                       <div className="text-sm font-semibold text-blue-900 mb-1">Buổi PT còn lại</div>
-                      <div className="text-gray-700">{activeSubscription.pt_sessions_remaining || 0} buổi</div>
+                      <div className="text-gray-700">{activeSubscription.ptsessionsRemaining || 0} buổi</div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
                       <div className="text-sm font-semibold text-blue-900 mb-1">Trạng thái</div>
@@ -183,8 +228,8 @@ export function MemberPackages() {
                 <h3 className="text-lg font-semibold text-yellow-800">Chưa có gói tập</h3>
                 <p className="text-yellow-600">Bạn cần đăng ký gói tập để sử dụng dịch vụ</p>
               </div>
-              <Button className="ml-auto">
-                <Package className="h-4 w-4 mr-2" />
+              <Button className="ml-auto" onClick={() => handleOpenRegisModal()}>
+                <PackageIcon className="h-4 w-4 mr-2" />
                 Đăng ký ngay
               </Button>
             </div>
@@ -228,20 +273,20 @@ export function MemberPackages() {
         </CardHeader>
         <CardContent>
           {(() => {
-            const filtered = mockPackages
-              .filter(pkg => pkg.status === 'Active')
-              .filter(pkg => (filterType === 'All' ? true : pkg.type === filterType))
-              .filter(pkg => (filterTier === 'All' ? true : pkg.membership_type === filterTier));
+            const filtered = packages
+              .filter((pkg: Package) => pkg.status === 'Active')
+              .filter((pkg: Package) => (filterType === 'All' ? true : pkg.type === filterType))
+              .filter((pkg: Package) => (filterTier === 'All' ? true : pkg.membershipType === filterTier));
             const items = filtered.slice(0, visibleCount);
             return (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {items.map((pkg) => (
-              <Card key={pkg.id} className="hover:shadow-lg transition-shadow">
+                  {items.map((pkg: Package) => (
+              <Card key={pkg._id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{pkg.name}</CardTitle>
-                    {pkg.is_trial && (
+                    {pkg.isTrial && (
                       <Badge variant="outline" className="bg-orange-100 text-orange-800">
                         Thử nghiệm
                       </Badge>
@@ -255,23 +300,27 @@ export function MemberPackages() {
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2 text-sm">
                       <Clock className="h-4 w-4 text-gray-500" />
-                            <span>{pkg.duration_months > 0 ? `${pkg.duration_months} tháng` : (pkg.max_trial_days ? `${pkg.max_trial_days} ngày` : 'Theo buổi')}</span>
+                            <span>{pkg.durationMonths > 0 ? `${pkg.durationMonths} tháng` : (pkg.maxTrialDays ? `${pkg.maxTrialDays} ngày` : 'Theo buổi')}</span>
                     </div>
                     <div className="flex items-center space-x-2 text-sm">
                       <MapPin className="h-4 w-4 text-gray-500" />
-                      <span>{pkg.branch_access === 'All' ? 'Tất cả chi nhánh' : '1 chi nhánh'}</span>
+                      <span>{pkg.branchAccess === 'All' ? 'Tất cả chi nhánh' : '1 chi nhánh'}</span>
                     </div>
-                    {pkg.pt_sessions && (
+                    {pkg.ptSessions && (
                       <div className="flex items-center space-x-2 text-sm">
                         <Users className="h-4 w-4 text-gray-500" />
-                        <span>{pkg.pt_sessions} buổi PT</span>
+                        <span>{pkg.ptSessions} buổi PT</span>
                       </div>
                     )}
                   </div>
                   
                   <p className="text-sm text-gray-600">{pkg.description}</p>
                   
-                  <Button className="w-full" variant="outline">
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => handleOpenRegisModal(pkg)}
+                  >
                     <CreditCard className="h-4 w-4 mr-2" />
                     Đăng ký
                   </Button>
@@ -301,19 +350,19 @@ export function MemberPackages() {
         <CardContent>
           {subscriptionHistory.length > 0 ? (
             <div className="space-y-4">
-              {subscriptionHistory.map((subscription) => {
-                const packageInfo = getPackageInfo(subscription.package_id);
+              {subscriptionHistory.map((subscription: Subscription) => {
+                const packageInfo = getPackageInfo(subscription.packageId);
                 return (
-                  <div key={subscription.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div key={subscription._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusColor(subscription.status)}`}>
-                        <Package className="h-5 w-5" />
+                        <PackageIcon className="h-5 w-5" />
                       </div>
                       <div>
                         <h4 className="font-medium">{packageInfo?.name || 'Gói tập'}</h4>
                         <div className="flex items-center space-x-2 mt-1">
-                          <Badge className={getMembershipTypeColor(subscription.membership_type)}>
-                            {subscription.membership_type}
+                          <Badge className={getMembershipTypeColor(subscription.membershipType)}>
+                            {subscription.membershipType}
                           </Badge>
                           <Badge variant="outline" className={getStatusColor(subscription.status)}>
                             {subscription.status}
@@ -323,10 +372,10 @@ export function MemberPackages() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        {formatDate(subscription.start_date)} - {formatDate(subscription.end_date)}
+                        {formatDate(subscription.startDate)} - {formatDate(subscription.endDate)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {subscription.duration_days} ngày
+                        {subscription.durationDays} ngày
                       </p>
                     </div>
                   </div>
@@ -335,13 +384,21 @@ export function MemberPackages() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <Package className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+              <PackageIcon className="h-12 w-12 mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có lịch sử gói tập</h3>
               <p className="text-gray-500">Đăng ký gói tập đầu tiên để bắt đầu tập luyện</p>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Registration Modal */}
+      <ModalRegisPackage
+        isOpen={isRegisModalOpen}
+        onClose={handleCloseRegisModal}
+        onSuccess={handleRegisSuccess}
+        selectedPackage={selectedPackage}
+      />
     </div>
   );
 }

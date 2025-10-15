@@ -5,7 +5,8 @@ import authService from '../services/auth.service';
 export type UserRole = 'admin' | 'staff' | 'trainer' | 'member';
 
 export interface User {
-  id: string;
+  _id: string;
+  id?: string; // For backward compatibility
   email: string;
   fullName: string;
   role: UserRole;
@@ -48,7 +49,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // TODO: Replace with actual API call
         const savedUser = localStorage.getItem('stagpower_user');
         if (savedUser) {
-          setUser(JSON.parse(savedUser));
+          const userData = JSON.parse(savedUser);
+          // Ensure both _id and id are available for compatibility
+          if (userData._id && !userData.id) {
+            userData.id = userData._id;
+          }
+          setUser(userData);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -69,16 +75,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('response', response);
       if (response && response.success) {
         const loggedInUser = response.data.user;
-        // const loggedInUser: User = {
-        //   id: userData.id,
-        //   email: userData.email,
-        //   fullName: userData.fullName || userData.email,
-        //   phone: userData.phone,
-        //   gender: userData.gender,
-        //   dateOfBirth: userData.dateOfBirth,
-        //   role: userData.role as UserRole,
-        //   avatar: userData.avatar
-        // };
+        // Ensure both _id and id are available for compatibility
+        if (loggedInUser._id && !loggedInUser.id) {
+          loggedInUser.id = loggedInUser._id;
+        }
         setUser(loggedInUser);
 
         // Lưu user data
