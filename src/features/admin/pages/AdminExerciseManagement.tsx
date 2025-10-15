@@ -12,20 +12,8 @@ import {
   Filter,
   Edit,
   Trash2,
-  Play,
   Eye,
-  Calendar,
-  Clock,
-  Target,
-  Users,
-  Activity,
-  Zap,
-  ArrowUp,
-  ArrowDown,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Info
+  Clock
 } from 'lucide-react';
 import { useExercises, useDeleteExercise } from '../hooks/useExercises';
 import { Exercise } from '../types/exercise.types';   
@@ -185,14 +173,6 @@ export function AdminExerciseManagement() {
             <Button onClick={handleAddExercise}>
               <Plus className="w-4 h-4 mr-2" />
               Thêm bài tập mới
-            </Button>
-            <Button variant="outline">
-              <Calendar className="w-4 h-4 mr-2" />
-              Tạo lịch tập
-            </Button>
-            <Button variant="outline">
-              <Users className="w-4 h-4 mr-2" />
-              Quản lý nhóm
             </Button>
           </div>
         </CardContent>

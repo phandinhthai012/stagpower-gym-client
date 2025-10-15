@@ -34,7 +34,6 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <Toaster position="top-right" richColors />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
@@ -127,27 +126,26 @@ function App() {
         visibleToasts={5}
         toastOptions={{
           style: {
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: '#fff',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
+            background: '#ffffff',
+            color: '#1f2937',
+            border: '1px solid #e5e7eb',
             borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(10px)',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05)',
             fontSize: '14px',
             fontWeight: '500',
           },
           className: 'toast-custom',
           descriptionClassName: 'toast-description',
           actionButtonStyle: {
-            background: 'rgba(255, 255, 255, 0.2)',
-            color: '#fff',
-            border: 'none',
+            background: '#f3f4f6',
+            color: '#1f2937',
+            border: '1px solid #d1d5db',
             borderRadius: '8px',
             padding: '8px 16px',
             fontWeight: '600',
           }
         }}
-        theme="dark"
+        theme="light"
       />
     </AuthProvider>
   );
