@@ -90,16 +90,22 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
       newErrors.price = 'Giá phải là số dương';
     }
 
-    if (formData.ptSessions && (isNaN(Number(formData.ptSessions)) || Number(formData.ptSessions) < 0)) {
-      newErrors.ptSessions = 'Số buổi PT phải là số không âm';
-    }
-
-    if (formData.ptSessionDuration && (isNaN(Number(formData.ptSessionDuration)) || Number(formData.ptSessionDuration) <= 0)) {
-      newErrors.ptSessionDuration = 'Thời lượng buổi PT phải là số dương';
-    }
-
     if (!formData.branchAccess) {
       newErrors.branchAccess = 'Quyền truy cập là bắt buộc';
+    }
+
+    // Validate PT sessions for PT and Combo types
+    if ((formData.type === 'PT' || formData.type === 'Combo') && (!formData.ptSessions || isNaN(Number(formData.ptSessions)) || Number(formData.ptSessions) <= 0)) {
+      newErrors.ptSessions = 'Số buổi PT là bắt buộc và phải lớn hơn 0';
+    }
+
+    // Validate PT session duration for PT and Combo types
+    if ((formData.type === 'PT' || formData.type === 'Combo') && (!formData.ptSessionDuration || isNaN(Number(formData.ptSessionDuration)) || Number(formData.ptSessionDuration) <= 0)) {
+      newErrors.ptSessionDuration = 'Thời lượng buổi PT là bắt buộc và phải lớn hơn 0';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Mô tả là bắt buộc';
     }
 
     if (formData.isTrial && (!formData.maxTrialDays || isNaN(Number(formData.maxTrialDays)) || Number(formData.maxTrialDays) <= 0)) {
@@ -160,6 +166,9 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
           maxTrialDays: '',
           status: 'Active'
         });
+        
+        // Clear errors
+        setErrors({});
         
         onSuccess?.();
         onClose();
@@ -300,15 +309,18 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Mô tả gói</Label>
+                  <Label htmlFor="description">Mô tả gói *</Label>
                   <textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                    className={`w-full p-3 border rounded-md resize-none ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
                     rows={3}
                     placeholder="Mô tả chi tiết về gói tập..."
                   />
+                  {errors.description && (
+                    <p className="text-sm text-red-500 mt-1">{errors.description}</p>
+                  )}
                 </div>
 
                 {/* Trial Package Fields */}
@@ -407,7 +419,7 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="ptSessions">Số buổi PT</Label>
+                      <Label htmlFor="ptSessions">Số buổi PT *</Label>
                       <Input
                         id="ptSessions"
                         type="number"
@@ -421,7 +433,7 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="ptSessionDuration">Thời lượng buổi PT (phút)</Label>
+                      <Label htmlFor="ptSessionDuration">Thời lượng buổi PT (phút) *</Label>
                       <Input
                         id="ptSessionDuration"
                         type="number"

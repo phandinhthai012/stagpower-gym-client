@@ -114,7 +114,7 @@ export function AdminPackageManagement({
     if (selectedPackages.length === filteredPackages.length) {
       setSelectedPackages([]);
     } else {
-      setSelectedPackages(filteredPackages.map(pkg => pkg.id));
+      setSelectedPackages(filteredPackages.map(pkg => pkg._id || pkg.id));
     }
   };
 
@@ -391,12 +391,12 @@ export function AdminPackageManagement({
                 </thead>
                 <tbody>
                   {filteredPackages.map((pkg) => (
-                    <tr key={pkg.id} className="border-b hover:bg-gray-50">
+                    <tr key={pkg._id || pkg.id} className="border-b hover:bg-gray-50">
                       <td className="p-3">
                         <input
                           type="checkbox"
-                          checked={selectedPackages.includes(pkg._id)}
-                          onChange={() => handleSelectPackage(pkg._id)}
+                          checked={selectedPackages.includes(pkg._id || pkg.id)}
+                          onChange={() => handleSelectPackage(pkg._id || pkg.id)}
                           className="rounded"
                         />
                       </td>
@@ -442,7 +442,7 @@ export function AdminPackageManagement({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleViewPackage(pkg._id)}
+                            onClick={() => handleViewPackage(pkg._id || pkg.id)}
                             title="Xem chi tiết"
                           >
                             <Eye className="w-4 h-4" />
@@ -450,7 +450,7 @@ export function AdminPackageManagement({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleEditPackage(pkg._id)}
+                            onClick={() => handleEditPackage(pkg._id || pkg.id)}
                             title="Chỉnh sửa"
                           >
                             <Edit className="w-4 h-4" />
@@ -459,7 +459,7 @@ export function AdminPackageManagement({
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeletePackage(pkg._id, pkg.name)}
+                            onClick={() => handleDeletePackage(pkg._id || pkg.id, pkg.name)}
                             title="Xóa gói tập"
                           >
                             <Trash2 className="w-4 h-4" />
