@@ -1,4 +1,4 @@
-// Export all types
-export * from './api.types';
-export * from './package.types';
-export * from './init';
+// Export all types from this directory
+// Note: Exercise types have been moved to features/admin/types/
+
+export {};

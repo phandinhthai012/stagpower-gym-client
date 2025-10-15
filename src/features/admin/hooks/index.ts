@@ -16,3 +16,14 @@ export {
   useUpdateUserStatus,
   useUpdateUser
 } from './useUsers';
+
+// Exercise hooks
+export {
+  useExercises,
+  useExerciseById,
+  useSearchExercises,
+  useExercisesByLevel,
+  useCreateExercise,
+  useUpdateExercise,
+  useDeleteExercise
+} from './useExercises';

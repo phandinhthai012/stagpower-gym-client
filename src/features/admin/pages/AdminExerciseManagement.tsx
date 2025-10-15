@@ -27,7 +27,9 @@ import {
   AlertCircle,
   Info
 } from 'lucide-react';
-import { mockExercises, type Exercise } from '../../../mockdata/exercises';
+import { useExercises, useDeleteExercise } from '../hooks/useExercises';
+import { Exercise } from '../types/exercise.types';   
+import { ModalCreateExercise, ModalEditExercise, ModalViewExercise } from '../components/exercises-management';
 
 export function AdminExerciseManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,33 +38,22 @@ export function AdminExerciseManagement() {
   const [equipmentFilter, setEquipmentFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  const [newExercise, setNewExercise] = useState({
-    name: '',
-    description: '',
-    category: '',
-    difficultyLevel: '',
-    targetMuscles: [] as string[],
-    equipment: '',
-    duration: '',
-    sets: '',
-    reps: '',
-    weight: '',
-    restTime: '',
-    instructions: '',
-    tips: '',
-    isActive: true
-  });
 
-  // Get statistics from mock data
+  // API hooks
+  const { data: exercises = [], isLoading, error } = useExercises();
+  const deleteExerciseMutation = useDeleteExercise();
+
+  // Get statistics from API data
   const getExerciseStats = () => {
-    const total = mockExercises.length;
-    const byCategory = mockExercises.reduce((acc, exercise) => {
+    const total = exercises.length;
+    const byCategory = exercises.reduce((acc, exercise) => {
       acc[exercise.category] = (acc[exercise.category] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
-    const byDifficulty = mockExercises.reduce((acc, exercise) => {
+    const byDifficulty = exercises.reduce((acc, exercise) => {
       acc[exercise.difficultyLevel] = (acc[exercise.difficultyLevel] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -71,8 +62,8 @@ export function AdminExerciseManagement() {
       total,
       byCategory,
       byDifficulty,
-      active: mockExercises.filter(e => e.isActive).length,
-      inactive: mockExercises.filter(e => !e.isActive).length
+      active: exercises.filter(e => e.isActive).length,
+      inactive: exercises.filter(e => !e.isActive).length
     };
   };
   
@@ -130,44 +121,28 @@ export function AdminExerciseManagement() {
 
   const handleDeleteExercise = (exercise: Exercise) => {
     if (confirm(`Bạn có chắc muốn xóa bài tập ${exercise.name}?`)) {
-      alert(`Đã xóa bài tập: ${exercise.name}`);
+      deleteExerciseMutation.mutate(exercise._id);
     }
   };
 
   const handleViewExercise = (exercise: Exercise) => {
-    alert(`Xem chi tiết bài tập: ${exercise.name}`);
+    setSelectedExercise(exercise);
+    setShowViewModal(true);
   };
 
-  const handleAddExerciseSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert('Đã thêm bài tập mới thành công!');
+  const handleModalClose = () => {
     setShowAddModal(false);
-    setNewExercise({
-      name: '',
-      description: '',
-      category: '',
-      difficultyLevel: '',
-      targetMuscles: [],
-      equipment: '',
-      duration: '',
-      sets: '',
-      reps: '',
-      weight: '',
-      restTime: '',
-      instructions: '',
-      tips: '',
-      isActive: true
-    });
+    setShowEditModal(false);
+    setShowViewModal(false);
+    setSelectedExercise(null);
   };
 
-  const handleEditExerciseSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert('Đã cập nhật bài tập thành công!');
-    setShowEditModal(false);
+  const handleSuccess = () => {
+    // Data will be automatically refreshed by React Query
   };
 
   // Filter exercises based on search and filters
-  const filteredExercises = mockExercises.filter(exercise => {
+  const filteredExercises = exercises.filter(exercise => {
     const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          exercise.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          exercise.instructions.toLowerCase().includes(searchTerm.toLowerCase());
@@ -177,6 +152,28 @@ export function AdminExerciseManagement() {
     
     return matchesSearch && matchesCategory && matchesDifficulty && matchesEquipment;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-red-500 mb-2">⚠️</div>
+          <p className="text-red-600">Có lỗi xảy ra khi tải dữ liệu</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -300,7 +297,7 @@ export function AdminExerciseManagement() {
               </thead>
               <tbody>
                 {filteredExercises.map((exercise) => (
-                  <tr key={exercise.id} className="border-b hover:bg-gray-50">
+                  <tr key={exercise._id} className="border-b hover:bg-gray-50">
                     <td className="p-4">
                       <div>
                         <div className="font-semibold">{exercise.name}</div>
@@ -368,388 +365,25 @@ export function AdminExerciseManagement() {
         </CardContent>
       </Card>
 
-      {/* Add Exercise Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Thêm Bài Tập Mới</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  ×
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleAddExerciseSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="exerciseName">Tên bài tập *</Label>
-                    <Input
-                      id="exerciseName"
-                      value={newExercise.name}
-                      onChange={(e) => setNewExercise(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="VD: Push-up"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="exerciseCategory">Danh mục *</Label>
-                    <Select 
-                      value={newExercise.category} 
-                      onValueChange={(value) => setNewExercise(prev => ({ ...prev, category: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn danh mục" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Chest">Chest</SelectItem>
-                        <SelectItem value="Back">Back</SelectItem>
-                        <SelectItem value="Legs">Legs</SelectItem>
-                        <SelectItem value="Shoulders">Shoulders</SelectItem>
-                        <SelectItem value="Arms">Arms</SelectItem>
-                        <SelectItem value="Core">Core</SelectItem>
-                        <SelectItem value="Cardio">Cardio</SelectItem>
-                        <SelectItem value="FullBody">Full Body</SelectItem>
-                        <SelectItem value="Flexibility">Flexibility</SelectItem>
-                        <SelectItem value="Balance">Balance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+      {/* Modals */}
+      <ModalCreateExercise
+        isOpen={showAddModal}
+        onClose={handleModalClose}
+        onSuccess={handleSuccess}
+      />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="exerciseDifficulty">Độ khó *</Label>
-                    <Select 
-                      value={newExercise.difficultyLevel} 
-                      onValueChange={(value) => setNewExercise(prev => ({ ...prev, difficultyLevel: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn độ khó" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Beginner">Beginner</SelectItem>
-                        <SelectItem value="Intermediate">Intermediate</SelectItem>
-                        <SelectItem value="Advanced">Advanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="exerciseEquipment">Thiết bị</Label>
-                    <Select 
-                      value={newExercise.equipment} 
-                      onValueChange={(value) => setNewExercise(prev => ({ ...prev, equipment: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn thiết bị" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Bodyweight">Bodyweight</SelectItem>
-                        <SelectItem value="Dumbbell">Dumbbell</SelectItem>
-                        <SelectItem value="Barbell">Barbell</SelectItem>
-                        <SelectItem value="Kettlebell">Kettlebell</SelectItem>
-                        <SelectItem value="Machine">Machine</SelectItem>
-                        <SelectItem value="Resistance Band">Resistance Band</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+      <ModalEditExercise
+        isOpen={showEditModal}
+        onClose={handleModalClose}
+        onSuccess={handleSuccess}
+        exercise={selectedExercise}
+      />
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="exerciseSets">Sets</Label>
-                    <Input
-                      id="exerciseSets"
-                      type="number"
-                      value={newExercise.sets}
-                      onChange={(e) => setNewExercise(prev => ({ ...prev, sets: e.target.value }))}
-                      placeholder="3"
-                      min="1"
-                      max="10"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="exerciseReps">Reps</Label>
-                    <Input
-                      id="exerciseReps"
-                      type="number"
-                      value={newExercise.reps}
-                      onChange={(e) => setNewExercise(prev => ({ ...prev, reps: e.target.value }))}
-                      placeholder="12"
-                      min="1"
-                      max="50"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="exerciseWeight">Trọng lượng (kg)</Label>
-                    <Input
-                      id="exerciseWeight"
-                      type="number"
-                      value={newExercise.weight}
-                      onChange={(e) => setNewExercise(prev => ({ ...prev, weight: e.target.value }))}
-                      placeholder="0"
-                      min="0"
-                      max="200"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="exerciseRestTime">Nghỉ (phút)</Label>
-                    <Input
-                      id="exerciseRestTime"
-                      type="number"
-                      value={newExercise.restTime}
-                      onChange={(e) => setNewExercise(prev => ({ ...prev, restTime: e.target.value }))}
-                      placeholder="2"
-                      min="0"
-                      max="10"
-                      step="0.5"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="exerciseDescription">Mô tả bài tập *</Label>
-                  <textarea
-                    id="exerciseDescription"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={3}
-                    placeholder="Mô tả ngắn gọn về bài tập..."
-                    value={newExercise.description}
-                    onChange={(e) => setNewExercise(prev => ({ ...prev, description: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="exerciseInstructions">Hướng dẫn thực hiện *</Label>
-                  <textarea
-                    id="exerciseInstructions"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={4}
-                    placeholder="Mô tả chi tiết cách thực hiện bài tập..."
-                    value={newExercise.instructions}
-                    onChange={(e) => setNewExercise(prev => ({ ...prev, instructions: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="exerciseTips">Mẹo thực hiện</Label>
-                  <textarea
-                    id="exerciseTips"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={3}
-                    placeholder="Những lưu ý quan trọng khi thực hiện bài tập..."
-                    value={newExercise.tips}
-                    onChange={(e) => setNewExercise(prev => ({ ...prev, tips: e.target.value }))}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-4 pt-4 border-t">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowAddModal(false)}
-                  >
-                    Hủy
-                  </Button>
-                  <Button type="submit">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Thêm bài tập
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Edit Exercise Modal */}
-      {showEditModal && selectedExercise && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Chỉnh Sửa Bài Tập</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowEditModal(false)}
-                >
-                  ×
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleEditExerciseSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="editExerciseName">Tên bài tập</Label>
-                    <Input
-                      id="editExerciseName"
-                      defaultValue={selectedExercise.name}
-                      placeholder="VD: Push-up"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editExerciseCategory">Danh mục</Label>
-                    <Select defaultValue={selectedExercise.category}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn danh mục" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Chest">Chest</SelectItem>
-                        <SelectItem value="Back">Back</SelectItem>
-                        <SelectItem value="Legs">Legs</SelectItem>
-                        <SelectItem value="Shoulders">Shoulders</SelectItem>
-                        <SelectItem value="Arms">Arms</SelectItem>
-                        <SelectItem value="Core">Core</SelectItem>
-                        <SelectItem value="Cardio">Cardio</SelectItem>
-                        <SelectItem value="FullBody">Full Body</SelectItem>
-                        <SelectItem value="Flexibility">Flexibility</SelectItem>
-                        <SelectItem value="Balance">Balance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="editExerciseDifficulty">Độ khó</Label>
-                    <Select defaultValue={selectedExercise.difficultyLevel}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn độ khó" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Beginner">Beginner</SelectItem>
-                        <SelectItem value="Intermediate">Intermediate</SelectItem>
-                        <SelectItem value="Advanced">Advanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="editExerciseEquipment">Thiết bị</Label>
-                    <Select defaultValue={selectedExercise.equipment}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn thiết bị" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Bodyweight">Bodyweight</SelectItem>
-                        <SelectItem value="Dumbbell">Dumbbell</SelectItem>
-                        <SelectItem value="Barbell">Barbell</SelectItem>
-                        <SelectItem value="Kettlebell">Kettlebell</SelectItem>
-                        <SelectItem value="Machine">Machine</SelectItem>
-                        <SelectItem value="Resistance Band">Resistance Band</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="editExerciseSets">Sets</Label>
-                    <Input
-                      id="editExerciseSets"
-                      type="number"
-                      defaultValue={selectedExercise.sets}
-                      placeholder="3"
-                      min="1"
-                      max="10"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editExerciseReps">Reps</Label>
-                    <Input
-                      id="editExerciseReps"
-                      type="number"
-                      defaultValue={selectedExercise.reps}
-                      placeholder="12"
-                      min="1"
-                      max="50"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editExerciseWeight">Trọng lượng (kg)</Label>
-                    <Input
-                      id="editExerciseWeight"
-                      type="number"
-                      defaultValue={selectedExercise.weight}
-                      placeholder="0"
-                      min="0"
-                      max="200"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editExerciseRestTime">Nghỉ (phút)</Label>
-                    <Input
-                      id="editExerciseRestTime"
-                      type="number"
-                      defaultValue={selectedExercise.restTime}
-                      placeholder="2"
-                      min="0"
-                      max="10"
-                      step="0.5"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="editExerciseDescription">Mô tả bài tập</Label>
-                  <textarea
-                    id="editExerciseDescription"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={3}
-                    placeholder="Mô tả ngắn gọn về bài tập..."
-                    defaultValue={selectedExercise.description}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="editExerciseInstructions">Hướng dẫn thực hiện</Label>
-                  <textarea
-                    id="editExerciseInstructions"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={4}
-                    placeholder="Mô tả chi tiết cách thực hiện bài tập..."
-                    defaultValue={selectedExercise.instructions}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="editExerciseTips">Mẹo thực hiện</Label>
-                  <textarea
-                    id="editExerciseTips"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={3}
-                    placeholder="Những lưu ý quan trọng khi thực hiện bài tập..."
-                    defaultValue={selectedExercise.tips}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-4 pt-4 border-t">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowEditModal(false)}
-                  >
-                    Hủy
-                  </Button>
-                  <Button type="submit">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Cập nhật
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <ModalViewExercise
+        isOpen={showViewModal}
+        onClose={handleModalClose}
+        exercise={selectedExercise}
+      />
     </div>
   );
 }
