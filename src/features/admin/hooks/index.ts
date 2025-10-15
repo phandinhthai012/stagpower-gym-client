@@ -27,3 +27,14 @@ export {
   useUpdateExercise,
   useDeleteExercise
 } from './useExercises';
+
+// Discount hooks
+export {
+  useDiscounts,
+  useDiscountById,
+  useSearchDiscounts,
+  useCreateDiscount,
+  useUpdateDiscount,
+  useChangeDiscountStatus,
+  useDeleteDiscount
+} from './useDiscounts';
