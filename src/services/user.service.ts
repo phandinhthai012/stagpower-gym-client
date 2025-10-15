@@ -55,7 +55,7 @@ const userService = {
     // update my profile
     updateMyProfile: async (payload: any): Promise<any> => {
         try {
-            const response = await apiClient.put(API_ENDPOINTS.USER.UPDATE_MY_PROFILE, payload);
+            const response = await apiClient.put(API_ENDPOINTS.USER.UPDATE_USER(payload.userId), payload);
             return response.data;
         } catch (error: any) {
             return {
@@ -79,7 +79,7 @@ const userService = {
         }
     },
     // create user
-    createMember: async (payload: any): Promise<any> => {
+    createUser: async (payload: any): Promise<any> => {
         try {
             const { fullName, email, phone, gender, dateOfBirth, photo, status, memberInfo } = payload;
             if (!fullName || !email || !phone || !gender || !dateOfBirth || !photo || !status || !memberInfo) {
@@ -89,7 +89,7 @@ const userService = {
                     error: null
                 };
             }
-            const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_MEMBER, { fullName, email, phone, gender, dateOfBirth, photo, status, memberInfo });
+            const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_USER, { fullName, email, phone, gender, dateOfBirth, photo, status, memberInfo });
             return response.data;
         } catch (error: any) {
             return {
@@ -99,66 +99,66 @@ const userService = {
             };
         }
     },
-    createTrainer: async (payload: any): Promise<any> => {
-        try {
-            const { fullName, email, phone, gender, dateOfBirth, photo, status, trainerInfo } = payload;
-            if (!fullName || !email || !phone || !gender || !dateOfBirth || !photo || !status || !trainerInfo) {
-                return {
-                    success: false,
-                    message: 'Vui lòng điền đầy đủ thông tin',
-                    error: null
-                };
-            }
-            const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_TRAINER, { fullName, email, phone, gender, dateOfBirth, photo, status, trainerInfo });
-            return response.data;
-        } catch (error: any) {
-            return {
-                success: false,
-                message: error?.response?.data?.message || error?.message || 'Tạo PT thất bại',
-                error: error?.response?.data || error
-            };
-        }
-    },
-    createStaff: async (payload: any): Promise<any> => {
-        try {
-            const { fullName, email, phone, gender, dateOfBirth, photo, status, staffInfo } = payload;
-            if (!fullName || !email || !phone || !gender || !dateOfBirth || !photo || !status || !staffInfo) {
-                return {
-                    success: false,
-                    message: 'Vui lòng điền đầy đủ thông tin',
-                    error: null
-                };
-            }
-            const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_STAFF, { fullName, email, phone, gender, dateOfBirth, photo, status, staffInfo });
-            return response.data;
-        } catch (error: any) {
-            return {
-                success: false,
-                message: error?.response?.data?.message || error?.message || 'Tạo nhân viên thất bại',
-                error: error?.response?.data || error
-            };
-        }
-    },
-    createAdmin: async (payload: any): Promise<any> => {
-        try {
-            const { fullName, email, phone, gender, dateOfBirth, photo, status, adminInfo } = payload;
-            if (!fullName || !email || !phone || !gender || !dateOfBirth || !photo || !status || !adminInfo) {
-                return {
-                    success: false,
-                    message: 'Vui lòng điền đầy đủ thông tin',
-                    error: null
-                };
-            }
-            const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_ADMIN, { fullName, email, phone, gender, dateOfBirth, photo, status, adminInfo });
-            return response.data;
-        } catch (error: any) {
-            return {
-                success: false,
-                message: error?.response?.data?.message || error?.message || 'Tạo admin thất bại',
-                error: error?.response?.data || error
-            };
-        }
-    },
+    // createTrainer: async (payload: any): Promise<any> => {
+    //     try {
+    //         const { fullName, email, phone, gender, dateOfBirth, photo, status, trainerInfo } = payload;
+    //         if (!fullName || !email || !phone || !gender || !dateOfBirth || !photo || !status || !trainerInfo) {
+    //             return {
+    //                 success: false,
+    //                 message: 'Vui lòng điền đầy đủ thông tin',
+    //                 error: null
+    //             };
+    //         }
+    //         const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_TRAINER, { fullName, email, phone, gender, dateOfBirth, photo, status, trainerInfo });
+    //         return response.data;
+    //     } catch (error: any) {
+    //         return {
+    //             success: false,
+    //             message: error?.response?.data?.message || error?.message || 'Tạo PT thất bại',
+    //             error: error?.response?.data || error
+    //         };
+    //     }
+    // },
+    // createStaff: async (payload: any): Promise<any> => {
+    //     try {
+    //         const { fullName, email, phone, gender, dateOfBirth, photo, status, staffInfo } = payload;
+    //         if (!fullName || !email || !phone || !gender || !dateOfBirth || !photo || !status || !staffInfo) {
+    //             return {
+    //                 success: false,
+    //                 message: 'Vui lòng điền đầy đủ thông tin',
+    //                 error: null
+    //             };
+    //         }
+    //         const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_STAFF, { fullName, email, phone, gender, dateOfBirth, photo, status, staffInfo });
+    //         return response.data;
+    //     } catch (error: any) {
+    //         return {
+    //             success: false,
+    //             message: error?.response?.data?.message || error?.message || 'Tạo nhân viên thất bại',
+    //             error: error?.response?.data || error
+    //         };
+    //     }
+    // },
+    // createAdmin: async (payload: any): Promise<any> => {
+    //     try {
+    //         const { fullName, email, phone, gender, dateOfBirth, photo, status, adminInfo } = payload;
+    //         if (!fullName || !email || !phone || !gender || !dateOfBirth || !photo || !status || !adminInfo) {
+    //             return {
+    //                 success: false,
+    //                 message: 'Vui lòng điền đầy đủ thông tin',
+    //                 error: null
+    //             };
+    //         }
+    //         const response = await apiClient.post(API_ENDPOINTS.USER.CREATE_ADMIN, { fullName, email, phone, gender, dateOfBirth, photo, status, adminInfo });
+    //         return response.data;
+    //     } catch (error: any) {
+    //         return {
+    //             success: false,
+    //             message: error?.response?.data?.message || error?.message || 'Tạo admin thất bại',
+    //             error: error?.response?.data || error
+    //         };
+    //     }
+    // },
 }
 
 export default userService;

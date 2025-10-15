@@ -1,7 +1,7 @@
-import apiClient from '../configs/AxiosConfig';
-import { API_ENDPOINTS } from '../configs/Api';
+import apiClient from '../../../configs/AxiosConfig';
+import { API_ENDPOINTS } from '../../../configs/Api';
 import { AxiosError } from 'axios';
-import { User } from '../contexts/AuthContext';
+import { User } from '../../../contexts/AuthContext';
 
 export type LoginRequest = {
     email: string;
@@ -90,7 +90,6 @@ const authService = {
             };
         }
     },
-
 
     getCurrentUser: async (): Promise<any> => {
         try {

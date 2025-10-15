@@ -10,7 +10,7 @@ import { useScrollLock } from '../../../../hooks/useScrollLock';
 import { useCreateSubscription } from '../../hooks/useSubscriptions';
 import { useBranches } from '../../hooks/useBranches';
 import { usePackages } from '../../hooks/usePackages';
-import { Package, Branch } from '../../types';
+import { Branch, Package } from '../../types';
 import { 
   X, 
   Package as PackageIcon, 
@@ -55,7 +55,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
 
   // Get data from API responses
   const branches: Branch[] = branchesResponse?.data || [];
-  const packages: Package[] = packagesResponse?.data || [];
+  const packages: Package[] = packagesResponse || [];
 
   // Update form data when selectedPackage changes
   useEffect(() => {
@@ -134,7 +134,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
         packageId: formData.packageId,
         branchId: formData.branchId,
         type: packageInfo.type,
-        membershipType: packageInfo.membershipType,
+        membershipType: packageInfo.membershipType || 'Basic',
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         durationDays: packageInfo.durationMonths * 30,
@@ -398,7 +398,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
                     </div>
                     <div className="flex justify-between">
                       <span>Loại:</span>
-                      <span className="font-medium">{selectedPackageInModal.membershipType}</span>
+                      <span className="font-medium">{selectedPackageInModal.membershipType || 'Basic'}</span>
                     </div>
                     <div className="flex justify-between text-base font-semibold border-t pt-2">
                       <span>Tổng cộng:</span>

@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Badge } from '../../../../components/ui/badge';
 import { Separator } from '../../../../components/ui/separator';
-import { 
-  X, 
-  Package as PackageIcon, 
-  Edit, 
-  Trash2, 
+import {
+  X,
+  Package as PackageIcon,
+  Edit,
+  Trash2,
   DollarSign,
   Calendar,
   Users,
@@ -19,41 +19,99 @@ import {
   Info
 } from 'lucide-react';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
+import { usePackageById, useUpdatePackage } from '../../hooks/usePackages';
+import { LoadingSpinner } from '../../../../components/common/LoadingSpinner';
+import { ModalEditPackage } from './ModalEditPackage';
 
 interface Package {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   type: 'Membership' | 'Combo' | 'PT';
-  package_category: 'ShortTerm' | 'MediumTerm' | 'LongTerm' | 'Trial';
+  packageCategory: 'ShortTerm' | 'MediumTerm' | 'LongTerm' | 'Trial';
+  durationMonths: number;
+  membershipType?: 'Basic' | 'VIP'; // Required for Membership/Combo
   price: number;
-  duration_months: number;
-  status: 'Active' | 'Inactive';
-  membership_type?: 'Basic' | 'VIP';
-  pt_sessions?: number;
-  features?: string[];
-  created_at: string;
-  updated_at: string;
+  ptSessions?: number; // Required for PT/Combo
+  ptSessionDuration?: number; // Required for PT/Combo (30-150 minutes)
+  branchAccess: 'Single' | 'All';
+  isTrial: boolean;
+  maxTrialDays?: number; // Required if isTrial = true (1-7 days)
+  status: 'Active' | 'Inactive' | 'Draft';
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface ModalDetailPackageProps {
   isOpen: boolean;
   onClose: () => void;
-  package: Package | null;
+  // package: Package | null;
+  packageId: string | null;
   onEdit?: (pkg: Package) => void;
   onDelete?: (packageId: string) => void;
 }
 
-export function ModalDetailPackage({ 
-  isOpen, 
-  onClose, 
-  package: pkg, 
-  onEdit, 
-  onDelete 
+export function ModalDetailPackage({
+  isOpen,
+  onClose,
+  packageId,
+  onEdit,
+  onDelete
 }: ModalDetailPackageProps) {
   useScrollLock(isOpen, { preserveScrollPosition: true });
+  const {
+    data: response,
+    isLoading,
+    isError,
+    error
+  } = usePackageById(packageId, {
+    enabled: isOpen && !!packageId
+  });
 
-  if (!isOpen || !pkg) return null;
+  const [pkg, setPkg] = useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  useEffect(() => {
+    if ((response as any)?.success && (response as any).data) {
+      setPkg((response as any).data);
+    }
+  }, [response]);
+
+  if (!isOpen || !packageId) return null;
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+        <div className="relative bg-white rounded-lg p-8">
+          <LoadingSpinner />
+          <p className="mt-4 text-center text-gray-600">Đang tải thông tin gói tập...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isError || !(response as any)?.success || !pkg) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative bg-white rounded-lg p-8 max-w-md">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi tải dữ liệu</h3>
+            <p className="text-gray-600 mb-4">
+              {(response as any)?.message || 'Không thể tải thông tin gói tập'}
+            </p>
+            <Button onClick={onClose} variant="outline">
+              Đóng
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -67,6 +125,7 @@ export function ModalDetailPackage({
       case 'Membership': return 'bg-blue-100 text-blue-800';
       case 'Combo': return 'bg-orange-100 text-orange-800';
       case 'PT': return 'bg-purple-100 text-purple-800';
+      case 'Trial': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -96,15 +155,20 @@ export function ModalDetailPackage({
   const getStatusColor = (status: string) => {
     return status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
+  
+  const handleUpdatePackage = () => {
+    console.log('Updating package:', pkg);
+    setIsEditModalOpen(true);
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="relative w-full max-w-4xl max-h-[90vh] mx-4 bg-white rounded-lg shadow-xl overflow-hidden">
         {/* Header */}
@@ -135,15 +199,15 @@ export function ModalDetailPackage({
           {/* Package Header */}
           <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-gray-900">{pkg.name}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{pkg?.name}</h2>
               <p className="text-gray-600">{pkg.description}</p>
               <div className="flex items-center space-x-2">
                 <Badge className={`${getPackageTypeColor(pkg.type)}`}>
                   {pkg.type}
                 </Badge>
-                {pkg.membership_type && (
-                  <Badge className={`${getMembershipTypeColor(pkg.membership_type)}`}>
-                    {pkg.membership_type}
+                {pkg.membershipType && (
+                  <Badge className={`${getMembershipTypeColor(pkg.membershipType)}`}>
+                    {pkg.membershipType}
                   </Badge>
                 )}
                 <Badge className={getStatusColor(pkg.status)}>
@@ -180,11 +244,11 @@ export function ModalDetailPackage({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Thời hạn:</span>
-                  <span className="text-sm text-gray-900">{pkg.duration_months} tháng</span>
+                  <span className="text-sm text-gray-900">{pkg.durationMonths} tháng</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Phân loại:</span>
-                  <span className="text-sm text-gray-900">{getCategoryDisplay(pkg.package_category)}</span>
+                  <span className="text-sm text-gray-900">{getCategoryDisplay(pkg.packageCategory)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Trạng thái:</span>
@@ -192,14 +256,20 @@ export function ModalDetailPackage({
                     {getStatusDisplay(pkg.status)}
                   </Badge>
                 </div>
-                {pkg.membership_type && (
+                {pkg.membershipType && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-600">Loại Membership:</span>
-                    <Badge className={`${getMembershipTypeColor(pkg.membership_type)}`}>
-                      {pkg.membership_type}
+                    <Badge className={`${getMembershipTypeColor(pkg.membershipType)}`}>
+                      {pkg.membershipType}
                     </Badge>
                   </div>
                 )}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600">Quyền truy cập:</span>
+                  <Badge className={pkg.branchAccess === 'All' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+                    {pkg.branchAccess === 'All' ? 'Tất cả chi nhánh' : 'Chi nhánh đơn'}
+                  </Badge>
+                </div>
               </CardContent>
             </Card>
 
@@ -220,34 +290,41 @@ export function ModalDetailPackage({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Thời hạn:</span>
-                  <span className="text-sm text-gray-900">{pkg.duration_months} tháng</span>
+                  <span className="text-sm text-gray-900">{pkg.durationMonths} tháng</span>
                 </div>
-                {pkg.pt_sessions && (
+                {pkg.ptSessions && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-600">Buổi PT:</span>
-                    <span className="text-sm text-gray-900">{pkg.pt_sessions} buổi</span>
+                    <span className="text-sm text-gray-900">{pkg.ptSessions} buổi</span>
                   </div>
                 )}
+                {pkg.ptSessionDuration && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-600">Thời gian/buổi PT:</span>
+                    <span className="text-sm text-gray-900">{pkg.ptSessionDuration} phút</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Giá/ tháng:</span>
                   <span className="text-sm text-gray-900">
-                    {formatPrice(pkg.price / pkg.duration_months)}
+                    {formatPrice(pkg.price / pkg.durationMonths)}
                   </span>
                 </div>
-                {pkg.pt_sessions && (
+                {pkg.ptSessions && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-600">Giá/ buổi PT:</span>
                     <span className="text-sm text-gray-900">
-                      {formatPrice(pkg.price / pkg.pt_sessions)}
+                      {formatPrice(pkg.price / pkg.ptSessions)}
                     </span>
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
-
+                
           {/* Features */}
-          {pkg.features && pkg.features.length > 0 && (
+          {pkg.features && pkg?.features?.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center space-x-2">
@@ -257,7 +334,7 @@ export function ModalDetailPackage({
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {pkg.features.map((feature, index) => (
+                  {pkg?.features?.map((feature: string, index: number) => (
                     <div key={index} className="flex items-center space-x-2">
                       <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                       <span className="text-sm text-gray-700">{feature}</span>
@@ -280,7 +357,7 @@ export function ModalDetailPackage({
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-600">Ngày tạo:</span>
                 <span className="text-sm text-gray-900">
-                  {new Date(pkg.created_at).toLocaleDateString('vi-VN', {
+                  {new Date(pkg.createdAt).toLocaleDateString('vi-VN', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -292,7 +369,7 @@ export function ModalDetailPackage({
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-gray-600">Cập nhật lần cuối:</span>
                 <span className="text-sm text-gray-900">
-                  {new Date(pkg.updated_at).toLocaleDateString('vi-VN', {
+                  {new Date(pkg.updatedAt).toLocaleDateString('vi-VN', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -315,7 +392,7 @@ export function ModalDetailPackage({
             <CardContent>
               <div className="flex flex-wrap gap-3">
                 <Button
-                  onClick={() => onEdit?.(pkg)}
+                  onClick={handleUpdatePackage}
                   className="flex items-center space-x-2"
                 >
                   <Edit className="w-4 h-4" />
@@ -325,7 +402,7 @@ export function ModalDetailPackage({
                   variant="outline"
                   onClick={() => {
                     // TODO: Implement duplicate functionality
-                    console.log('Duplicate package:', pkg.id);
+                    console.log('Duplicate package:', pkg._id);
                   }}
                   className="flex items-center space-x-2"
                 >
@@ -336,7 +413,7 @@ export function ModalDetailPackage({
                   variant="outline"
                   onClick={() => {
                     // TODO: Implement toggle status functionality
-                    console.log('Toggle status:', pkg.id);
+                    console.log('Toggle status:', pkg._id);
                   }}
                   className="flex items-center space-x-2"
                 >
@@ -347,7 +424,7 @@ export function ModalDetailPackage({
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => onDelete?.(pkg.id)}
+                  onClick={() => onDelete?.(pkg._id)}
                   className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -356,6 +433,11 @@ export function ModalDetailPackage({
               </div>
             </CardContent>
           </Card>
+          <ModalEditPackage 
+            isOpen={isEditModalOpen} 
+            onClose={() => setIsEditModalOpen(false)} 
+            packageId={pkg._id}
+          />
         </div>
       </div>
     </div>

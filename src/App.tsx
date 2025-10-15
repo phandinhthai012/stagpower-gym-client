@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { AuthPage, RegistrationSuccessPage } from './features/auth';
@@ -33,21 +34,22 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <Toaster position="top-right" richColors />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
           <Route path="/registration-success" element={<RegistrationSuccessPage />} />
-          
+
           {/* Protected Routes */}
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
               <ProtectedRoute requiredRole="admin">
                 <AdminLayout />
               </ProtectedRoute>
-            } 
+            }
           >
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
@@ -64,21 +66,21 @@ function App() {
             <Route path="complaints" element={<AdminComplaintManagement />} />
             <Route path="settings" element={<AdminAccountSettings />} />
           </Route>
-          <Route 
-            path="/staff" 
+          <Route
+            path="/staff"
             element={
               <ProtectedRoute requiredRole="staff">
                 <StaffDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/trainer" 
-            element={ 
+          <Route
+            path="/trainer"
+            element={
               <ProtectedRoute requiredRole="trainer">
                 <TrainerLayout />
               </ProtectedRoute>
-            } 
+            }
           >
             <Route index element={<Navigate to="/trainer/dashboard" replace />} />
             <Route path="dashboard" element={<TrainerDashboardPage />} />
@@ -90,15 +92,15 @@ function App() {
             <Route path="progress" element={<TrainerProgressPage />} />
             <Route path="profile" element={<TrainerProfilePage />} />
             <Route path="notifications" element={<TrainerNotificationsPage />} />
-            
+
           </Route>
-          <Route 
+          <Route
             path="/member"
             element={
               <ProtectedRoute requiredRole="member">
                 <MemberLayout />
               </ProtectedRoute>
-            } 
+            }
           >
             <Route index element={<Navigate to="/member/dashboard" replace />} />
             <Route path="dashboard" element={<MemberDashboard />} />
@@ -111,11 +113,42 @@ function App() {
             <Route path="notifications" element={<MemberNotifications />} />
             <Route path="suggestions" element={<MemberSuggestions />} />
           </Route>
-          
+
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+      <Toaster
+        position="top-right"
+        duration={4000}
+        richColors
+        closeButton={false}
+        expand={true}
+        visibleToasts={5}
+        toastOptions={{
+          style: {
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+          className: 'toast-custom',
+          descriptionClassName: 'toast-description',
+          actionButtonStyle: {
+            background: 'rgba(255, 255, 255, 0.2)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            fontWeight: '600',
+          }
+        }}
+        theme="dark"
+      />
     </AuthProvider>
   );
 }

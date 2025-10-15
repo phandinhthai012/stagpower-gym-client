@@ -23,7 +23,6 @@ import {
 import { usePackages } from '../hooks/usePackages';
 import { useSubscriptionsByMemberId } from '../hooks/useSubscriptions';
 import { formatDate } from '../../../lib/date-utils';
-import { Package, Subscription } from '../types';
 import { ModalRegisPackage } from '../components/member-package/ModalRegisPackage';
 
 export function MemberPackages() {
@@ -32,30 +31,30 @@ export function MemberPackages() {
   const [filterTier, setFilterTier] = useState<'All' | 'Basic' | 'VIP'>('All');
   const [visibleCount, setVisibleCount] = useState<number>(3);
   const [isRegisModalOpen, setIsRegisModalOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<Package | undefined>();
+  const [selectedPackage, setSelectedPackage] = useState<any | undefined>();
 
   // API hooks
   const { data: packagesResponse, isLoading: packagesLoading, isError: packagesError } = usePackages();
   const { data: subscriptionsResponse, isLoading: subscriptionsLoading, isError: subscriptionsError } = useSubscriptionsByMemberId(user?.id || '');
 
   // Get data from API responses
-  const packages: Package[] = packagesResponse?.data || [];
-  const memberSubscriptions: Subscription[] = subscriptionsResponse?.data || [];
+  const packages: any[] = packagesResponse || [];
+  const subscriptions: any[] = subscriptionsResponse?.data || [];
 
   // Get active subscription
   const activeSubscription = useMemo(() => {
-    return memberSubscriptions.find((sub: Subscription) => sub.status === 'Active');
-  }, [memberSubscriptions]);
+    return subscriptions.find(sub => sub.status === 'Active');
+  }, [subscriptions]);
 
   // Get subscription history
   const subscriptionHistory = useMemo(() => {
-    return memberSubscriptions
-      .sort((a: Subscription, b: Subscription) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
-  }, [memberSubscriptions]);
+    return subscriptions
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+  }, [subscriptions]);
 
   // Get package info
   const getPackageInfo = (packageId: string) => {
-    return packages.find((pkg: Package) => pkg._id === packageId);
+    return packages.find(pkg => pkg._id === packageId);
   };
 
   const getDaysUntilExpiry = (endDate: string) => {
@@ -66,7 +65,7 @@ export function MemberPackages() {
     return diffDays;
   };
 
-  const getSubscriptionProgress = (subscription: Subscription) => {
+  const getSubscriptionProgress = (subscription: any) => {
     const startDate = new Date(subscription.startDate);
     const endDate = new Date(subscription.endDate);
     const today = new Date();
@@ -99,7 +98,7 @@ export function MemberPackages() {
     return type === 'VIP' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
   };
 
-  const handleOpenRegisModal = (pkg?: Package) => {
+  const handleOpenRegisModal = (pkg?: any) => {
     setSelectedPackage(pkg);
     setIsRegisModalOpen(true);
   };
@@ -274,14 +273,14 @@ export function MemberPackages() {
         <CardContent>
           {(() => {
             const filtered = packages
-              .filter((pkg: Package) => pkg.status === 'Active')
-              .filter((pkg: Package) => (filterType === 'All' ? true : pkg.type === filterType))
-              .filter((pkg: Package) => (filterTier === 'All' ? true : pkg.membershipType === filterTier));
+              .filter(pkg => pkg.status === 'Active')
+              .filter(pkg => (filterType === 'All' ? true : pkg.type === filterType))
+              .filter(pkg => (filterTier === 'All' ? true : pkg.membershipType === filterTier));
             const items = filtered.slice(0, visibleCount);
             return (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {items.map((pkg: Package) => (
+                  {items.map((pkg) => (
               <Card key={pkg._id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -350,7 +349,7 @@ export function MemberPackages() {
         <CardContent>
           {subscriptionHistory.length > 0 ? (
             <div className="space-y-4">
-              {subscriptionHistory.map((subscription: Subscription) => {
+              {subscriptionHistory.map((subscription) => {
                 const packageInfo = getPackageInfo(subscription.packageId);
                 return (
                   <div key={subscription._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">

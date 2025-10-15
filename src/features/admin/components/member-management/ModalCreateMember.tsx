@@ -132,9 +132,9 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
                 <SelectValue placeholder="Chọn giới tính" />
               </SelectTrigger>
               <SelectContent className="z-[10001]" lockScroll={false}>
-                <SelectItem value="Male">Nam</SelectItem>
-                <SelectItem value="Female">Nữ</SelectItem>
-                <SelectItem value="Other">Khác</SelectItem>
+                <SelectItem value="male">Nam</SelectItem>
+                <SelectItem value="female">Nữ</SelectItem>
+                <SelectItem value="other">Khác</SelectItem>
               </SelectContent>
             </Select>
             {errors.gender && (

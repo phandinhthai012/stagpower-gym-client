@@ -17,9 +17,10 @@ apiClient.interceptors.request.use(
         if (accessToken) {
             config.headers.Authorization = `Bearer ${accessToken}`;
         }
-        if (refreshToken) {
-            config.headers.RefreshToken = `Bearer ${refreshToken}`;
-        }
+        // Temporarily disable refresh-token header to avoid CORS issues
+        // if (refreshToken) {
+        //     config.headers['refresh-token'] = refreshToken;
+        // }
         return config;
     },
     (error) => {
@@ -56,14 +57,15 @@ apiClient.interceptors.response.use(
                 localStorage.setItem('accessToken', accessToken);
                 localStorage.setItem('refreshToken', refreshToken);
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-                originalRequest.headers.Refreshtoken = `Bearer ${refreshToken}`;
+                // Temporarily disable refresh-token header to avoid CORS issues
+                // originalRequest.headers['refresh-token'] = refreshToken;
                 return apiClient(originalRequest);
             } catch (error) {
                 console.error('Refresh token error:', error);
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
                 // có thể redirect về trang login
-                window.location.href = '/login';
+                // window.location.href = '/login';
                 return Promise.reject(error);
             }
 

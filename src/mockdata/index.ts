@@ -1,7 +1,8 @@
 // Import all mock data
 import { mockUsers, type User } from './users';
 import { mockHealthInfo, type HealthInfo } from './healthInfo';
-import { mockPackages, type Package } from './packages';
+import { mockPackages } from './packages';
+import { type Package } from '../types/package.types';
 import { mockBranches, type Branch } from './branches';
 import { mockSubscriptions, type Subscription } from './subscriptions';
 import { mockPayments, type Payment } from './payments';

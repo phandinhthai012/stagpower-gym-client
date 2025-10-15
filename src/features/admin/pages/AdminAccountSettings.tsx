@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -8,8 +8,9 @@ import { User, Mail, Phone, MapPin, Save, Key } from 'lucide-react';
 
 export function AdminAccountSettings() {
   const { user } = useAuth();
-  console.log('user', user);
-  const [formData, setFormData] = useState({
+  
+  // ✅ GOOD: Memoize initial form data để tránh tạo lại object
+  const initialFormData = useMemo(() => ({
     fullName: user?.fullName || '',
     email: user?.email || '',
     phone: user?.phone || '',
@@ -19,7 +20,9 @@ export function AdminAccountSettings() {
     newPassword: '',
     confirmPassword: '',
     address: '',
-  });
+  }), [user]); // Chỉ tính toán lại khi user thay đổi
+  
+  const [formData, setFormData] = useState(initialFormData);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -39,12 +42,48 @@ export function AdminAccountSettings() {
     console.log('Changing password');
   };
 
+  // ✅ GOOD: Memoize validation rules để tránh tạo lại object
+  const validationRules = useMemo(() => ({
+    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    phone: /^[0-9]{10,11}$/,
+    password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/
+  }), []); // Empty dependency array vì rules không thay đổi
+
+  // ✅ GOOD: Memoize computed values
+  const isFormValid = useMemo(() => {
+    return formData.fullName.trim() !== '' && 
+           formData.email.trim() !== '' && 
+           formData.phone.trim() !== '';
+  }, [formData.fullName, formData.email, formData.phone]);
+
+  // ✅ GOOD: Memoize expensive calculations
+  const formStats = useMemo(() => {
+    const filledFields = Object.values(formData).filter(value => value.trim() !== '').length;
+    const totalFields = Object.keys(formData).length;
+    const completionPercentage = (filledFields / totalFields) * 100;
+    
+    return {
+      filledFields,
+      totalFields,
+      completionPercentage: Math.round(completionPercentage)
+    };
+  }, [formData]);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Cài Đặt Tài Khoản</h1>
           <p className="text-gray-600">Quản lý thông tin cá nhân và bảo mật tài khoản</p>
+        </div>
+        {/* Demo useMemo: Form completion stats */}
+        <div className="text-right">
+          <div className="text-sm text-gray-600">
+            Hoàn thành: {formStats.completionPercentage}%
+          </div>
+          <div className="text-xs text-gray-500">
+            {formStats.filledFields}/{formStats.totalFields} trường
+          </div>
         </div>
       </div>
 
@@ -103,9 +142,13 @@ export function AdminAccountSettings() {
               />
             </div>
 
-            <Button onClick={handleSaveProfile} className="w-full">
+            <Button 
+              onClick={handleSaveProfile} 
+              className="w-full"
+              disabled={!isFormValid}
+            >
               <Save className="w-4 h-4 mr-2" />
-              Lưu Thông Tin
+              Lưu Thông Tin {!isFormValid && '(Vui lòng điền đầy đủ thông tin)'}
             </Button>
           </div>
         </Card>

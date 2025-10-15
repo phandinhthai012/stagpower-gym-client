@@ -5,16 +5,19 @@ import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
-import { 
-  X, 
-  Package, 
+import { useCreatePackage } from '../../hooks/usePackages';
+import { useBranches } from '../../hooks/useBranches';
+import { toast } from 'sonner';
+import {
+  X,
+  Package,
   DollarSign,
   Calendar,
   Users,
+  Plus,
   Dumbbell,
   Building2,
-  FileText,
-  Plus
+  FileText
 } from 'lucide-react';
 
 interface ModalCreatePackageProps {
@@ -24,28 +27,33 @@ interface ModalCreatePackageProps {
 }
 
 export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePackageProps) {
+  const createPackageMutation = useCreatePackage();
+  const { data: branches = [], isLoading: branchesLoading } = useBranches();
+  
   const [formData, setFormData] = useState({
     name: '',
     type: '',
-    package_category: '',
-    duration_months: '',
-    membership_type: '',
+    packageCategory: '',
+    durationMonths: '',
+    membershipType: '',
     price: '',
-    pt_sessions: '',
-    pt_session_duration: '',
-    branch_access: '',
-    description: ''
+    ptSessions: '',
+    ptSessionDuration: '',
+    branchAccess: '',
+    description: '',
+    isTrial: false,
+    maxTrialDays: '',
+    status: 'Active'
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Lock scroll when modal is open
   useScrollLock(isOpen, {
     preserveScrollPosition: true
   });
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -64,16 +72,16 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
       newErrors.type = 'Loại gói là bắt buộc';
     }
 
-    if (!formData.package_category) {
-      newErrors.package_category = 'Thời hạn là bắt buộc';
+    if (!formData.packageCategory) {
+      newErrors.packageCategory = 'Thời hạn là bắt buộc';
     }
 
-    if (!formData.duration_months) {
-      newErrors.duration_months = 'Số tháng là bắt buộc';
+    if (!formData.durationMonths) {
+      newErrors.durationMonths = 'Số tháng là bắt buộc';
     }
 
-    if (formData.type === 'Membership' && !formData.membership_type) {
-      newErrors.membership_type = 'Loại membership là bắt buộc';
+    if ((formData.type === 'Membership' || formData.type === 'Combo') && !formData.membershipType) {
+      newErrors.membershipType = 'Loại membership là bắt buộc';
     }
 
     if (!formData.price) {
@@ -82,16 +90,26 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
       newErrors.price = 'Giá phải là số dương';
     }
 
-    if (formData.pt_sessions && (isNaN(Number(formData.pt_sessions)) || Number(formData.pt_sessions) < 0)) {
-      newErrors.pt_sessions = 'Số buổi PT phải là số không âm';
+    if (!formData.branchAccess) {
+      newErrors.branchAccess = 'Quyền truy cập là bắt buộc';
     }
 
-    if (formData.pt_session_duration && (isNaN(Number(formData.pt_session_duration)) || Number(formData.pt_session_duration) <= 0)) {
-      newErrors.pt_session_duration = 'Thời lượng buổi PT phải là số dương';
+    // Validate PT sessions for PT and Combo types
+    if ((formData.type === 'PT' || formData.type === 'Combo') && (!formData.ptSessions || isNaN(Number(formData.ptSessions)) || Number(formData.ptSessions) <= 0)) {
+      newErrors.ptSessions = 'Số buổi PT là bắt buộc và phải lớn hơn 0';
     }
 
-    if (!formData.branch_access) {
-      newErrors.branch_access = 'Quyền truy cập là bắt buộc';
+    // Validate PT session duration for PT and Combo types
+    if ((formData.type === 'PT' || formData.type === 'Combo') && (!formData.ptSessionDuration || isNaN(Number(formData.ptSessionDuration)) || Number(formData.ptSessionDuration) <= 0)) {
+      newErrors.ptSessionDuration = 'Thời lượng buổi PT là bắt buộc và phải lớn hơn 0';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Mô tả là bắt buộc';
+    }
+
+    if (formData.isTrial && (!formData.maxTrialDays || isNaN(Number(formData.maxTrialDays)) || Number(formData.maxTrialDays) <= 0)) {
+      newErrors.maxTrialDays = 'Số ngày thử nghiệm phải là số dương';
     }
 
     setErrors(newErrors);
@@ -100,45 +118,70 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    console.log('Form submitted!', formData);
     if (!validateForm()) {
+      console.log('Form validation failed');
+      console.log('Current errors:', errors);
+      console.log('Form data:', formData);
       return;
     }
 
-    setIsSubmitting(true);
-    
-    try {
-      // TODO: Implement API call to create package
-      console.log('Creating package:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Reset form
-      setFormData({
-        name: '',
-        type: '',
-        package_category: '',
-        duration_months: '',
-        membership_type: '',
-        price: '',
-        pt_sessions: '',
-        pt_session_duration: '',
-        branch_access: '',
-        description: ''
-      });
-      
-      onSuccess?.();
-      onClose();
-    } catch (error) {
-      console.error('Error creating package:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Prepare data for API
+    const packageData = {
+      name: formData.name,
+      type: formData.type,
+      packageCategory: formData.packageCategory,
+      durationMonths: Number(formData.durationMonths),
+      membershipType: formData.membershipType || undefined,
+      price: Number(formData.price),
+      ptSessions: formData.ptSessions ? Number(formData.ptSessions) : undefined,
+      ptSessionDuration: formData.ptSessionDuration ? Number(formData.ptSessionDuration) : undefined,
+      branchAccess: formData.branchAccess,
+      description: formData.description,
+      isTrial: formData.isTrial,
+      maxTrialDays: formData.isTrial ? Number(formData.maxTrialDays) : undefined,
+      status: formData.status
+    };
+
+    console.log('Package data to submit:', packageData);
+
+    createPackageMutation.mutate(packageData, {
+      onSuccess: (data) => {
+        console.log('Package created successfully:', data);
+        toast.success('Gói tập đã được tạo thành công!');
+        
+        // Reset form
+        setFormData({
+          name: '',
+          type: '',
+          packageCategory: '',
+          durationMonths: '',
+          membershipType: '',
+          price: '',
+          ptSessions: '',
+          ptSessionDuration: '',
+          branchAccess: '',
+          description: '',
+          isTrial: false,
+          maxTrialDays: '',
+          status: 'Active'
+        });
+        
+        // Clear errors
+        setErrors({});
+        
+        onSuccess?.();
+        onClose();
+      },
+      onError: (error) => {
+        console.error('Error creating package:', error);
+        toast.error(`Lỗi khi tạo gói tập: ${error?.message || 'Có lỗi xảy ra'}`);
+      }
+    });
   };
 
   const handleClose = () => {
-    if (!isSubmitting) {
+    if (!createPackageMutation.isPending) {
       onClose();
     }
   };
@@ -148,11 +191,11 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={handleClose}
       />
-      
+
       {/* Modal */}
       <div className="relative w-full max-w-4xl max-h-[90vh] mx-4 bg-white rounded-lg shadow-xl overflow-hidden">
         {/* Header */}
@@ -174,7 +217,7 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
             variant="outline"
             size="sm"
             onClick={handleClose}
-            disabled={isSubmitting}
+            disabled={createPackageMutation.isPending}
             className="flex items-center space-x-1"
           >
             <X className="h-4 w-4" />
@@ -230,12 +273,12 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="package_category">Thời hạn *</Label>
+                    <Label htmlFor="packageCategory">Thời hạn *</Label>
                     <Select
-                      value={formData.package_category}
-                      onValueChange={(value) => handleInputChange('package_category', value)}
+                      value={formData.packageCategory}
+                      onValueChange={(value) => handleInputChange('packageCategory', value)}
                     >
-                      <SelectTrigger className={errors.package_category ? 'border-red-500' : ''}>
+                      <SelectTrigger className={errors.packageCategory ? 'border-red-500' : ''}>
                         <SelectValue placeholder="Chọn thời hạn" />
                       </SelectTrigger>
                       <SelectContent lockScroll={false}>
@@ -245,42 +288,75 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                         <SelectItem value="Trial">Gói thử (1-7 ngày)</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.package_category && (
-                      <p className="text-sm text-red-500 mt-1">{errors.package_category}</p>
+                    {errors.packageCategory && (
+                      <p className="text-sm text-red-500 mt-1">{errors.packageCategory}</p>
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="duration_months">Số tháng *</Label>
+                    <Label htmlFor="durationMonths">Số tháng *</Label>
                     <Input
-                      id="duration_months"
+                      id="durationMonths"
                       type="number"
-                      value={formData.duration_months}
-                      onChange={(e) => handleInputChange('duration_months', e.target.value)}
+                      value={formData.durationMonths}
+                      onChange={(e) => handleInputChange('durationMonths', e.target.value)}
                       placeholder="1, 3, 6, 12"
-                      className={errors.duration_months ? 'border-red-500' : ''}
+                      className={errors.durationMonths ? 'border-red-500' : ''}
                     />
-                    {errors.duration_months && (
-                      <p className="text-sm text-red-500 mt-1">{errors.duration_months}</p>
+                    {errors.durationMonths && (
+                      <p className="text-sm text-red-500 mt-1">{errors.durationMonths}</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Mô tả gói</Label>
+                  <Label htmlFor="description">Mô tả gói *</Label>
                   <textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                    className={`w-full p-3 border rounded-md resize-none ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
                     rows={3}
                     placeholder="Mô tả chi tiết về gói tập..."
                   />
+                  {errors.description && (
+                    <p className="text-sm text-red-500 mt-1">{errors.description}</p>
+                  )}
+                </div>
+
+                {/* Trial Package Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isTrial"
+                      checked={formData.isTrial}
+                      onChange={(e) => handleInputChange('isTrial', e.target.checked)}
+                      className="rounded"
+                    />
+                    <Label htmlFor="isTrial">Gói thử nghiệm</Label>
+                  </div>
+                  {formData.isTrial && (
+                    <div>
+                      <Label htmlFor="maxTrialDays">Số ngày thử nghiệm *</Label>
+                      <Input
+                        id="maxTrialDays"
+                        type="number"
+                        value={formData.maxTrialDays}
+                        onChange={(e) => handleInputChange('maxTrialDays', e.target.value)}
+                        placeholder="3, 7, 14"
+                        className={errors.maxTrialDays ? 'border-red-500' : ''}
+                      />
+                      {errors.maxTrialDays && (
+                        <p className="text-sm text-red-500 mt-1">{errors.maxTrialDays}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Membership Information */}
-            {formData.type === 'Membership' && (
+            {(formData.type === 'Membership' || formData.type === 'Combo') && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -291,12 +367,12 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="membership_type">Loại Membership *</Label>
+                      <Label htmlFor="membershipType">Loại Membership *</Label>
                       <Select
-                        value={formData.membership_type}
-                        onValueChange={(value) => handleInputChange('membership_type', value)}
+                        value={formData.membershipType}
+                        onValueChange={(value) => handleInputChange('membershipType', value)}
                       >
-                        <SelectTrigger className={errors.membership_type ? 'border-red-500' : ''}>
+                        <SelectTrigger className={errors.membershipType ? 'border-red-500' : ''}>
                           <SelectValue placeholder="Chọn loại" />
                         </SelectTrigger>
                         <SelectContent lockScroll={false}>
@@ -304,17 +380,17 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                           <SelectItem value="VIP">VIP (Tất cả chi nhánh)</SelectItem>
                         </SelectContent>
                       </Select>
-                      {errors.membership_type && (
-                        <p className="text-sm text-red-500 mt-1">{errors.membership_type}</p>
+                      {errors.membershipType && (
+                        <p className="text-sm text-red-500 mt-1">{errors.membershipType}</p>
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="branch_access">Quyền truy cập *</Label>
+                      <Label htmlFor="branchAccess">Quyền truy cập *</Label>
                       <Select
-                        value={formData.branch_access}
-                        onValueChange={(value) => handleInputChange('branch_access', value)}
+                        value={formData.branchAccess}
+                        onValueChange={(value) => handleInputChange('branchAccess', value)}
                       >
-                        <SelectTrigger className={errors.branch_access ? 'border-red-500' : ''}>
+                        <SelectTrigger className={errors.branchAccess ? 'border-red-500' : ''}>
                           <SelectValue placeholder="Chọn quyền" />
                         </SelectTrigger>
                         <SelectContent lockScroll={false}>
@@ -322,8 +398,8 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                           <SelectItem value="All">Tất cả chi nhánh</SelectItem>
                         </SelectContent>
                       </Select>
-                      {errors.branch_access && (
-                        <p className="text-sm text-red-500 mt-1">{errors.branch_access}</p>
+                      {errors.branchAccess && (
+                        <p className="text-sm text-red-500 mt-1">{errors.branchAccess}</p>
                       )}
                     </div>
                   </div>
@@ -343,31 +419,31 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="pt_sessions">Số buổi PT</Label>
+                      <Label htmlFor="ptSessions">Số buổi PT *</Label>
                       <Input
-                        id="pt_sessions"
+                        id="ptSessions"
                         type="number"
-                        value={formData.pt_sessions}
-                        onChange={(e) => handleInputChange('pt_sessions', e.target.value)}
+                        value={formData.ptSessions}
+                        onChange={(e) => handleInputChange('ptSessions', e.target.value)}
                         placeholder="0 nếu không có PT"
-                        className={errors.pt_sessions ? 'border-red-500' : ''}
+                        className={errors.ptSessions ? 'border-red-500' : ''}
                       />
-                      {errors.pt_sessions && (
-                        <p className="text-sm text-red-500 mt-1">{errors.pt_sessions}</p>
+                      {errors.ptSessions && (
+                        <p className="text-sm text-red-500 mt-1">{errors.ptSessions}</p>
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="pt_session_duration">Thời lượng buổi PT (phút)</Label>
+                      <Label htmlFor="ptSessionDuration">Thời lượng buổi PT (phút) *</Label>
                       <Input
-                        id="pt_session_duration"
+                        id="ptSessionDuration"
                         type="number"
-                        value={formData.pt_session_duration}
-                        onChange={(e) => handleInputChange('pt_session_duration', e.target.value)}
+                        value={formData.ptSessionDuration}
+                        onChange={(e) => handleInputChange('ptSessionDuration', e.target.value)}
                         placeholder="90"
-                        className={errors.pt_session_duration ? 'border-red-500' : ''}
+                        className={errors.ptSessionDuration ? 'border-red-500' : ''}
                       />
-                      {errors.pt_session_duration && (
-                        <p className="text-sm text-red-500 mt-1">{errors.pt_session_duration}</p>
+                      {errors.ptSessionDuration && (
+                        <p className="text-sm text-red-500 mt-1">{errors.ptSessionDuration}</p>
                       )}
                     </div>
                   </div>
@@ -400,35 +476,36 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                 </div>
               </CardContent>
             </Card>
-          </form>
-        </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={isSubmitting}
-          >
-            Hủy
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="flex items-center space-x-2"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Đang tạo...</span>
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4" />
-                <span>Tạo gói tập</span>
-              </>
-            )}
-          </Button>
+            {/* Form Actions */}
+            <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={createPackageMutation.isPending}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                disabled={createPackageMutation.isPending}
+                className="flex items-center space-x-2"
+              >
+                {createPackageMutation.isPending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Đang tạo...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    <span>Tạo gói tập</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
