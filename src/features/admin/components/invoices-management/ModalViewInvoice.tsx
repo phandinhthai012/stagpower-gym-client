@@ -1,0 +1,278 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
+import { Button } from '../../../../components/ui/button';
+import { Badge } from '../../../../components/ui/badge';
+import { Label } from '../../../../components/ui/label';
+import { X, Eye, Printer, CreditCard, Bell, Calendar, User, Package, DollarSign } from 'lucide-react';
+import { Invoice } from '../../types/invoice.types';
+
+interface ModalViewInvoiceProps {
+  isOpen: boolean;
+  onClose: () => void;
+  invoice: Invoice | null;
+  onEdit?: (invoice: Invoice) => void;
+  onRecordPayment?: (invoice: Invoice) => void;
+  onSendReminder?: (invoice: Invoice) => void;
+}
+
+export function ModalViewInvoice({ 
+  isOpen, 
+  onClose, 
+  invoice, 
+  onEdit, 
+  onRecordPayment, 
+  onSendReminder 
+}: ModalViewInvoiceProps) {
+  if (!isOpen || !invoice) return null;
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Completed':
+        return <Badge className="bg-green-100 text-green-800">Đã thanh toán</Badge>;
+      case 'Pending':
+        return <Badge className="bg-yellow-100 text-yellow-800">Chờ thanh toán</Badge>;
+      case 'Failed':
+        return <Badge className="bg-red-100 text-red-800">Thất bại</Badge>;
+      case 'Refunded':
+        return <Badge className="bg-gray-100 text-gray-800">Đã hoàn tiền</Badge>;
+      case 'Cancelled':
+        return <Badge className="bg-gray-100 text-gray-800">Đã hủy</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">Không xác định</Badge>;
+    }
+  };
+
+  const getPaymentMethodText = (method: string) => {
+    switch (method) {
+      case 'Cash': return 'Tiền mặt';
+      case 'Card': return 'Thẻ tín dụng';
+      case 'BankTransfer': return 'Chuyển khoản';
+      case 'Momo': return 'Ví MoMo';
+      case 'ZaloPay': return 'ZaloPay';
+      default: return method;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
+        <CardHeader className="sticky top-0 bg-white border-b z-10">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-blue-600" />
+              Chi tiết hóa đơn
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            {/* Invoice Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Hóa đơn #{invoice.invoiceNumber}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Tạo ngày: {formatDate(invoice.createdAt)}
+                </p>
+              </div>
+              <div className="text-right">
+                {getStatusBadge(invoice.status)}
+                <p className="text-sm text-gray-500 mt-1">
+                  Hạn thanh toán: {formatDate(invoice.dueDate)}
+                </p>
+              </div>
+            </div>
+
+            {/* Member Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <User className="w-4 h-4" />
+                    Thông tin hội viên
+                  </Label>
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                    <p className="font-medium text-gray-900">{invoice.memberName}</p>
+                    <p className="text-sm text-gray-600">{invoice.memberEmail}</p>
+                    <p className="text-sm text-gray-600">{invoice.memberPhone}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <Package className="w-4 h-4" />
+                    Gói dịch vụ
+                  </Label>
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                    <p className="font-medium text-gray-900">{invoice.packageName}</p>
+                    <p className="text-sm text-gray-600">{invoice.packageType}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <DollarSign className="w-4 h-4" />
+                    Thông tin thanh toán
+                  </Label>
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Phương thức:</span>
+                      <span className="text-sm font-medium">{getPaymentMethodText(invoice.paymentMethod)}</span>
+                    </div>
+                    {invoice.originalAmount !== invoice.amount && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Giá gốc:</span>
+                        <span className="text-sm line-through text-gray-500">
+                          {formatPrice(invoice.originalAmount)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Số tiền:</span>
+                      <span className="text-sm font-semibold text-green-600">
+                        {formatPrice(invoice.amount)}
+                      </span>
+                    </div>
+                    {invoice.discountAmount && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Giảm giá:</span>
+                        <span className="text-sm text-red-600">
+                          -{formatPrice(invoice.discountAmount)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <Calendar className="w-4 h-4" />
+                    Thời gian
+                  </Label>
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Tạo ngày:</span>
+                      <span className="text-sm">{formatDate(invoice.createdAt)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Hạn thanh toán:</span>
+                      <span className="text-sm">{formatDate(invoice.dueDate)}</span>
+                    </div>
+                    {invoice.paidAt && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Thanh toán:</span>
+                        <span className="text-sm">{formatDate(invoice.paidAt)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Details */}
+            {invoice.paymentDetails && (
+              <div>
+                <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <CreditCard className="w-4 h-4" />
+                  Chi tiết giao dịch
+                </Label>
+                <div className="mt-2 p-4 bg-gray-50 rounded-lg space-y-2">
+                  {invoice.paymentDetails.transactionId && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Mã giao dịch:</span>
+                      <span className="text-sm font-mono">{invoice.paymentDetails.transactionId}</span>
+                    </div>
+                  )}
+                  {invoice.paymentDetails.paymentGateway && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Cổng thanh toán:</span>
+                      <span className="text-sm">{invoice.paymentDetails.paymentGateway}</span>
+                    </div>
+                  )}
+                  {invoice.paymentDetails.reference && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Mã tham chiếu:</span>
+                      <span className="text-sm font-mono">{invoice.paymentDetails.reference}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            {invoice.notes && (
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Ghi chú</Label>
+                <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-700">{invoice.notes}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={onClose}
+              >
+                Đóng
+              </Button>
+              {invoice.status === 'Pending' && onRecordPayment && (
+                <Button
+                  onClick={() => onRecordPayment(invoice)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Ghi nhận thanh toán
+                </Button>
+              )}
+              {invoice.status === 'Pending' && onSendReminder && (
+                <Button
+                  variant="outline"
+                  onClick={() => onSendReminder(invoice)}
+                  className="text-yellow-600 hover:text-yellow-700"
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  Gửi nhắc nhở
+                </Button>
+              )}
+              {onEdit && (
+                <Button
+                  variant="outline"
+                  onClick={() => onEdit(invoice)}
+                >
+                  Chỉnh sửa
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

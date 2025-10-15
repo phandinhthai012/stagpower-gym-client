@@ -21,12 +21,20 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  XCircle
+  XCircle,
+  Trash2,
+  Edit
 } from 'lucide-react';
-import { mockUsers } from '../../../mockdata/users';
-import { mockPayments } from '../../../mockdata/payments';
-import { mockSubscriptions } from '../../../mockdata/subscriptions';
-import { mockPackages } from '../../../mockdata/packages';
+import { 
+  useInvoices, 
+  useInvoiceStats, 
+  useDeleteInvoice, 
+  useSendPaymentReminder, 
+  useBulkSendReminders,
+  useExportInvoices 
+} from '../hooks/useInvoices';
+import { Invoice } from '../types/invoice.types';
+import { ModalCreateInvoice, ModalViewInvoice, ModalRecordPayment } from '../components/invoices-management';
 
 export function AdminInvoicePayment() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,38 +44,55 @@ export function AdminInvoicePayment() {
   const [endDate, setEndDate] = useState('');
   const [priceFilter, setPriceFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
 
-  // Calculate statistics from mock data
-  const totalRevenue = mockPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const paidInvoices = mockPayments.filter(payment => payment.payment_status === 'Completed').length;
-  const pendingInvoices = mockPayments.filter(payment => payment.payment_status === 'Pending').length;
-  const overdueInvoices = mockPayments.filter(payment => {
-    const paymentDate = new Date(payment.payment_date);
-    const now = new Date();
-    return payment.payment_status === 'Pending' && paymentDate < now;
-  }).length;
+  // API hooks
+  const { data: invoices = [], isLoading, error } = useInvoices();
+  const { data: stats } = useInvoiceStats();
+  const deleteInvoiceMutation = useDeleteInvoice();
+  const sendReminderMutation = useSendPaymentReminder();
+  const bulkSendRemindersMutation = useBulkSendReminders();
+  const exportInvoicesMutation = useExportInvoices();
 
 
-  // Create invoice data from payments
-  const invoices = mockPayments.map(payment => {
-    const member = mockUsers.find(user => user.id === payment.member_id);
-    const subscription = mockSubscriptions.find(sub => sub.id === payment.subscription_id);
-    const packageInfo = mockPackages.find(pkg => subscription?.package_id === pkg.id);
+  // Filter invoices based on search and filters
+  const filteredInvoices = invoices.filter(invoice => {
+    const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         invoice.memberName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         invoice.memberEmail.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+    const matchesPackage = packageFilter === 'all' || invoice.packageType === packageFilter;
     
-    return {
-      id: payment.invoice_number,
-      member: member?.fullName || 'Unknown',
-      package: packageInfo?.name || 'Unknown Package',
-      amount: payment.amount,
-      originalAmount: payment.original_amount,
-      paymentDate: payment.payment_date,
-      dueDate: new Date(new Date(payment.payment_date).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      status: payment.payment_status,
-      paymentMethod: payment.payment_method,
-      memberId: payment.member_id
-    };
+    let matchesDate = true;
+    if (startDate && endDate) {
+      const invoiceDate = new Date(invoice.createdAt);
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      matchesDate = invoiceDate >= start && invoiceDate <= end;
+    }
+    
+    let matchesPrice = true;
+    if (priceFilter !== 'all') {
+      switch (priceFilter) {
+        case '0-500k':
+          matchesPrice = invoice.amount < 500000;
+          break;
+        case '500k-1M':
+          matchesPrice = invoice.amount >= 500000 && invoice.amount < 1000000;
+          break;
+        case '1M-2M':
+          matchesPrice = invoice.amount >= 1000000 && invoice.amount < 2000000;
+          break;
+        case '2M+':
+          matchesPrice = invoice.amount >= 2000000;
+          break;
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesPackage && matchesDate && matchesPrice;
   });
 
   const formatPrice = (price: number) => {
@@ -92,29 +117,148 @@ export function AdminInvoicePayment() {
     }
   };
 
+  const handleSelectInvoice = (invoiceId: string) => {
+    setSelectedInvoices(prev => 
+      prev.includes(invoiceId) 
+        ? prev.filter((id: string) => id !== invoiceId)
+        : [...prev, invoiceId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedInvoices.length === filteredInvoices.length) {
+      setSelectedInvoices([]);
+    } else {
+      setSelectedInvoices(filteredInvoices.map((invoice: Invoice) => invoice._id));
+    }
+  };
+
   const handleCreateInvoice = () => {
     setShowCreateModal(true);
   };
 
-  const handleRecordPayment = (invoice: any) => {
+  const handleViewInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setShowViewModal(true);
+  };
+
+  const handleRecordPayment = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setShowPaymentModal(true);
   };
 
-  const handleViewInvoice = (invoice: any) => {
-    alert(`Xem chi tiết hóa đơn: ${invoice.id}`);
+  const handleDeleteInvoice = async (invoice: Invoice) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa hóa đơn ${invoice.invoiceNumber}?`)) {
+      try {
+        await deleteInvoiceMutation.mutateAsync(invoice._id);
+      } catch (error) {
+        console.error('Error deleting invoice:', error);
+      }
+    }
   };
 
-  const handlePrintInvoice = (invoice: any) => {
-    alert(`In hóa đơn: ${invoice.id}`);
+  const handleSendReminder = async (invoice: Invoice) => {
+    try {
+      await sendReminderMutation.mutateAsync(invoice._id);
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+    }
   };
 
-  const handleSendReminder = (invoice: any) => {
-    alert(`Gửi nhắc nhở thanh toán cho hóa đơn: ${invoice.id}`);
+  const handleBulkSendReminders = async () => {
+    if (selectedInvoices.length === 0) return;
+    try {
+      await bulkSendRemindersMutation.mutateAsync(selectedInvoices);
+      setSelectedInvoices([]);
+    } catch (error) {
+      console.error('Error sending bulk reminders:', error);
+    }
   };
+
+  const handleExportInvoices = async () => {
+    try {
+      await exportInvoicesMutation.mutateAsync({
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        packageType: packageFilter !== 'all' ? packageFilter : undefined,
+        startDate,
+        endDate,
+        priceRange: priceFilter !== 'all' ? priceFilter : undefined,
+        search: searchTerm
+      });
+    } catch (error) {
+      console.error('Error exporting invoices:', error);
+    }
+  };
+
+  const handlePrintInvoice = (invoice: Invoice) => {
+    // TODO: Implement print functionality
+    console.log('Print invoice:', invoice.invoiceNumber);
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Đang tải...</div>;
+  }
+
+  if (error) {
+    return <div className="flex justify-center items-center h-64 text-red-600">
+      Có lỗi xảy ra khi tải danh sách hóa đơn
+    </div>;
+  }
 
   return (
     <div className="space-y-6">
+
+      {/* Statistics */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Tổng doanh thu</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatPrice(stats.totalRevenue)}
+                  </p>
+                </div>
+                <DollarSign className="w-8 h-8 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Đã thanh toán</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.paidInvoices}</p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Chờ thanh toán</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats.pendingInvoices}</p>
+                </div>
+                <Clock className="w-8 h-8 text-yellow-600" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Quá hạn</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.overdueInvoices}</p>
+                </div>
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Action Buttons */}
       <Card>
@@ -124,19 +268,27 @@ export function AdminInvoicePayment() {
               <Plus className="w-4 h-4 mr-2" />
               Tạo hóa đơn mới
             </Button>
-            <Button variant="outline">
+            <Button 
+              variant="outline" 
+              onClick={handleExportInvoices}
+              disabled={exportInvoicesMutation.isPending}
+            >
               <Download className="w-4 h-4 mr-2" />
-              Xuất báo cáo
+              {exportInvoicesMutation.isPending ? 'Đang xuất...' : 'Xuất báo cáo'}
             </Button>
-            <Button variant="outline">
+            <Button 
+              variant="outline" 
+              onClick={handleBulkSendReminders}
+              disabled={selectedInvoices.length === 0 || bulkSendRemindersMutation.isPending}
+            >
               <Bell className="w-4 h-4 mr-2" />
-              Gửi nhắc nhở hàng loạt
+              {bulkSendRemindersMutation.isPending ? 'Đang gửi...' : 'Gửi nhắc nhở hàng loạt'}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Filters */}
+      {/* Filters and Search */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -146,6 +298,16 @@ export function AdminInvoicePayment() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Tìm kiếm hóa đơn..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
             <div>
               <Label htmlFor="statusFilter">Trạng thái thanh toán</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -212,43 +374,72 @@ export function AdminInvoicePayment() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            <div className="flex items-end">
-              <Button variant="outline" className="w-full">
-                <Search className="w-4 h-4 mr-2" />
-                Áp dụng bộ lọc
+      {/* Bulk Actions */}
+      {selectedInvoices.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">
+                Đã chọn {selectedInvoices.length} hóa đơn
+              </span>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleBulkSendReminders}
+                  disabled={bulkSendRemindersMutation.isPending}
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  Gửi nhắc nhở hàng loạt
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleExportInvoices}
+                  disabled={exportInvoicesMutation.isPending}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Xuất dữ liệu
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Xóa hàng loạt
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Invoice Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-green-600" />
-              Danh sách hóa đơn
+            Danh sách hóa đơn ({filteredInvoices.length})
             </CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Tìm kiếm hóa đơn..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
-            </div>
-          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
+                  <th className="text-left p-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
+                      onChange={handleSelectAll}
+                      className="rounded"
+                    />
+                  </th>
                   <th className="text-left p-3 font-medium text-gray-600">Mã HĐ</th>
                   <th className="text-left p-3 font-medium text-gray-600">Hội Viên</th>
                   <th className="text-left p-3 font-medium text-gray-600">Gói Dịch Vụ</th>
@@ -260,25 +451,36 @@ export function AdminInvoicePayment() {
                 </tr>
               </thead>
               <tbody>
-                {invoices.slice(0, 10).map((invoice) => (
-                  <tr key={invoice.id} className="border-b hover:bg-gray-50">
+                {filteredInvoices.map((invoice) => (
+                  <tr key={invoice._id} className="border-b hover:bg-gray-50">
                     <td className="p-3">
-                      <span className="font-medium text-blue-600">{invoice.id}</span>
+                      <input
+                        type="checkbox"
+                        checked={selectedInvoices.includes(invoice._id)}
+                        onChange={() => handleSelectInvoice(invoice._id)}
+                        className="rounded"
+                      />
+                    </td>
+                    <td className="p-3">
+                      <span className="font-medium text-blue-600">{invoice.invoiceNumber}</span>
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">
-                            {invoice.member.charAt(0)}
+                            {invoice.memberName.charAt(0)}
                           </span>
                         </div>
-                        <span className="font-medium">{invoice.member}</span>
+                        <div>
+                          <p className="font-medium text-gray-900">{invoice.memberName}</p>
+                          <p className="text-sm text-gray-500">{invoice.memberEmail}</p>
+                        </div>
                       </div>
                     </td>
                     <td className="p-3">
                       <div>
-                        <p className="font-medium text-gray-900">{invoice.package}</p>
-                        <p className="text-sm text-gray-500">{invoice.paymentMethod}</p>
+                        <p className="font-medium text-gray-900">{invoice.packageName}</p>
+                        <p className="text-sm text-gray-500">{invoice.packageType}</p>
                       </div>
                     </td>
                     <td className="p-3">
@@ -292,7 +494,7 @@ export function AdminInvoicePayment() {
                       </div>
                     </td>
                     <td className="p-3">
-                      {new Date(invoice.paymentDate).toLocaleDateString('vi-VN')}
+                      {new Date(invoice.createdAt).toLocaleDateString('vi-VN')}
                     </td>
                     <td className="p-3">
                       {new Date(invoice.dueDate).toLocaleDateString('vi-VN')}
@@ -306,6 +508,7 @@ export function AdminInvoicePayment() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleViewInvoice(invoice)}
+                          title="Xem chi tiết"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -313,6 +516,7 @@ export function AdminInvoicePayment() {
                           variant="outline"
                           size="sm"
                           onClick={() => handlePrintInvoice(invoice)}
+                          title="In hóa đơn"
                         >
                           <Printer className="w-4 h-4" />
                         </Button>
@@ -322,6 +526,7 @@ export function AdminInvoicePayment() {
                             size="sm"
                             className="text-green-600 hover:text-green-700"
                             onClick={() => handleRecordPayment(invoice)}
+                            title="Ghi nhận thanh toán"
                           >
                             <CreditCard className="w-4 h-4" />
                           </Button>
@@ -332,10 +537,20 @@ export function AdminInvoicePayment() {
                             size="sm"
                             className="text-yellow-600 hover:text-yellow-700"
                             onClick={() => handleSendReminder(invoice)}
+                            title="Gửi nhắc nhở"
                           >
                             <Bell className="w-4 h-4" />
                           </Button>
                         )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteInvoice(invoice)}
+                          className="text-red-600 hover:text-red-700"
+                          title="Xóa hóa đơn"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -346,226 +561,42 @@ export function AdminInvoicePayment() {
         </CardContent>
       </Card>
 
-      {/* Create Invoice Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Tạo Hóa Đơn Mới</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  <XCircle className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="memberSelect">Chọn hội viên</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn hội viên..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mockUsers.filter(user => user.role === 'Member').map((member) => (
-                          <SelectItem key={member.id} value={member.id}>
-                            {member.fullName} - {member.id.slice(-4)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="packageType">Loại gói</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn gói..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Membership">Gói tập</SelectItem>
-                        <SelectItem value="PT">Gói PT</SelectItem>
-                        <SelectItem value="Combo">Gói Combo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="specificPackage">Gói cụ thể</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn gói cụ thể..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mockPackages.slice(0, 5).map((pkg) => (
-                          <SelectItem key={pkg.id} value={pkg.id}>
-                            {pkg.name} - {formatPrice(pkg.price)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="amount">Số tiền</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      placeholder="Nhập số tiền..."
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="createDate">Ngày tạo</Label>
-                    <Input
-                      id="createDate"
-                      type="date"
-                      defaultValue={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="dueDate">Hạn thanh toán</Label>
-                    <Input
-                      id="dueDate"
-                      type="date"
-                      defaultValue={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="notes">Ghi chú</Label>
-                  <textarea
-                    id="notes"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={3}
-                    placeholder="Nhập ghi chú..."
-                  />
-                </div>
-                
-                <div className="flex justify-end gap-4 pt-4 border-t">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowCreateModal(false)}
-                  >
-                    Hủy
-                  </Button>
-                  <Button type="submit">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Tạo hóa đơn
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Modals */}
+      <ModalCreateInvoice
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          setShowCreateModal(false);
+        }}
+      />
 
-      {/* Payment Modal */}
-      {showPaymentModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Ghi Nhận Thanh Toán</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPaymentModal(false)}
-                >
-                  <XCircle className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="invoiceNumber">Mã hóa đơn</Label>
-                    <Input
-                      id="invoiceNumber"
-                      value={selectedInvoice.id}
-                      readOnly
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="paymentMethod">Phương thức thanh toán</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn phương thức..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Cash">Tiền mặt</SelectItem>
-                        <SelectItem value="Card">Thẻ tín dụng</SelectItem>
-                        <SelectItem value="BankTransfer">Chuyển khoản</SelectItem>
-                        <SelectItem value="Momo">Ví MoMo</SelectItem>
-                        <SelectItem value="ZaloPay">ZaloPay</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="paymentAmount">Số tiền thanh toán</Label>
-                    <Input
-                      id="paymentAmount"
-                      type="number"
-                      placeholder="Nhập số tiền..."
-                      defaultValue={selectedInvoice.amount}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="paymentDate">Ngày thanh toán</Label>
-                    <Input
-                      id="paymentDate"
-                      type="date"
-                      defaultValue={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="paymentNotes">Ghi chú thanh toán</Label>
-                  <textarea
-                    id="paymentNotes"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={3}
-                    placeholder="Nhập ghi chú về thanh toán..."
-                  />
-                </div>
-                
-                <div className="flex justify-end gap-4 pt-4 border-t">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowPaymentModal(false)}
-                  >
-                    Hủy
-                  </Button>
-                  <Button type="submit">
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Ghi nhận thanh toán
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <ModalViewInvoice
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedInvoice(null);
+        }}
+        invoice={selectedInvoice}
+        onRecordPayment={(invoice) => {
+          setShowViewModal(false);
+          setSelectedInvoice(invoice);
+          setShowPaymentModal(true);
+        }}
+        onSendReminder={handleSendReminder}
+      />
+
+      <ModalRecordPayment
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedInvoice(null);
+        }}
+        invoice={selectedInvoice}
+        onSuccess={() => {
+          setShowPaymentModal(false);
+          setSelectedInvoice(null);
+        }}
+      />
     </div>
   );
 }

@@ -147,6 +147,20 @@ export const API_ENDPOINTS = {
         GENERATE_AI_SUGGESTION: `${API_PREFIX}/ai-suggestions/suggestion/generate`,
         GENERATE_NUTRITION_SUGGESTION: `${API_PREFIX}/ai-suggestions/suggestion/nutrition`,
     },
+    INVOICE: {
+        GET_ALL_INVOICES: `${API_PREFIX}/payments`,
+        GET_INVOICE_BY_ID: (invoiceId: string) => `${API_PREFIX}/payments/${invoiceId}`,
+        CREATE_INVOICE: `${API_PREFIX}/payments`,
+        UPDATE_INVOICE: (invoiceId: string) => `${API_PREFIX}/payments/${invoiceId}`,
+        DELETE_INVOICE: (invoiceId: string) => `${API_PREFIX}/payments/${invoiceId}`,
+        SEARCH_INVOICES: `${API_PREFIX}/payments/search`,
+        GET_INVOICE_STATS: `${API_PREFIX}/payments/stats`,
+        RECORD_PAYMENT: `${API_PREFIX}/payments/payment`,
+        GET_INVOICE_PAYMENTS: (invoiceId: string) => `${API_PREFIX}/payments/${invoiceId}/payments`,
+        SEND_PAYMENT_REMINDER: (invoiceId: string) => `${API_PREFIX}/payments/${invoiceId}/reminder`,
+        BULK_SEND_REMINDERS: `${API_PREFIX}/payments/bulk-reminders`,
+        EXPORT_INVOICES: `${API_PREFIX}/payments/export`,
+    },
 }
 
 export default API_CONFIG;

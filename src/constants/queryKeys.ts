@@ -54,5 +54,9 @@ export const queryKeys = {
     // Discounts
     discounts: ['discounts'] as const,
     discount: (id: string) => ['discounts', id] as const,
+
+    // Invoices
+    invoices: ['invoices'] as const,
+    invoice: (id: string) => ['invoices', id] as const,
     
   }
