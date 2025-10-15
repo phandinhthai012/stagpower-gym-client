@@ -23,8 +23,8 @@ export function TrainerSessionDetailPage() {
 
   const handleAddExercise = () => {
     if (selectedExerciseId) {
-      const exercise = exercises.find(ex => ex.id === selectedExerciseId);
-      if (exercise && !selectedExercises.find(ex => ex.id === exercise.id)) {
+      const exercise = exercises.find(ex => ex._id === selectedExerciseId);
+      if (exercise && !selectedExercises.find(ex => ex._id === exercise._id)) {
         setSelectedExercises([...selectedExercises, exercise]);
         setSelectedExerciseId('');
       }
@@ -32,7 +32,7 @@ export function TrainerSessionDetailPage() {
   };
 
   const handleRemoveExercise = (exerciseId: string) => {
-    setSelectedExercises(selectedExercises.filter(ex => ex.id !== exerciseId));
+    setSelectedExercises(selectedExercises.filter(ex => ex._id !== exerciseId));
   };
 
   return (
@@ -88,7 +88,7 @@ export function TrainerSessionDetailPage() {
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="">Chọn bài tập</option>
                   {exercises.map((exercise) => (
-                    <option key={exercise.id} value={exercise.id}>{exercise.name}</option>
+                    <option key={exercise._id} value={exercise._id}>{exercise.name}</option>
                   ))}
                 </select>
                 <Button

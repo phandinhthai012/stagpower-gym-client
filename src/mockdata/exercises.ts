@@ -1,5 +1,5 @@
 export interface Exercise {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   instructions: string;
@@ -21,7 +21,7 @@ export interface Exercise {
 export const mockExercises: Exercise[] = [
   // CHEST EXERCISES
   {
-    id: 'ex_001',
+    _id: 'ex_001',
     name: 'Push-ups',
     description: 'Bài tập cơ bản cho ngực, vai và tay',
     instructions: 'Nằm sấp, đặt tay rộng bằng vai, nâng người lên xuống bằng cách co duỗi tay',
@@ -39,7 +39,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_002',
+    _id: 'ex_002',
     name: 'Bench Press',
     description: 'Bài tập ngực với tạ đòn',
     instructions: 'Nằm trên ghế, nâng tạ từ ngực lên cao, sau đó hạ xuống',
@@ -57,7 +57,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_003',
+    _id: 'ex_003',
     name: 'Dumbbell Flyes',
     description: 'Bài tập ngực với tạ đơn',
     instructions: 'Nằm trên ghế, cầm tạ đơn, mở rộng tay ra hai bên rồi đưa lại',
@@ -77,7 +77,7 @@ export const mockExercises: Exercise[] = [
 
   // BACK EXERCISES
   {
-    id: 'ex_004',
+    _id: 'ex_004',
     name: 'Pull-ups',
     description: 'Bài tập lưng cơ bản',
     instructions: 'Treo người trên xà, kéo người lên cho đến khi cằm qua xà',
@@ -95,7 +95,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_005',
+    _id: 'ex_005',
     name: 'Bent-over Row',
     description: 'Bài tập lưng với tạ đòn',
     instructions: 'Cúi người, cầm tạ đòn, kéo tạ lên ngực',
@@ -113,7 +113,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_006',
+    _id: 'ex_006',
     name: 'Lat Pulldown',
     description: 'Bài tập lưng với máy',
     instructions: 'Ngồi trên máy, kéo thanh xuống sau gáy',
@@ -133,7 +133,7 @@ export const mockExercises: Exercise[] = [
 
   // LEGS EXERCISES
   {
-    id: 'ex_007',
+    _id: 'ex_007',
     name: 'Squats',
     description: 'Bài tập chân cơ bản',
     instructions: 'Đứng thẳng, hạ người xuống như ngồi ghế, sau đó đứng lên',
@@ -151,7 +151,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_008',
+    _id: 'ex_008',
     name: 'Deadlift',
     description: 'Bài tập toàn thân với tạ đòn',
     instructions: 'Đứng cúi xuống cầm tạ, đứng thẳng lên',
@@ -169,7 +169,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_009',
+    _id: 'ex_009',
     name: 'Lunges',
     description: 'Bài tập chân với bước dài',
     instructions: 'Bước một chân về phía trước, hạ người xuống, sau đó đẩy lên',
@@ -189,7 +189,7 @@ export const mockExercises: Exercise[] = [
 
   // SHOULDERS EXERCISES
   {
-    id: 'ex_010',
+    _id: 'ex_010',
     name: 'Shoulder Press',
     description: 'Bài tập vai với tạ đơn',
     instructions: 'Ngồi hoặc đứng, nâng tạ từ vai lên cao',
@@ -207,7 +207,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_011',
+    _id: 'ex_011',
     name: 'Lateral Raises',
     description: 'Bài tập vai bên',
     instructions: 'Đứng, nâng tạ ra hai bên đến ngang vai',
@@ -227,7 +227,7 @@ export const mockExercises: Exercise[] = [
 
   // ARMS EXERCISES
   {
-    id: 'ex_012',
+    _id: 'ex_012',
     name: 'Bicep Curls',
     description: 'Bài tập tay trước',
     instructions: 'Cầm tạ đơn, co tay lên xuống',
@@ -245,7 +245,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_013',
+    _id: 'ex_013',
     name: 'Tricep Dips',
     description: 'Bài tập tay sau',
     instructions: 'Ngồi trên ghế, đặt tay cạnh hông, hạ người xuống',
@@ -265,7 +265,7 @@ export const mockExercises: Exercise[] = [
 
   // CORE EXERCISES
   {
-    id: 'ex_014',
+    _id: 'ex_014',
     name: 'Plank',
     description: 'Bài tập cơ bụng tĩnh',
     instructions: 'Nằm sấp, chống khuỷu tay, giữ người thẳng',
@@ -284,7 +284,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_015',
+    _id: 'ex_015',
     name: 'Crunches',
     description: 'Bài tập cơ bụng động',
     instructions: 'Nằm ngửa, co đầu gối, nâng vai lên khỏi đất',
@@ -304,7 +304,7 @@ export const mockExercises: Exercise[] = [
 
   // CARDIO EXERCISES
   {
-    id: 'ex_016',
+    _id: 'ex_016',
     name: 'Running',
     description: 'Chạy bộ cardio',
     instructions: 'Chạy với tốc độ ổn định',
@@ -323,7 +323,7 @@ export const mockExercises: Exercise[] = [
     updatedAt: '2024-01-01T00:00:00Z'
   },
   {
-    id: 'ex_017',
+    _id: 'ex_017',
     name: 'Jumping Jacks',
     description: 'Nhảy dang tay chân',
     instructions: 'Nhảy dang tay chân đồng thời',
@@ -344,7 +344,7 @@ export const mockExercises: Exercise[] = [
 
   // FULL BODY EXERCISES
   {
-    id: 'ex_018',
+    _id: 'ex_018',
     name: 'Burpees',
     description: 'Bài tập toàn thân',
     instructions: 'Squat xuống, chống tay, nhảy chân ra sau, hít đất, nhảy chân về, nhảy lên',
@@ -364,7 +364,7 @@ export const mockExercises: Exercise[] = [
 
   // FLEXIBILITY EXERCISES
   {
-    id: 'ex_019',
+    _id: 'ex_019',
     name: 'Yoga Stretches',
     description: 'Bài tập giãn cơ yoga',
     instructions: 'Thực hiện các tư thế yoga cơ bản',
@@ -385,7 +385,7 @@ export const mockExercises: Exercise[] = [
 
   // BALANCE EXERCISES
   {
-    id: 'ex_020',
+    _id: 'ex_020',
     name: 'Single Leg Stand',
     description: 'Đứng một chân',
     instructions: 'Đứng một chân, giữ thăng bằng',
@@ -427,5 +427,5 @@ export const getActiveExercises = () => {
 };
 
 export const getExerciseById = (id: string) => {
-  return mockExercises.find(exercise => exercise.id === id);
+  return mockExercises.find(exercise => exercise._id === id);
 };

@@ -121,7 +121,7 @@ function App() {
         position="top-right"
         duration={4000}
         richColors
-        closeButton={false}
+        closeButton={true}
         expand={true}
         visibleToasts={5}
         toastOptions={{
