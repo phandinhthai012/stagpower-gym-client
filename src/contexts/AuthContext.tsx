@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { mockUsers } from '../mockdata/index';
-import authService from '../services/auth.service';
+import authService from '../features/auth/services/auth.service';
 
 export type UserRole = 'admin' | 'staff' | 'trainer' | 'member';
 

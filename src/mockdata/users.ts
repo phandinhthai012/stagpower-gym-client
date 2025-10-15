@@ -4,7 +4,7 @@ export interface User {
   fullName: string;
   email: string;
   phone: string;
-  gender: 'Male' | 'Female' | 'Other';
+  gender: 'male' | 'female' | 'other';
   date_of_birth: string;
   password: string; // bcrypt hashed
   cccd: string;
@@ -55,7 +55,7 @@ export const mockUsers: User[] = [
     fullName: 'Nguyễn Văn An',
     email: 'nguyenvanan@gmail.com',
     phone: '0901234567',
-    gender: 'Male',
+    gender: 'male',
     date_of_birth: '1995-03-15',
     password: 'member123', // Demo password for testing
     cccd: '123456789012',
@@ -81,7 +81,7 @@ export const mockUsers: User[] = [
     fullName: 'Trần Thị Bình',
     email: 'tranthibinh@gmail.com',
     phone: '0901234568',
-    gender: 'Female',
+    gender: 'female',
     date_of_birth: '2000-07-22',
     password: 'member123', // Demo password for testing
     cccd: '123456789013',
@@ -107,7 +107,7 @@ export const mockUsers: User[] = [
     fullName: 'Lê Văn Cường',
     email: 'levancuong@gmail.com',
     phone: '0901234569',
-    gender: 'Male',
+    gender: 'male',
     date_of_birth: '1988-11-10',
     password: 'member123', // Demo password for testing
     cccd: '123456789014',
@@ -133,7 +133,7 @@ export const mockUsers: User[] = [
     fullName: 'Phạm Thị Dung',
     email: 'phamthidung@gmail.com',
     phone: '0901234570',
-    gender: 'Female',
+    gender: 'female',
     date_of_birth: '1992-05-18',
     password: 'member123', // Demo password for testing
     cccd: '123456789015',
@@ -161,7 +161,7 @@ export const mockUsers: User[] = [
     fullName: 'Hoàng Văn Em',
     email: 'hoangvanem@gmail.com',
     phone: '0901234571',
-    gender: 'Male',
+    gender: 'male',
     date_of_birth: '1990-09-12',
     password: 'trainer123', // Demo password for testing
     cccd: '123456789016',
@@ -186,7 +186,7 @@ export const mockUsers: User[] = [
     fullName: 'Võ Thị Phương',
     email: 'vothiphuong@gmail.com',
     phone: '0901234572',
-    gender: 'Female',
+    gender: 'female',
     date_of_birth: '1985-12-03',
     password: 'trainer123', // Demo password for testing
     cccd: '123456789017',
@@ -213,7 +213,7 @@ export const mockUsers: User[] = [
     fullName: 'Đặng Văn Giang',
     email: 'dangvangiang@gmail.com',
     phone: '0901234573',
-    gender: 'Male',
+    gender: 'male',
     date_of_birth: '1993-04-25',
     password: 'staff123', // Demo password for testing
     cccd: '123456789018',
@@ -233,7 +233,7 @@ export const mockUsers: User[] = [
     fullName: 'Bùi Thị Hoa',
     email: 'buithihoa@gmail.com',
     phone: '0901234574',
-    gender: 'Female',
+    gender: 'female',
     date_of_birth: '1991-08-14',
     password: 'staff123', // Demo password for testing
     cccd: '123456789019',
@@ -255,7 +255,7 @@ export const mockUsers: User[] = [
     fullName: 'Nguyễn Văn Admin',
     email: 'admin@stagpower.com',
     phone: '0901234575',
-    gender: 'Male',
+    gender: 'male',
     date_of_birth: '1980-01-01',
     password: 'admin123', // Demo password for testing
     cccd: '123456789020',

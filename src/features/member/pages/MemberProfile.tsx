@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
@@ -19,10 +19,13 @@ import {
   Shield,
   Heart,
   Target,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
-import { mockHealthInfo, getMockDataByMemberId } from '../../../mockdata';
+import { useMe, useUpdateProfile } from '../hooks/useMembers';
+import { useHealthInfo, useCreateHealthInfo, useUpdateHealthInfo } from '../hooks/useHealthInfo';
 import { formatDate } from '../../../lib/date-utils';
+import { toast } from 'sonner';
 
 export function MemberProfile() {
   const { user } = useAuth();
@@ -32,28 +35,32 @@ export function MemberProfile() {
   const [editedHealth, setEditedHealth] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'health' | 'personal'>('health');
 
-  // Get health info for current user
-  const healthInfo = getMockDataByMemberId('healthInfo', user?.id || '')[0];
+  // API hooks
+  const { data: userData, isLoading: userLoading, error: userError } = useMe();
+  const { data: healthInfo, isLoading: healthLoading, error: healthError } = useHealthInfo();
+  const updateProfileMutation = useUpdateProfile();
+  const createHealthInfoMutation = useCreateHealthInfo();
+  const updateHealthInfoMutation = useUpdateHealthInfo();
   
   const initEditedHealth = () => {
     if (!healthInfo) return null;
     return {
-      height: healthInfo.height ?? '',
-      weight: healthInfo.weight ?? '',
-      goal: healthInfo.goal ?? 'WeightLoss',
-      experience: healthInfo.experience ?? 'Beginner',
-      fitness_level: healthInfo.fitness_level ?? 'Low',
-      preferred_time: healthInfo.preferred_time ?? 'Morning',
-      weekly_sessions: healthInfo.weekly_sessions ?? '1-2',
-      medical_history: healthInfo.medical_history ?? '',
-      allergies: healthInfo.allergies ?? ''
+      height: healthInfo?.height ?? '',
+      weight: healthInfo?.weight ?? '',
+      goal: healthInfo?.goal ?? 'WeightLoss',
+      experience: healthInfo?.experience ?? 'Beginner',
+      fitnessLevel: healthInfo?.fitnessLevel ?? 'Low',
+      preferredTime: healthInfo?.preferredTime ?? 'Morning',
+      weeklySessions: healthInfo?.weeklySessions ?? '1-2',
+      medicalHistory: healthInfo?.medicalHistory ?? '',
+      allergies: healthInfo?.allergies ?? ''
     };
   };
 
   const bmiValue = useMemo(() => {
     if (!healthInfo?.height || !healthInfo?.weight) return null;
-    const h = healthInfo.height / 100;
-    return (healthInfo.weight / (h * h)).toFixed(1);
+    const h = healthInfo?.height / 100;
+    return (healthInfo?.weight / (h * h)).toFixed(1);
   }, [healthInfo]);
 
   const handleInputChange = (field: string, value: string) => {
@@ -65,10 +72,21 @@ export function MemberProfile() {
     });
   };
 
-  const handleSave = () => {
-    // In a real app, this would make an API call to update the user
-    console.log('Saving user data:', editedUser);
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!editedUser) return;
+    
+    try {
+      await updateProfileMutation.mutateAsync({
+        fullName: editedUser.fullName,
+        email: editedUser.email,
+      });
+      toast.success('Cập nhật thông tin thành công!');
+      setIsEditing(false);
+      setEditedUser(null);
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi cập nhật thông tin');
+      console.error('Update profile error:', error);
+    }
   };
 
   const handleCancel = () => {
@@ -77,10 +95,10 @@ export function MemberProfile() {
   };
 
   const handleEdit = () => {
-    if (user) {
+    if (userData) {
       setEditedUser({
-        fullName: user.fullName,
-        email: user.email
+        fullName: userData.fullName,
+        email: userData.email
       });
     }
     setIsEditing(true);
@@ -97,14 +115,51 @@ export function MemberProfile() {
   };
 
   const handleHealthChange = (field: string, value: string | number) => {
-    if (!editedHealth) return;
-    setEditedHealth({ ...editedHealth, [field]: value });
+    if (!editedHealth) {
+      // Initialize editedHealth if it doesn't exist
+      const initialHealth = {
+        height: healthInfo?.height ?? '',
+        weight: healthInfo?.weight ?? '',
+        gender: healthInfo?.gender ?? userData?.gender ?? 'male',
+        goal: healthInfo?.goal ?? 'weightLoss',
+        experience: healthInfo?.experience ?? 'beginner',
+        fitnessLevel: healthInfo?.fitnessLevel ?? 'low',
+        preferredTime: healthInfo?.preferredTime ?? 'morning',
+        weeklySessions: healthInfo?.weeklySessions ?? '1-2',
+        medicalHistory: healthInfo?.medicalHistory ?? '',
+        allergies: healthInfo?.allergies ?? ''
+      };
+      setEditedHealth({ ...initialHealth, [field]: value });
+    } else {
+      setEditedHealth({ ...editedHealth, [field]: value });
+    }
   };
 
-  const handleHealthSave = () => {
-    // TODO: Integrate API; for now log edited data
-    console.log('Saving health info:', editedHealth);
-    setIsEditingHealth(false);
+  const handleHealthSave = async () => {
+    if (!editedHealth || !userData) return;
+    
+    try {
+      if (healthInfo) {
+        // Update existing health info
+        await updateHealthInfoMutation.mutateAsync({
+          healthInfoId: healthInfo._id!,
+          data: editedHealth
+        });
+        toast.success('Cập nhật thông tin sức khỏe thành công!');
+      } else {
+        // Create new health info
+        await createHealthInfoMutation.mutateAsync({
+          memberId: userData._id,
+          data: editedHealth
+        });
+        toast.success('Tạo thông tin sức khỏe thành công!');
+      }
+      setIsEditingHealth(false);
+      setEditedHealth(null);
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi lưu thông tin sức khỏe');
+      console.error('Health info save error:', error);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -127,6 +182,32 @@ export function MemberProfile() {
     return (weight / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
+  // Loading state
+  if (userLoading || healthLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Đang tải thông tin...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - only show error for non-404 errors
+  if (userError || (healthError && healthError?.response?.status !== 404)) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Có lỗi xảy ra khi tải thông tin</p>
+          <Button onClick={() => window.location.reload()}>
+            Thử lại
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Page Title */}
@@ -148,11 +229,17 @@ export function MemberProfile() {
               )}
             </div>
             <div className="space-y-1">
-              <h2 className="text-xl font-bold text-blue-900">{user?.fullName}</h2>
-              <p className="text-gray-600">Hội viên VIP - Chi nhánh Gò Vấp</p>
-              <Badge className="mt-1 bg-green-100 text-green-700 hover:bg-green-100">
+              <h2 className="text-xl font-bold text-blue-900">{userData?.fullName || user?.fullName}</h2>
+              <p className="text-gray-600">
+                {userData?.memberInfo?.membership_level === 'vip' ? 'Hội viên VIP' : 'Hội viên Basic'} - Chi nhánh Gò Vấp
+              </p>
+              <Badge className={`mt-1 ${
+                userData?.status === 'active' 
+                  ? 'bg-green-100 text-green-700 hover:bg-green-100' 
+                  : 'bg-red-100 text-red-700 hover:bg-red-100'
+              }`}>
                 <CheckCircle className="w-4 h-4 mr-1" />
-                Đang hoạt động
+                {userData?.status === 'active' ? 'Đang hoạt động' : 'Không hoạt động'}
               </Badge>
             </div>
           </div>
@@ -168,15 +255,15 @@ export function MemberProfile() {
                 </div>
                 <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
                   <span className="text-blue-900 text-sm font-semibold">Mục tiêu</span>
-                  <span className="text-gray-700 text-sm truncate">{healthInfo.goal === 'WeightLoss' ? 'Giảm cân' : healthInfo.goal === 'MuscleGain' ? 'Tăng cơ' : 'Sức khỏe'}</span>
+                  <span className="text-gray-700 text-sm truncate">{healthInfo?.goal === 'WeightLoss' ? 'Giảm cân' : healthInfo?.goal === 'MuscleGain' ? 'Tăng cơ' : 'Sức khỏe'}</span>
                 </div>
                 <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
                   <span className="text-blue-900 text-sm font-semibold">Trình độ</span>
-                  <span className="text-gray-700 text-sm truncate">{healthInfo.experience === 'Beginner' ? 'Người mới' : healthInfo.experience === 'Intermediate' ? 'Trung bình' : 'Nâng cao'}</span>
+                  <span className="text-gray-700 text-sm truncate">{healthInfo?.experience === 'Beginner' ? 'Người mới' : healthInfo?.experience === 'Intermediate' ? 'Trung bình' : 'Nâng cao'}</span>
                 </div>
                 <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
                   <span className="text-blue-900 text-sm font-semibold">Thể lực</span>
-                  <span className="text-gray-700 text-sm truncate">{healthInfo.fitness_level === 'Low' ? 'Thấp' : healthInfo.fitness_level === 'Medium' ? 'Trung bình' : 'Cao'}</span>
+                  <span className="text-gray-700 text-sm truncate">{healthInfo?.fitnessLevel === 'Low' ? 'Thấp' : healthInfo?.fitnessLevel === 'Medium' ? 'Trung bình' : 'Cao'}</span>
                 </div>
               </div>
             </div>
@@ -218,18 +305,26 @@ export function MemberProfile() {
               <Edit3 />
               <span>Chỉnh sửa</span>
             </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button onClick={handleSave} size="sm">
-                <Save />
-                <span>Lưu</span>
-              </Button>
-              <Button onClick={handleCancel} size="sm" variant="ghost">
-                <X />
-                <span>Hủy</span>
-              </Button>
-            </div>
-          )}
+            ) : (
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleSave} 
+                  size="sm"
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {updateProfileMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  <span>Lưu</span>
+                </Button>
+                <Button onClick={handleCancel} size="sm" variant="ghost">
+                  <X />
+                  <span>Hủy</span>
+                </Button>
+              </div>
+            )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -244,7 +339,7 @@ export function MemberProfile() {
             ) : (
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <User className="h-4 w-4 text-gray-500" />
-                <span>{user?.fullName}</span>
+                <span>{userData?.fullName || user?.fullName}</span>
               </div>
             )}
           </div>
@@ -261,7 +356,7 @@ export function MemberProfile() {
             ) : (
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <Mail className="h-4 w-4 text-gray-500" />
-                <span>{user?.email}</span>
+                <span>{userData?.email || user?.email}</span>
               </div>
             )}
           </div>
@@ -270,7 +365,7 @@ export function MemberProfile() {
             <Label htmlFor="phone">Số điện thoại</Label>
             <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
               <Phone className="h-4 w-4 text-gray-500" />
-              <span>Chưa cập nhật</span>
+              <span>{userData?.phone || 'Chưa cập nhật'}</span>
             </div>
           </div>
 
@@ -278,7 +373,7 @@ export function MemberProfile() {
             <Label htmlFor="dateOfBirth">Ngày sinh</Label>
             <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
               <Calendar className="h-4 w-4 text-gray-500" />
-              <span>Chưa cập nhật</span>
+              <span>{userData?.dateOfBirth ? formatDate(userData.dateOfBirth) : 'Chưa cập nhật'}</span>
             </div>
           </div>
 
@@ -286,7 +381,11 @@ export function MemberProfile() {
             <Label htmlFor="gender">Giới tính</Label>
             <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
               <User className="h-4 w-4 text-gray-500" />
-              <span>Chưa cập nhật</span>
+              <span>
+                {userData?.gender === 'male' ? 'Nam' : 
+                 userData?.gender === 'female' ? 'Nữ' : 
+                 userData?.gender === 'other' ? 'Khác' : 'Chưa cập nhật'}
+              </span>
             </div>
           </div>
 
@@ -294,7 +393,7 @@ export function MemberProfile() {
             <Label htmlFor="cccd">CCCD/CMND</Label>
             <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
               <CreditCard className="h-4 w-4 text-gray-500" />
-              <span>Chưa cập nhật</span>
+              <span>{userData?.cccd || 'Chưa cập nhật'}</span>
             </div>
           </div>
         </div>
@@ -305,7 +404,7 @@ export function MemberProfile() {
               <Label>Ngày tham gia</Label>
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <Calendar className="h-4 w-4 text-gray-500" />
-                <span>Chưa cập nhật</span>
+                <span>{userData?.createdAt ? formatDate(userData.createdAt) : 'Chưa cập nhật'}</span>
               </div>
             </div>
 
@@ -314,7 +413,7 @@ export function MemberProfile() {
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <Shield className="h-4 w-4 text-gray-500" />
                 <span className="font-mono text-sm">
-                  Chưa có QR code
+                  {userData?.memberInfo?.qr_code || 'Chưa có QR code'}
                 </span>
               </div>
             </div>
@@ -324,19 +423,27 @@ export function MemberProfile() {
       )}
 
       {/* Health Information (tab) */}
-      {activeTab === 'health' && healthInfo && (
+      {activeTab === 'health' && (
         <div className="bg-white rounded-2xl p-8 shadow-sm border-l-4 border-blue-900">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-semibold text-blue-900">Thông Tin Sức Khỏe</h3>
             {!isEditingHealth ? (
               <Button onClick={handleHealthEdit} size="sm" variant="outline">
                 <Edit3 />
-                <span>Chỉnh sửa</span>
+                <span>{healthInfo ? 'Chỉnh sửa' : 'Tạo mới'}</span>
               </Button>
             ) : (
               <div className="flex gap-2">
-                <Button onClick={handleHealthSave} size="sm">
-                  <Save />
+                <Button 
+                  onClick={handleHealthSave} 
+                  size="sm"
+                  disabled={updateHealthInfoMutation.isPending || createHealthInfoMutation.isPending}
+                >
+                  {(updateHealthInfoMutation.isPending || createHealthInfoMutation.isPending) ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
                   <span>Lưu</span>
                 </Button>
                 <Button onClick={handleHealthCancel} size="sm" variant="ghost">
@@ -347,11 +454,23 @@ export function MemberProfile() {
             )}
           </div>
 
+          {!healthInfo && !isEditingHealth && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Heart className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-blue-800 font-medium">Chưa có thông tin sức khỏe</p>
+                  <p className="text-blue-600 text-sm">Hãy tạo thông tin sức khỏe để được tư vấn tốt nhất</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label>Chiều cao (cm)</Label>
               <Input
-                value={(isEditingHealth ? editedHealth?.height : healthInfo.height) ?? ''}
+                value={(isEditingHealth ? editedHealth?.height : healthInfo?.height) ?? ''}
                 onChange={(e) => handleHealthChange('height', Number(e.target.value))}
                 readOnly={!isEditingHealth}
               />
@@ -360,23 +479,36 @@ export function MemberProfile() {
             <div className="space-y-2">
               <Label>Cân nặng (kg)</Label>
               <Input
-                value={(isEditingHealth ? editedHealth?.weight : healthInfo.weight) ?? ''}
+                value={(isEditingHealth ? editedHealth?.weight : healthInfo?.weight) ?? ''}
                 onChange={(e) => handleHealthChange('weight', Number(e.target.value))}
                 readOnly={!isEditingHealth}
               />
             </div>
 
             <div className="space-y-2">
+              <Label>Giới tính</Label>
+              <select
+                className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200"
+                value={(isEditingHealth ? editedHealth?.gender : healthInfo?.gender) as string}
+                onChange={(e) => handleHealthChange('gender', e.target.value)}
+                disabled={!isEditingHealth}
+              >
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Mục tiêu tập luyện</Label>
               <select
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200"
-                value={(isEditingHealth ? editedHealth?.goal : healthInfo.goal) as string}
+                value={(isEditingHealth ? editedHealth?.goal : healthInfo?.goal) as string}
                 onChange={(e) => handleHealthChange('goal', e.target.value)}
                 disabled={!isEditingHealth}
               >
-                <option value="WeightLoss">Giảm cân</option>
-                <option value="MuscleGain">Tăng cơ</option>
-                <option value="Health">Sức khỏe</option>
+                <option value="weightLoss">Giảm cân</option>
+                <option value="muscleGain">Tăng cơ</option>
+                <option value="health">Sức khỏe</option>
               </select>
             </div>
 
@@ -384,13 +516,13 @@ export function MemberProfile() {
               <Label>Trình độ tập luyện</Label>
               <select
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200"
-                value={(isEditingHealth ? editedHealth?.experience : healthInfo.experience) as string}
+                value={(isEditingHealth ? editedHealth?.experience : healthInfo?.experience) as string}
                 onChange={(e) => handleHealthChange('experience', e.target.value)}
                 disabled={!isEditingHealth}
               >
-                <option value="Beginner">Người mới</option>
-                <option value="Intermediate">Trung bình</option>
-                <option value="Advanced">Nâng cao</option>
+                <option value="beginner">Người mới</option>
+                <option value="intermediate">Trung bình</option>
+                <option value="advanced">Nâng cao</option>
               </select>
             </div>
 
@@ -398,13 +530,13 @@ export function MemberProfile() {
               <Label>Mức độ thể lực</Label>
               <select
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200"
-                value={(isEditingHealth ? editedHealth?.fitness_level : healthInfo.fitness_level) as string}
-                onChange={(e) => handleHealthChange('fitness_level', e.target.value)}
+                value={(isEditingHealth ? editedHealth?.fitnessLevel : healthInfo?.fitnessLevel) as string}
+                onChange={(e) => handleHealthChange('fitnessLevel', e.target.value)}
                 disabled={!isEditingHealth}
               >
-                <option value="Low">Thấp</option>
-                <option value="Medium">Trung bình</option>
-                <option value="High">Cao</option>
+                <option value="low">Thấp</option>
+                <option value="medium">Trung bình</option>
+                <option value="high">Cao</option>
               </select>
             </div>
 
@@ -412,13 +544,13 @@ export function MemberProfile() {
               <Label>Thời gian tập ưa thích</Label>
               <select
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200"
-                value={(isEditingHealth ? editedHealth?.preferred_time : healthInfo.preferred_time) as string}
-                onChange={(e) => handleHealthChange('preferred_time', e.target.value)}
+                value={(isEditingHealth ? editedHealth?.preferredTime : healthInfo?.preferredTime) as string}
+                onChange={(e) => handleHealthChange('preferredTime', e.target.value)}
                 disabled={!isEditingHealth}
               >
-                <option value="Morning">Sáng</option>
-                <option value="Afternoon">Chiều</option>
-                <option value="Evening">Tối</option>
+                <option value="morning">Sáng</option>
+                <option value="afternoon">Chiều</option>
+                <option value="evening">Tối</option>
               </select>
             </div>
 
@@ -426,8 +558,8 @@ export function MemberProfile() {
               <Label>Số buổi tập/tuần</Label>
               <select
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200"
-                value={(isEditingHealth ? editedHealth?.weekly_sessions : healthInfo.weekly_sessions) as string}
-                onChange={(e) => handleHealthChange('weekly_sessions', e.target.value)}
+                value={(isEditingHealth ? editedHealth?.weeklySessions : healthInfo?.weeklySessions) as string}
+                onChange={(e) => handleHealthChange('weeklySessions', e.target.value)}
                 disabled={!isEditingHealth}
               >
                 <option value="1-2">1-2 buổi</option>
@@ -441,8 +573,8 @@ export function MemberProfile() {
               <textarea
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200"
                 rows={3}
-                value={(isEditingHealth ? editedHealth?.medical_history : healthInfo.medical_history) ?? ''}
-                onChange={(e) => handleHealthChange('medical_history', e.target.value)}
+                value={(isEditingHealth ? editedHealth?.medicalHistory : healthInfo?.medicalHistory) ?? ''}
+                onChange={(e) => handleHealthChange('medicalHistory', e.target.value)}
                 readOnly={!isEditingHealth}
               />
             </div>
@@ -452,7 +584,7 @@ export function MemberProfile() {
               <textarea
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200"
                 rows={3}
-                value={(isEditingHealth ? editedHealth?.allergies : healthInfo.allergies) ?? ''}
+                value={(isEditingHealth ? editedHealth?.allergies : healthInfo?.allergies) ?? ''}
                 onChange={(e) => handleHealthChange('allergies', e.target.value)}
                 readOnly={!isEditingHealth}
               />

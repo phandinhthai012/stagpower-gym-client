@@ -7,6 +7,10 @@ export const queryKeys = {
     members: ['users', 'members'] as const,
     staffs: ['users', 'staffs'] as const,
     userById: (userId: string) => ['users', 'userById', userId] as const,
+    me: ['users', 'me'] as const,
+    
+    // Health Info
+    healthInfo: ['healthInfo'] as const,
     // Packages
     packages: ['packages'] as const,
     package: (id: string) => ['packages', id] as const,

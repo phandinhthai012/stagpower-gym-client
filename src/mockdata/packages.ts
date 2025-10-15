@@ -1,4 +1,7 @@
-export interface Package {
+import { Package } from '../types/package.types';
+
+// Legacy interface for mock data (snake_case format)
+export interface MockPackage {
   id: string;
   name: string;
   type: 'Membership' | 'Combo' | 'PT';
@@ -17,7 +20,7 @@ export interface Package {
   updated_at: string;
 }
 
-export const mockPackages: Package[] = [
+export const mockPackages: MockPackage[] = [
   // Membership Packages - Basic
   {
     id: '507f1f77bcf86cd799439031',
