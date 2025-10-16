@@ -8,6 +8,7 @@ import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
 import { useCreateSubscription } from '../../hooks/useSubscriptions';
+import { useCreatePayment } from '../../hooks/usePayments';
 import { useBranches } from '../../hooks/useBranches';
 import { usePackages } from '../../hooks/usePackages';
 import { Branch, Package } from '../../types';
@@ -34,6 +35,7 @@ interface ModalRegisPackageProps {
 export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage }: ModalRegisPackageProps) {
   const { user } = useAuth();
   const createSubscriptionMutation = useCreateSubscription();
+  const createPaymentMutation = useCreatePayment();
   const { data: branchesResponse, isLoading: branchesLoading } = useBranches();
   const { data: packagesResponse, isLoading: packagesLoading } = usePackages();
   
@@ -129,7 +131,8 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + packageInfo.durationMonths);
 
-      const subscriptionData = {
+      // Step 1: Tạo subscription với status PendingPayment
+      const newSubscriptionData = {
         memberId: user?._id || user?.id,
         packageId: formData.packageId,
         branchId: formData.branchId,
@@ -140,16 +143,45 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
         durationDays: packageInfo.durationMonths * 30,
         ptsessionsRemaining: packageInfo.ptSessions || 0,
         ptsessionsUsed: 0,
-        status: 'Active' as const,
+        status: 'PendingPayment' as const, // Tạo với status PendingPayment
         isSuspended: false
       };
 
-      await createSubscriptionMutation.mutateAsync(subscriptionData);
+      const subscription = await createSubscriptionMutation.mutateAsync(newSubscriptionData);
+      
+      // Step 2: Tạo payment record cho subscription vừa tạo
+      const createdSubscription = subscription?.data;
+      if (createdSubscription && createdSubscription._id) {
+        const paymentData = {
+          subscriptionId: createdSubscription._id,
+          memberId: createdSubscription.memberId,
+          originalAmount: packageInfo.price,
+          amount: packageInfo.price, // Có thể áp dụng discount sau
+          paymentMethod: formData.paymentMethod === 'cash' ? 'Cash' : 
+                        formData.paymentMethod === 'card' ? 'Card' :
+                        formData.paymentMethod === 'momo' ? 'Momo' : 'BankTransfer',
+          paymentStatus: 'Pending' as const,
+          paymentDate: new Date().toISOString(),
+          notes: formData.notes || ''
+        };
+
+        // Gọi API tạo payment
+        try {
+          await createPaymentMutation.mutateAsync(paymentData);
+          console.log('Payment created successfully');
+          
+        } catch (paymentError) {
+          console.error('Error creating payment:', paymentError);
+          // Vẫn hiển thị thành công vì subscription đã được tạo
+          alert('Đăng ký gói tập thành công! Vui lòng liên hệ admin để thanh toán.');
+        }
+      }
       
       onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Error creating subscription:', error);
+      alert('Có lỗi xảy ra khi đăng ký gói tập. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -400,10 +432,30 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
                       <span>Loại:</span>
                       <span className="font-medium">{selectedPackageInModal.membershipType || 'Basic'}</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span>Phương thức thanh toán:</span>
+                      <span className="font-medium">
+                        {formData.paymentMethod === 'cash' ? 'Tiền mặt' :
+                         formData.paymentMethod === 'card' ? 'Thẻ' :
+                         formData.paymentMethod === 'momo' ? 'MoMo' : 'Chuyển khoản'}
+                      </span>
+                    </div>
                     <div className="flex justify-between text-base font-semibold border-t pt-2">
                       <span>Tổng cộng:</span>
                       <span className="text-blue-600">{formatPrice(selectedPackageInModal.price)}</span>
                     </div>
+                  </div>
+                  
+                  {/* Payment Status Info */}
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <span className="text-sm font-medium text-yellow-800">Lưu ý quan trọng</span>
+                    </div>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      Gói tập sẽ được tạo với trạng thái &quot;Chờ thanh toán&quot;. 
+                      Sau khi thanh toán thành công, gói tập sẽ được kích hoạt.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -428,12 +480,12 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Đang xử lý...</span>
+                <span>Đang tạo gói tập...</span>
               </>
             ) : (
               <>
                 <CreditCard className="w-4 h-4" />
-                <span>Đăng ký ngay</span>
+                <span>Tạo gói tập & Payment</span>
               </>
             )}
           </Button>
