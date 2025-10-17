@@ -50,4 +50,10 @@ export const paymentApi = {
     const response = await apiClient.post(API_ENDPOINTS.PAYMENT.CREATE_PAYMENT_MOMO, data);
     return response.data;
   },
+
+  // Get payment stats
+  getPaymentStats: async (): Promise<ApiResponse<any>> => {
+    const response = await apiClient.get(`${API_ENDPOINTS.PAYMENT.GET_ALL_PAYMENTS}/stats`);
+    return response.data;
+  },
 };

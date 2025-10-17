@@ -92,3 +92,10 @@ export const useDeletePayment = () => {
         },
     });
 }
+
+export const usePaymentStats = () => {
+    return useQuery({
+        queryKey: ['paymentStats'],
+        queryFn: paymentApi.getPaymentStats,
+    });
+};

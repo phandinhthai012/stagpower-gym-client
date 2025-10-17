@@ -33,6 +33,7 @@ import {
   useBulkSendReminders,
   useExportInvoices 
 } from '../hooks/useInvoices';
+import { usePayments, usePaymentStats } from '../../member/hooks/usePayments';
 import { Invoice } from '../types/invoice.types';
 import { ModalCreateInvoice, ModalViewInvoice, ModalRecordPayment } from '../components/invoices-management';
 
@@ -46,48 +47,50 @@ export function AdminInvoicePayment() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<Invoice | null>(null);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
 
   // API hooks
-  const { data: invoices = [], isLoading, error } = useInvoices();
-  const { data: stats } = useInvoiceStats();
+  const { data: paymentsResponse, isLoading, error } = usePayments();
+  const payments = paymentsResponse?.data || [];
+  const { data: statsResponse } = usePaymentStats();
+  const stats = statsResponse?.data;
   const deleteInvoiceMutation = useDeleteInvoice();
   const sendReminderMutation = useSendPaymentReminder();
   const bulkSendRemindersMutation = useBulkSendReminders();
   const exportInvoicesMutation = useExportInvoices();
 
 
-  // Filter invoices based on search and filters
-  const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.memberName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.memberEmail.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    const matchesPackage = packageFilter === 'all' || invoice.packageType === packageFilter;
+  // Filter payments based on search and filters
+  const filteredPayments = payments.filter((payment: any) => {
+    const matchesSearch = (payment._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         payment.memberId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         payment.memberId?.email?.toLowerCase().includes(searchTerm.toLowerCase())) || false;
+    const matchesStatus = statusFilter === 'all' || (payment.paymentStatus || payment.status) === statusFilter;
+    const matchesPackage = packageFilter === 'all' || payment.subscriptionId?.packageId?.type === packageFilter;
     
     let matchesDate = true;
-    if (startDate && endDate) {
-      const invoiceDate = new Date(invoice.createdAt);
+    if (startDate && endDate && payment.createdAt) {
+      const paymentDate = new Date(payment.createdAt);
       const start = new Date(startDate);
       const end = new Date(endDate);
-      matchesDate = invoiceDate >= start && invoiceDate <= end;
+      matchesDate = paymentDate >= start && paymentDate <= end;
     }
     
     let matchesPrice = true;
-    if (priceFilter !== 'all') {
+    if (priceFilter !== 'all' && payment.amount) {
       switch (priceFilter) {
         case '0-500k':
-          matchesPrice = invoice.amount < 500000;
+          matchesPrice = payment.amount < 500000;
           break;
         case '500k-1M':
-          matchesPrice = invoice.amount >= 500000 && invoice.amount < 1000000;
+          matchesPrice = payment.amount >= 500000 && payment.amount < 1000000;
           break;
         case '1M-2M':
-          matchesPrice = invoice.amount >= 1000000 && invoice.amount < 2000000;
+          matchesPrice = payment.amount >= 1000000 && payment.amount < 2000000;
           break;
         case '2M+':
-          matchesPrice = invoice.amount >= 2000000;
+          matchesPrice = payment.amount >= 2000000;
           break;
       }
     }
@@ -112,24 +115,26 @@ export function AdminInvoicePayment() {
         return <Badge className="bg-red-100 text-red-800">Thất bại</Badge>;
       case 'Refunded':
         return <Badge className="bg-gray-100 text-gray-800">Đã hoàn tiền</Badge>;
+      case 'Cancelled':
+        return <Badge className="bg-gray-100 text-gray-800">Đã hủy</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">Không xác định</Badge>;
     }
   };
 
-  const handleSelectInvoice = (invoiceId: string) => {
+  const handleSelectPayment = (paymentId: string) => {
     setSelectedInvoices(prev => 
-      prev.includes(invoiceId) 
-        ? prev.filter((id: string) => id !== invoiceId)
-        : [...prev, invoiceId]
+      prev.includes(paymentId) 
+        ? prev.filter((id: string) => id !== paymentId)
+        : [...prev, paymentId]
     );
   };
 
   const handleSelectAll = () => {
-    if (selectedInvoices.length === filteredInvoices.length) {
+    if (selectedInvoices.length === filteredPayments.length) {
       setSelectedInvoices([]);
     } else {
-      setSelectedInvoices(filteredInvoices.map((invoice: Invoice) => invoice._id));
+      setSelectedInvoices(filteredPayments.map((payment: any) => payment._id));
     }
   };
 
@@ -137,29 +142,29 @@ export function AdminInvoicePayment() {
     setShowCreateModal(true);
   };
 
-  const handleViewInvoice = (invoice: Invoice) => {
-    setSelectedInvoice(invoice);
+  const handleViewInvoice = (payment: Invoice) => {
+    setSelectedPayment(payment);
     setShowViewModal(true);
   };
 
-  const handleRecordPayment = (invoice: Invoice) => {
-    setSelectedInvoice(invoice);
+  const handleRecordPayment = (payment: Invoice) => {
+    setSelectedPayment(payment);
     setShowPaymentModal(true);
   };
 
-  const handleDeleteInvoice = async (invoice: Invoice) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa hóa đơn ${invoice.invoiceNumber}?`)) {
+  const handleDeleteInvoice = async (payment: Invoice) => {
+      if (window.confirm(`Bạn có chắc chắn muốn xóa thanh toán ${payment._id}?`)) {
       try {
-        await deleteInvoiceMutation.mutateAsync(invoice._id);
+        await deleteInvoiceMutation.mutateAsync(payment._id);
       } catch (error) {
-        console.error('Error deleting invoice:', error);
+        console.error('Error deleting payment:', error);
       }
     }
   };
 
-  const handleSendReminder = async (invoice: Invoice) => {
+  const handleSendReminder = async (payment: Invoice) => {
     try {
-      await sendReminderMutation.mutateAsync(invoice._id);
+      await sendReminderMutation.mutateAsync(payment._id);
     } catch (error) {
       console.error('Error sending reminder:', error);
     }
@@ -186,13 +191,13 @@ export function AdminInvoicePayment() {
         search: searchTerm
       });
     } catch (error) {
-      console.error('Error exporting invoices:', error);
+      console.error('Error exporting payments:', error);
     }
   };
 
-  const handlePrintInvoice = (invoice: Invoice) => {
+  const handlePrintInvoice = (payment: Invoice) => {
     // TODO: Implement print functionality
-    console.log('Print invoice:', invoice.invoiceNumber);
+    console.log('Print payment:', payment._id);
   };
 
   if (isLoading) {
@@ -217,7 +222,7 @@ export function AdminInvoicePayment() {
                 <div>
                   <p className="text-sm text-gray-600">Tổng doanh thu</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {formatPrice(stats.totalRevenue)}
+                    {formatPrice(stats?.totalAmount || 0)}
                   </p>
                 </div>
                 <DollarSign className="w-8 h-8 text-green-600" />
@@ -229,7 +234,7 @@ export function AdminInvoicePayment() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Đã thanh toán</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.paidInvoices}</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats?.completedPayments || 0}</p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-blue-600" />
               </div>
@@ -240,7 +245,7 @@ export function AdminInvoicePayment() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Chờ thanh toán</p>
-                  <p className="text-2xl font-bold text-yellow-600">{stats.pendingInvoices}</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats?.pendingPayments || 0}</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-600" />
               </div>
@@ -250,8 +255,8 @@ export function AdminInvoicePayment() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Quá hạn</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.overdueInvoices}</p>
+                  <p className="text-sm text-gray-600">Thất bại</p>
+                  <p className="text-2xl font-bold text-red-600">{stats?.failedPayments || 0}</p>
                 </div>
                 <AlertTriangle className="w-8 h-8 text-red-600" />
               </div>
@@ -384,7 +389,7 @@ export function AdminInvoicePayment() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">
-                Đã chọn {selectedInvoices.length} hóa đơn
+                Đã chọn {selectedInvoices.length} thanh toán
               </span>
               <div className="flex gap-2">
                 <Button 
@@ -424,7 +429,7 @@ export function AdminInvoicePayment() {
         <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-green-600" />
-            Danh sách hóa đơn ({filteredInvoices.length})
+            Danh sách hóa đơn ({filteredPayments.length})
             </CardTitle>
         </CardHeader>
         <CardContent>
@@ -435,7 +440,7 @@ export function AdminInvoicePayment() {
                   <th className="text-left p-3">
                     <input
                       type="checkbox"
-                      checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
+                      checked={selectedInvoices.length === filteredPayments.length && filteredPayments.length > 0}
                       onChange={handleSelectAll}
                       className="rounded"
                     />
@@ -445,69 +450,75 @@ export function AdminInvoicePayment() {
                   <th className="text-left p-3 font-medium text-gray-600">Gói Dịch Vụ</th>
                   <th className="text-left p-3 font-medium text-gray-600">Số Tiền</th>
                   <th className="text-left p-3 font-medium text-gray-600">Ngày Tạo</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Hạn Thanh Toán</th>
+                  <th className="text-left p-3 font-medium text-gray-600">Ngày Thanh Toán</th>
+                  <th className="text-left p-3 font-medium text-gray-600">Phương Thức</th>
                   <th className="text-left p-3 font-medium text-gray-600">Trạng Thái</th>
                   <th className="text-left p-3 font-medium text-gray-600">Thao Tác</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredInvoices.map((invoice) => (
-                  <tr key={invoice._id} className="border-b hover:bg-gray-50">
+                {filteredPayments.map((payment: any) => (
+                  <tr key={payment._id} className="border-b hover:bg-gray-50">
                     <td className="p-3">
                       <input
                         type="checkbox"
-                        checked={selectedInvoices.includes(invoice._id)}
-                        onChange={() => handleSelectInvoice(invoice._id)}
+                        checked={selectedInvoices.includes(payment._id)}
+                        onChange={() => handleSelectPayment(payment._id)}
                         className="rounded"
                       />
                     </td>
                     <td className="p-3">
-                      <span className="font-medium text-blue-600">{invoice.invoiceNumber}</span>
+                      <span className="font-medium text-blue-600">{payment._id}</span>
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">
-                            {invoice.memberName.charAt(0)}
+                            {payment.memberId?.name?.charAt(0) || 'U'}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{invoice.memberName}</p>
-                          <p className="text-sm text-gray-500">{invoice.memberEmail}</p>
+                          <p className="font-medium text-gray-900">{payment.memberId?.name || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">{payment.memberId?.email || 'N/A'}</p>
                         </div>
                       </div>
                     </td>
                     <td className="p-3">
                       <div>
-                        <p className="font-medium text-gray-900">{invoice.packageName}</p>
-                        <p className="text-sm text-gray-500">{invoice.packageType}</p>
+                        <p className="font-medium text-gray-900">{payment.subscriptionId?.packageId?.name || 'N/A'}</p>
+                        <p className="text-sm text-gray-500">{payment.subscriptionId?.packageId?.type || 'N/A'}</p>
                       </div>
                     </td>
                     <td className="p-3">
                       <div>
-                        <p className="font-medium text-gray-900">{formatPrice(invoice.amount)}</p>
-                        {invoice.originalAmount !== invoice.amount && (
+                        <p className="font-medium text-gray-900">{formatPrice(payment.amount || 0)}</p>
+                        {payment.subscriptionId?.packageId?.price && payment.subscriptionId?.packageId?.price !== payment.amount && (
                           <p className="text-sm text-gray-500 line-through">
-                            {formatPrice(invoice.originalAmount)}
+                            {formatPrice(payment.subscriptionId?.packageId?.price)}
                           </p>
                         )}
                       </div>
                     </td>
                     <td className="p-3">
-                      {new Date(invoice.createdAt).toLocaleDateString('vi-VN')}
+                      {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
                     </td>
                     <td className="p-3">
-                      {new Date(invoice.dueDate).toLocaleDateString('vi-VN')}
+                      {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}
                     </td>
                     <td className="p-3">
-                      {getStatusBadge(invoice.status)}
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                        {payment.paymentMethod || 'N/A'}
+                      </Badge>
+                    </td>
+                    <td className="p-3">
+                      {getStatusBadge(payment.paymentStatus || payment.status)}
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleViewInvoice(invoice)}
+                          onClick={() => handleViewInvoice(payment)}
                           title="Xem chi tiết"
                         >
                           <Eye className="w-4 h-4" />
@@ -515,28 +526,28 @@ export function AdminInvoicePayment() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handlePrintInvoice(invoice)}
+                          onClick={() => handlePrintInvoice(payment)}
                           title="In hóa đơn"
                         >
                           <Printer className="w-4 h-4" />
                         </Button>
-                        {invoice.status === 'Pending' && (
+                        {(payment.paymentStatus || payment.status) === 'Pending' && (
                           <Button
                             variant="outline"
                             size="sm"
                             className="text-green-600 hover:text-green-700"
-                            onClick={() => handleRecordPayment(invoice)}
+                            onClick={() => handleRecordPayment(payment)}
                             title="Ghi nhận thanh toán"
                           >
                             <CreditCard className="w-4 h-4" />
                           </Button>
                         )}
-                        {invoice.status === 'Pending' && (
+                        {(payment.paymentStatus || payment.status) === 'Pending' && (
                           <Button
                             variant="outline"
                             size="sm"
                             className="text-yellow-600 hover:text-yellow-700"
-                            onClick={() => handleSendReminder(invoice)}
+                            onClick={() => handleSendReminder(payment)}
                             title="Gửi nhắc nhở"
                           >
                             <Bell className="w-4 h-4" />
@@ -545,7 +556,7 @@ export function AdminInvoicePayment() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteInvoice(invoice)}
+                          onClick={() => handleDeleteInvoice(payment)}
                           className="text-red-600 hover:text-red-700"
                           title="Xóa hóa đơn"
                         >
@@ -574,12 +585,12 @@ export function AdminInvoicePayment() {
         isOpen={showViewModal}
         onClose={() => {
           setShowViewModal(false);
-          setSelectedInvoice(null);
+          setSelectedPayment(null);
         }}
-        invoice={selectedInvoice}
+        invoice={selectedPayment}
         onRecordPayment={(invoice) => {
           setShowViewModal(false);
-          setSelectedInvoice(invoice);
+          setSelectedPayment(invoice);
           setShowPaymentModal(true);
         }}
         onSendReminder={handleSendReminder}
@@ -589,12 +600,12 @@ export function AdminInvoicePayment() {
         isOpen={showPaymentModal}
         onClose={() => {
           setShowPaymentModal(false);
-          setSelectedInvoice(null);
+          setSelectedPayment(null);
         }}
-        invoice={selectedInvoice}
+        invoice={selectedPayment}
         onSuccess={() => {
           setShowPaymentModal(false);
-          setSelectedInvoice(null);
+          setSelectedPayment(null);
         }}
       />
     </div>
