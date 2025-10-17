@@ -53,6 +53,16 @@ export function ModalViewInvoice({
         return <Badge className="bg-gray-100 text-gray-800">Đã hoàn tiền</Badge>;
       case 'Cancelled':
         return <Badge className="bg-gray-100 text-gray-800">Đã hủy</Badge>;
+      case 'Active':
+        return <Badge className="bg-green-100 text-green-800">Đang hoạt động</Badge>;
+      case 'Expired':
+        return <Badge className="bg-red-100 text-red-800">Đã hết hạn</Badge>;
+      case 'Suspended':
+        return <Badge className="bg-orange-100 text-orange-800">Tạm dừng</Badge>;
+      case 'PendingPayment':
+        return <Badge className="bg-yellow-100 text-yellow-800">Chờ thanh toán</Badge>;
+      case 'NotStarted':
+        return <Badge className="bg-blue-100 text-blue-800">Chờ bắt đầu</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">Không xác định</Badge>;
     }

@@ -21,7 +21,8 @@ import {
   CheckCircle,
   AlertTriangle,
   XCircle,
-  Edit
+  Edit,
+  Printer
 } from 'lucide-react';
 import { 
   useSendPaymentReminder, 
@@ -120,6 +121,8 @@ export function AdminInvoicePayment() {
         return <Badge className="bg-orange-100 text-orange-800 text-xs">Tạm dừng</Badge>;
       case 'PendingPayment':
         return <Badge className="bg-yellow-100 text-yellow-800 text-xs">Chờ thanh toán</Badge>;
+      case 'NotStarted':
+        return <Badge className="bg-blue-100 text-blue-800 text-xs">Chờ bắt đầu</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800 text-xs">Không xác định</Badge>;
     }
@@ -170,6 +173,10 @@ export function AdminInvoicePayment() {
     } catch (error) {
       console.error('Error sending reminder:', error);
     }
+  };
+
+  const handlePrintInvoice = (payment: Payment) => {
+    window.print();
   };
 
   const handleBulkSendReminders = async () => {
@@ -547,6 +554,17 @@ export function AdminInvoicePayment() {
                             title="Gửi nhắc nhở"
                           >
                             <Bell className="w-3 h-3" />
+                          </Button>
+                        )}
+                        {(payment.paymentStatus || payment.status) === 'Completed' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700 text-xs"
+                            onClick={() => handlePrintInvoice(payment)}
+                            title="In hóa đơn"
+                          >
+                            <Printer className="w-3 h-3" />
                           </Button>
                         )}
                       </div>

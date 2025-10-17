@@ -10,7 +10,7 @@ export interface Subscription {
   duration_days: number;
   pt_sessions_remaining?: number;
   pt_sessions_used?: number;
-  status: 'Active' | 'Expired' | 'Suspended';
+  status: 'Active' | 'Expired' | 'Suspended' | 'PendingPayment' | 'NotStarted';
   
   // Suspension management
   is_suspended: boolean;

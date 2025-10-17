@@ -66,7 +66,7 @@ export interface Subscription {
   durationDays: number;
   ptsessionsRemaining: number;
   ptsessionsUsed: number;
-  status: 'Active' | 'Expired' | 'Suspended' | 'Cancelled';
+  status: 'Active' | 'Expired' | 'Suspended' | 'Cancelled' | 'PendingPayment' | 'NotStarted';
   suspensionHistory?: Array<{
     startDate: string;
     endDate: string;

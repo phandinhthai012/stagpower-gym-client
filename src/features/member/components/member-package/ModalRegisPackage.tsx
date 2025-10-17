@@ -7,7 +7,7 @@ import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
-import { useCreateSubscription } from '../../hooks/useSubscriptions';
+import { useCreateSubscription, useSubscriptionsByMemberId } from '../../hooks/useSubscriptions';
 import { useCreatePayment } from '../../hooks/usePayments';
 import { useBranches } from '../../hooks/useBranches';
 import { usePackages } from '../../hooks/usePackages';
@@ -38,6 +38,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
   const createPaymentMutation = useCreatePayment();
   const { data: branchesResponse, isLoading: branchesLoading } = useBranches();
   const { data: packagesResponse, isLoading: packagesLoading } = usePackages();
+  const { data: subscriptionsResponse } = useSubscriptionsByMemberId(user?._id || user?.id || '');
   
   const [formData, setFormData] = useState({
     packageId: selectedPackage?._id || '',
@@ -51,6 +52,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Lock scroll when modal is open
   useScrollLock(isOpen);
@@ -95,18 +97,6 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
       newErrors.branchId = 'Vui lòng chọn chi nhánh';
     }
 
-    if (!formData.startDate) {
-      newErrors.startDate = 'Vui lòng chọn ngày bắt đầu';
-    } else {
-      const startDate = new Date(formData.startDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (startDate < today) {
-        newErrors.startDate = 'Ngày bắt đầu không thể là ngày trong quá khứ';
-      }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -127,19 +117,19 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
         throw new Error('Không tìm thấy thông tin gói tập');
       }
 
-      const startDate = new Date(formData.startDate);
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + packageInfo.durationMonths);
+      // Kiểm tra xem member có gói đang Active không
+      const subscriptions = subscriptionsResponse?.data || [];
+      const activeSubscription = subscriptions.find((sub: any) => sub.status === 'Active');
 
       // Step 1: Tạo subscription với status PendingPayment
+      // KHÔNG gửi startDate và endDate - sẽ được set khi thanh toán
       const newSubscriptionData = {
         memberId: user?._id || user?.id,
         packageId: formData.packageId,
         branchId: formData.branchId,
         type: packageInfo.type,
         membershipType: packageInfo.membershipType || 'Basic',
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
+        // KHÔNG gửi startDate và endDate - sẽ được tính khi thanh toán
         durationDays: packageInfo.durationMonths * 30,
         ptsessionsRemaining: packageInfo.ptSessions || 0,
         ptsessionsUsed: 0,
@@ -161,7 +151,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
                         formData.paymentMethod === 'card' ? 'Card' :
                         formData.paymentMethod === 'momo' ? 'Momo' : 'BankTransfer',
           paymentStatus: 'Pending' as const,
-          paymentDate: new Date().toISOString(),
+          // KHÔNG set paymentDate khi chưa thanh toán
           notes: formData.notes || ''
         };
 
@@ -177,8 +167,8 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
         }
       }
       
-      onSuccess?.();
-      onClose();
+      // Hiển thị modal xác nhận
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Error creating subscription:', error);
       alert('Có lỗi xảy ra khi đăng ký gói tập. Vui lòng thử lại.');
@@ -339,46 +329,30 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="branchId">Chi nhánh *</Label>
-                    <Select
-                      value={formData.branchId}
-                      onValueChange={(value) => handleInputChange('branchId', value)}
-                    >
-                      <SelectTrigger className={errors.branchId ? 'border-red-500' : ''}>
-                        <SelectValue placeholder="Chọn chi nhánh" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {branchesLoading ? (
-                          <SelectItem value="loading" disabled>Đang tải...</SelectItem>
-                        ) : (
-                          branches.map((branch) => (
-                            <SelectItem key={branch._id} value={branch._id}>
-                              {branch.name} - {branch.address}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {errors.branchId && (
-                      <p className="text-sm text-red-500 mt-1">{errors.branchId}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="startDate">Ngày bắt đầu *</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => handleInputChange('startDate', e.target.value)}
-                      className={errors.startDate ? 'border-red-500' : ''}
-                    />
-                    {errors.startDate && (
-                      <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>
-                    )}
-                  </div>
+                <div>
+                  <Label htmlFor="branchId">Chi nhánh *</Label>
+                  <Select
+                    value={formData.branchId}
+                    onValueChange={(value) => handleInputChange('branchId', value)}
+                  >
+                    <SelectTrigger className={errors.branchId ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Chọn chi nhánh" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branchesLoading ? (
+                        <SelectItem value="loading" disabled>Đang tải...</SelectItem>
+                      ) : (
+                        branches.map((branch) => (
+                          <SelectItem key={branch._id} value={branch._id}>
+                            {branch.name} - {branch.address}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.branchId && (
+                    <p className="text-sm text-red-500 mt-1">{errors.branchId}</p>
+                  )}
                 </div>
 
                 <div>
@@ -453,8 +427,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
                       <span className="text-sm font-medium text-yellow-800">Lưu ý quan trọng</span>
                     </div>
                     <p className="text-xs text-yellow-700 mt-1">
-                      Gói tập sẽ được tạo với trạng thái &quot;Chờ thanh toán&quot;. 
-                      Sau khi thanh toán thành công, gói tập sẽ được kích hoạt.
+                      Gói tập sẽ được kích hoạt khi thanh toán thành công!
                     </p>
                   </div>
                 </CardContent>
@@ -480,17 +453,68 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Đang tạo gói tập...</span>
+                <span>Đang đăng ký...</span>
               </>
             ) : (
               <>
                 <CreditCard className="w-4 h-4" />
-                <span>Tạo gói tập & Payment</span>
+                <span>Đăng ký gói tập</span>
               </>
             )}
           </Button>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setShowSuccessModal(false);
+              onSuccess?.();
+              onClose();
+            }}
+          />
+          <div className="relative w-full max-w-md mx-4 bg-white rounded-lg shadow-xl p-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                🎉 Đăng ký thành công!
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Bạn có muốn chuyển đến trang thanh toán để hoàn tất thanh toán ngay không?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    onSuccess?.();
+                    onClose();
+                  }}
+                >
+                  Không
+                </Button>
+                <Button
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    onSuccess?.();
+                    onClose();
+                    window.location.href = '/member/payments';
+                  }}
+                >
+                  Xác nhận
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
