@@ -5,14 +5,15 @@ import { Badge } from '../../../../components/ui/badge';
 import { Label } from '../../../../components/ui/label';
 import { X, Eye, Printer, CreditCard, Bell, Calendar, User, Package, DollarSign } from 'lucide-react';
 import { Invoice } from '../../types/invoice.types';
+import { Payment } from '../../../member/types';
 
 interface ModalViewInvoiceProps {
   isOpen: boolean;
   onClose: () => void;
-  invoice: Invoice | null;
-  onEdit?: (invoice: Invoice) => void;
-  onRecordPayment?: (invoice: Invoice) => void;
-  onSendReminder?: (invoice: Invoice) => void;
+  invoice: Invoice | Payment | null;
+  onEdit?: (invoice: Invoice | Payment) => void;
+  onRecordPayment?: (invoice: Invoice | Payment) => void;
+  onSendReminder?: (invoice: Invoice | Payment) => void;
 }
 
 export function ModalViewInvoice({ 
@@ -92,16 +93,16 @@ export function ModalViewInvoice({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Hóa đơn #{invoice.invoiceNumber}
+                  Hóa đơn {invoice.invoiceNumber || `#${invoice._id?.slice(-8).toUpperCase()}`}
                 </h3>
                 <p className="text-sm text-gray-500">
                   Tạo ngày: {formatDate(invoice.createdAt)}
                 </p>
               </div>
               <div className="text-right">
-                {getStatusBadge(invoice.status)}
+                {getStatusBadge((invoice as any).paymentStatus || (invoice as any).status)}
                 <p className="text-sm text-gray-500 mt-1">
-                  Hạn thanh toán: {formatDate(invoice.dueDate)}
+                  Ngày thanh toán: {(invoice as any).paymentDate ? formatDate((invoice as any).paymentDate) : 'Chưa thanh toán'}
                 </p>
               </div>
             </div>
@@ -115,9 +116,9 @@ export function ModalViewInvoice({
                     Thông tin hội viên
                   </Label>
                   <div className="mt-2 p-4 bg-gray-50 rounded-lg">
-                    <p className="font-medium text-gray-900">{invoice.memberName}</p>
-                    <p className="text-sm text-gray-600">{invoice.memberEmail}</p>
-                    <p className="text-sm text-gray-600">{invoice.memberPhone}</p>
+                    <p className="font-medium text-gray-900">{(invoice as any).memberId?.fullName || (invoice as any).memberName || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">{(invoice as any).memberId?.email || (invoice as any).memberEmail || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">{(invoice as any).memberId?.phone || (invoice as any).memberPhone || 'N/A'}</p>
                   </div>
                 </div>
 
@@ -127,8 +128,10 @@ export function ModalViewInvoice({
                     Gói dịch vụ
                   </Label>
                   <div className="mt-2 p-4 bg-gray-50 rounded-lg">
-                    <p className="font-medium text-gray-900">{invoice.packageName}</p>
-                    <p className="text-sm text-gray-600">{invoice.packageType}</p>
+                    <p className="font-medium text-gray-900">{(invoice as any).subscriptionId?.packageId?.name || (invoice as any).packageName || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">{(invoice as any).subscriptionId?.packageId?.type || (invoice as any).packageType || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">Loại: {(invoice as any).subscriptionId?.type || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">Thành viên: {(invoice as any).subscriptionId?.membershipType || 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -144,7 +147,7 @@ export function ModalViewInvoice({
                       <span className="text-sm text-gray-600">Phương thức:</span>
                       <span className="text-sm font-medium">{getPaymentMethodText(invoice.paymentMethod)}</span>
                     </div>
-                    {invoice.originalAmount !== invoice.amount && (
+                    {invoice.originalAmount && invoice.originalAmount !== invoice.amount && (
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Giá gốc:</span>
                         <span className="text-sm line-through text-gray-500">
@@ -158,12 +161,10 @@ export function ModalViewInvoice({
                         {formatPrice(invoice.amount)}
                       </span>
                     </div>
-                    {invoice.discountAmount && (
+                    {(invoice as any).transactionId && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Giảm giá:</span>
-                        <span className="text-sm text-red-600">
-                          -{formatPrice(invoice.discountAmount)}
-                        </span>
+                        <span className="text-sm text-gray-600">Mã giao dịch:</span>
+                        <span className="text-sm font-mono">{(invoice as any).transactionId}</span>
                       </div>
                     )}
                   </div>
@@ -180,13 +181,19 @@ export function ModalViewInvoice({
                       <span className="text-sm">{formatDate(invoice.createdAt)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Hạn thanh toán:</span>
-                      <span className="text-sm">{formatDate(invoice.dueDate)}</span>
+                      <span className="text-sm text-gray-600">Ngày thanh toán:</span>
+                      <span className="text-sm">{(invoice as any).paymentDate ? formatDate((invoice as any).paymentDate) : 'Chưa thanh toán'}</span>
                     </div>
-                    {invoice.paidAt && (
+                    {(invoice as any).subscriptionId?.startDate && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Thanh toán:</span>
-                        <span className="text-sm">{formatDate(invoice.paidAt)}</span>
+                        <span className="text-sm text-gray-600">Ngày bắt đầu:</span>
+                        <span className="text-sm">{formatDate((invoice as any).subscriptionId.startDate)}</span>
+                      </div>
+                    )}
+                    {(invoice as any).subscriptionId?.endDate && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Ngày kết thúc:</span>
+                        <span className="text-sm">{formatDate((invoice as any).subscriptionId.endDate)}</span>
                       </div>
                     )}
                   </div>
@@ -195,29 +202,29 @@ export function ModalViewInvoice({
             </div>
 
             {/* Payment Details */}
-            {invoice.paymentDetails && (
+            {(invoice as any).paymentDetails && (
               <div>
                 <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <CreditCard className="w-4 h-4" />
                   Chi tiết giao dịch
                 </Label>
                 <div className="mt-2 p-4 bg-gray-50 rounded-lg space-y-2">
-                  {invoice.paymentDetails.transactionId && (
+                  {(invoice as any).paymentDetails.transactionId && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Mã giao dịch:</span>
-                      <span className="text-sm font-mono">{invoice.paymentDetails.transactionId}</span>
+                      <span className="text-sm font-mono">{(invoice as any).paymentDetails.transactionId}</span>
                     </div>
                   )}
-                  {invoice.paymentDetails.paymentGateway && (
+                  {(invoice as any).paymentDetails.paymentGateway && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Cổng thanh toán:</span>
-                      <span className="text-sm">{invoice.paymentDetails.paymentGateway}</span>
+                      <span className="text-sm">{(invoice as any).paymentDetails.paymentGateway}</span>
                     </div>
                   )}
-                  {invoice.paymentDetails.reference && (
+                  {(invoice as any).paymentDetails.reference && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Mã tham chiếu:</span>
-                      <span className="text-sm font-mono">{invoice.paymentDetails.reference}</span>
+                      <span className="text-sm font-mono">{(invoice as any).paymentDetails.reference}</span>
                     </div>
                   )}
                 </div>
@@ -242,25 +249,29 @@ export function ModalViewInvoice({
               >
                 Đóng
               </Button>
-              {invoice.status === 'Pending' && onRecordPayment && (
-                <Button
-                  onClick={() => onRecordPayment(invoice)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Ghi nhận thanh toán
-                </Button>
-              )}
-              {invoice.status === 'Pending' && onSendReminder && (
-                <Button
-                  variant="outline"
-                  onClick={() => onSendReminder(invoice)}
-                  className="text-yellow-600 hover:text-yellow-700"
-                >
-                  <Bell className="w-4 h-4 mr-2" />
-                  Gửi nhắc nhở
-                </Button>
-              )}
+              {(invoice as any).paymentStatus === 'Pending' || (invoice as any).status === 'Pending' ? (
+                <>
+                  {onRecordPayment && (
+                    <Button
+                      onClick={() => onRecordPayment(invoice)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Ghi nhận thanh toán
+                    </Button>
+                  )}
+                  {onSendReminder && (
+                    <Button
+                      variant="outline"
+                      onClick={() => onSendReminder(invoice)}
+                      className="text-yellow-600 hover:text-yellow-700"
+                    >
+                      <Bell className="w-4 h-4 mr-2" />
+                      Gửi nhắc nhở
+                    </Button>
+                  )}
+                </>
+              ) : null}
               {onEdit && (
                 <Button
                   variant="outline"

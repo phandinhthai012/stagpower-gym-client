@@ -28,9 +28,10 @@ import {
   useBulkSendReminders,
   useExportInvoices 
 } from '../hooks/useInvoices';
-import { usePayments, usePaymentStats } from '../../member/hooks/usePayments';
+import { usePayments, usePaymentStats, useUpdatePayment } from '../../member/hooks/usePayments';
 import { Invoice } from '../types/invoice.types';
-import { ModalCreateInvoice, ModalViewInvoice, ModalRecordPayment } from '../components/invoices-management';
+import { Payment } from '../../member/types';
+import { ModalCreateInvoice, ModalViewInvoice } from '../components/invoices-management';
 
 export function AdminInvoicePayment() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,8 +42,7 @@ export function AdminInvoicePayment() {
   const [priceFilter, setPriceFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<Invoice | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
 
   // API hooks
@@ -50,6 +50,7 @@ export function AdminInvoicePayment() {
   const payments = paymentsResponse?.data || [];
   const { data: statsResponse } = usePaymentStats();
   const stats = statsResponse?.data;
+  const updatePaymentMutation = useUpdatePayment();
   const sendReminderMutation = useSendPaymentReminder();
   const bulkSendRemindersMutation = useBulkSendReminders();
   const exportInvoicesMutation = useExportInvoices();
@@ -144,17 +145,26 @@ export function AdminInvoicePayment() {
     setShowCreateModal(true);
   };
 
-  const handleViewInvoice = (payment: Invoice) => {
+  const handleViewInvoice = (payment: Payment) => {
     setSelectedPayment(payment);
     setShowViewModal(true);
   };
 
-  const handleRecordPayment = (payment: Invoice) => {
-    setSelectedPayment(payment);
-    setShowPaymentModal(true);
+  const handleRecordPayment = async (payment: Payment) => {
+    try {
+      await updatePaymentMutation.mutateAsync({
+        paymentId: payment._id,
+        data: {
+          paymentStatus: 'Completed',
+          paymentDate: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Error recording payment:', error);
+    }
   };
 
-  const handleSendReminder = async (payment: Invoice) => {
+  const handleSendReminder = async (payment: Payment) => {
     try {
       await sendReminderMutation.mutateAsync(payment._id);
     } catch (error) {
@@ -565,25 +575,11 @@ export function AdminInvoicePayment() {
           setSelectedPayment(null);
         }}
         invoice={selectedPayment}
-        onRecordPayment={(invoice) => {
+        onRecordPayment={(payment) => {
+          handleRecordPayment(payment as Payment);
           setShowViewModal(false);
-          setSelectedPayment(invoice);
-          setShowPaymentModal(true);
         }}
         onSendReminder={handleSendReminder}
-      />
-
-      <ModalRecordPayment
-        isOpen={showPaymentModal}
-        onClose={() => {
-          setShowPaymentModal(false);
-          setSelectedPayment(null);
-        }}
-        invoice={selectedPayment}
-        onSuccess={() => {
-          setShowPaymentModal(false);
-          setSelectedPayment(null);
-        }}
       />
     </div>
   );

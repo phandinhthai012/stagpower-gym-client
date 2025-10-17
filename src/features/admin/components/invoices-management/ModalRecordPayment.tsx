@@ -9,11 +9,12 @@ import { X, CreditCard, DollarSign, Calendar } from 'lucide-react';
 import { useRecordPayment } from '../../hooks/useInvoices';
 import { CreatePaymentData } from '../../types/invoice.types';
 import { Invoice } from '../../types/invoice.types';
+import { Payment } from '../../../member/types';
 
 interface ModalRecordPaymentProps {
   isOpen: boolean;
   onClose: () => void;
-  invoice: Invoice | null;
+  invoice: Invoice | Payment | null;
   onSuccess?: () => void;
 }
 
@@ -154,17 +155,17 @@ export function ModalRecordPayment({ isOpen, onClose, invoice, onSuccess }: Moda
               </div>
               <div>
                 <span className="text-gray-600">Hội viên:</span>
-                <span className="ml-2 font-medium">{invoice.memberName}</span>
+                <span className="ml-2 font-medium">{(invoice as any).memberId?.fullName || (invoice as any).memberName || 'N/A'}</span>
               </div>
               <div>
                 <span className="text-gray-600">Số tiền:</span>
                 <span className="ml-2 font-medium text-green-600">{formatPrice(invoice.amount)}</span>
               </div>
               <div>
-                <span className="text-gray-600">Hạn thanh toán:</span>
-                <span className="ml-2 font-medium">{new Date(invoice.dueDate).toLocaleDateString('vi-VN')}</span>
+                <span className="text-gray-600">Ngày tạo:</span>
+                <span className="ml-2 font-medium">{new Date(invoice.createdAt).toLocaleDateString('vi-VN')}</span>
               </div>
-            </div>
+            </div> 
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">

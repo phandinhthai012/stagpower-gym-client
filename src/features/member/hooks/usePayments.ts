@@ -52,6 +52,7 @@ export const useUpdatePayment = () => {
             paymentApi.updatePayment(paymentId, data),
         onSuccess: (response) => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });
+            queryClient.invalidateQueries({ queryKey: ['paymentStats'] });
             queryClient.invalidateQueries({ queryKey: ['payments', 'member', response.data.memberId] });
             toast.success('Payment đã được cập nhật!');
         },
