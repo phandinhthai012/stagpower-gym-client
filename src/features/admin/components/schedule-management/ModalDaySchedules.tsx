@@ -108,17 +108,20 @@ export function ModalDaySchedules({ isOpen, onClose, date, schedules }: ModalDay
                         {/* Details */}
                         <div className="flex-1 space-y-2">
                           {/* Trainer/Staff */}
-                          <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                              {schedule.trainer?.fullName?.charAt(0) || 'P'}
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                              {(typeof schedule.trainerId === 'object' ? schedule.trainerId?.fullName : schedule.trainer?.fullName)?.charAt(0) || 'P'}
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900">
-                                {schedule.trainer?.fullName || 'PT'}
+                              <p className="font-bold text-lg text-gray-900">
+                                {(typeof schedule.trainerId === 'object' ? schedule.trainerId?.fullName : schedule.trainer?.fullName) || `Trainer ${(typeof schedule.trainerId === 'string' ? schedule.trainerId : schedule.trainerId?._id || '').slice(-4)}`}
                               </p>
-                              {schedule.trainer?.trainerInfo && (
-                                <p className="text-xs text-gray-500">
-                                  {schedule.trainer.trainerInfo.specialty}
+                              <p className="text-sm text-gray-600">
+                                {(typeof schedule.trainerId === 'object' ? schedule.trainerId?.trainerInfo : schedule.trainer?.trainerInfo) ? 'Personal Trainer' : 'Nhân viên'}
+                              </p>
+                              {(typeof schedule.trainerId === 'object' ? schedule.trainerId?.trainerInfo : schedule.trainer?.trainerInfo) && (
+                                <p className="text-xs text-blue-600 font-medium">
+                                  {(typeof schedule.trainerId === 'object' ? schedule.trainerId?.trainerInfo : schedule.trainer?.trainerInfo)?.specialty}
                                 </p>
                               )}
                             </div>
@@ -137,13 +140,15 @@ export function ModalDaySchedules({ isOpen, onClose, date, schedules }: ModalDay
                                   <Dumbbell className="w-3 h-3 mr-1" />
                                   Lịch PT
                                 </Badge>
-                                {schedule.member && (
+                                {(typeof schedule.memberId === 'object' ? schedule.memberId : schedule.member) && (
                                   <div className="flex items-center gap-1 text-sm">
                                     <User className="w-3 h-3 text-gray-400" />
-                                    <span className="font-medium">{schedule.member.fullName}</span>
-                                    {schedule.member.memberInfo && (
+                                    <span className="font-medium">
+                                      {(typeof schedule.memberId === 'object' ? schedule.memberId?.fullName : schedule.member?.fullName)}
+                                    </span>
+                                    {(typeof schedule.memberId === 'object' ? schedule.memberId?.memberInfo : schedule.member?.memberInfo) && (
                                       <Badge variant="outline" className="text-xs ml-1">
-                                        {schedule.member.memberInfo.membership_level.toUpperCase()}
+                                        {(typeof schedule.memberId === 'object' ? schedule.memberId?.memberInfo : schedule.member?.memberInfo)?.membership_level?.toUpperCase()}
                                       </Badge>
                                     )}
                                   </div>
@@ -153,10 +158,10 @@ export function ModalDaySchedules({ isOpen, onClose, date, schedules }: ModalDay
                           </div>
 
                           {/* Branch */}
-                          {schedule.branch && (
+                          {(typeof schedule.branchId === 'object' ? schedule.branchId : schedule.branch) && (
                             <div className="flex items-center gap-1 text-sm text-gray-600">
                               <MapPin className="w-3 h-3 text-gray-400" />
-                              {schedule.branch.name}
+                              {(typeof schedule.branchId === 'object' ? schedule.branchId?.name : schedule.branch?.name)}
                             </div>
                           )}
 
@@ -181,34 +186,8 @@ export function ModalDaySchedules({ isOpen, onClose, date, schedules }: ModalDay
             </div>
           )}
 
-          {/* Summary */}
-          {schedules.length > 0 && (
-            <div className="mt-6 pt-4 border-t">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {schedules.length}
-                  </div>
-                  <p className="text-xs text-gray-600">Tổng buổi</p>
-                </div>
-                <div className="p-3 bg-orange-50 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {schedules.filter(s => !isDirectSchedule(s)).length}
-                  </div>
-                  <p className="text-xs text-gray-600">Lịch PT</p>
-                </div>
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
-                    {schedules.filter(s => isDirectSchedule(s)).length}
-                  </div>
-                  <p className="text-xs text-gray-600">Lịch trực</p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-end gap-3 pt-6">
             <Button variant="outline" onClick={onClose}>
               Đóng
             </Button>

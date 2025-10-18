@@ -17,7 +17,37 @@ export interface Schedule {
   updatedAt: string;
 }
 
-export interface ScheduleWithDetails extends Schedule {
+export interface ScheduleWithDetails extends Omit<Schedule, 'memberId' | 'trainerId' | 'branchId' | 'subscriptionId'> {
+  memberId: string | {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    memberInfo?: {
+      membership_level: 'vip' | 'basic';
+    };
+  };
+  trainerId: string | {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    trainerInfo?: {
+      specialty: string;
+      experience_years: number;
+    };
+  };
+  branchId: string | {
+    _id: string;
+    name: string;
+    address: string;
+  };
+  subscriptionId: string | {
+    _id: string;
+    type: string;
+    membershipType: string;
+    ptsessionsRemaining: number;
+  };
   member?: {
     _id: string;
     fullName: string;
