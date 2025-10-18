@@ -59,7 +59,7 @@ export interface CreateStaffTrainerRequest {
   gender: 'male' | 'female' | 'other';
   dateOfBirth?: string;
   photo?: string;
-  cccd?: string;
+  cccd: string; // Required by backend
   role: 'trainer' | 'staff' | 'admin';
   // Trainer specific
   trainerInfo?: {

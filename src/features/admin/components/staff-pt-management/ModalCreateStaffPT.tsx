@@ -98,6 +98,11 @@ export function ModalCreateStaffPT({ isOpen, onClose }: ModalCreateStaffPTProps)
     } else if (!/^(0|\+84)[0-9]{9}$/.test(formData.phone)) {
       newErrors.phone = 'Số điện thoại không hợp lệ';
     }
+    if (!formData.cccd.trim()) {
+      newErrors.cccd = 'CCCD là bắt buộc';
+    } else if (!/^[0-9]{12}$/.test(formData.cccd)) {
+      newErrors.cccd = 'CCCD phải có đúng 12 số';
+    }
 
     // Role-specific validation
     if (formData.role === 'staff' && !formData.branch_id) {
@@ -123,8 +128,8 @@ export function ModalCreateStaffPT({ isOpen, onClose }: ModalCreateStaffPTProps)
         password: formData.password,
         phone: formData.phone,
         gender: formData.gender,
-        dateOfBirth: formData.dateOfBirth || undefined,
-        cccd: formData.cccd || undefined,
+        dateOfBirth: formData.dateOfBirth,
+        cccd: formData.cccd,
         role: formData.role,
       };
 
@@ -144,9 +149,12 @@ export function ModalCreateStaffPT({ isOpen, onClose }: ModalCreateStaffPTProps)
         };
       }
 
+      console.log('🚀 Payload gửi lên API:', JSON.stringify(createData, null, 2));
       await createMutation.mutateAsync(createData);
       handleClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Error response:', error?.response?.data);
+      console.error('❌ Error message:', error?.message);
       // Error handled by mutation
     }
   };
@@ -295,14 +303,20 @@ export function ModalCreateStaffPT({ isOpen, onClose }: ModalCreateStaffPTProps)
               </div>
 
               <div>
-                <Label htmlFor="cccd">CCCD</Label>
+                <Label htmlFor="cccd">
+                  CCCD <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="cccd"
                   value={formData.cccd}
                   onChange={(e) => handleChange('cccd', e.target.value)}
                   placeholder="12 số"
                   maxLength={12}
+                  className={errors.cccd ? 'border-red-500' : ''}
                 />
+                {errors.cccd && (
+                  <p className="text-red-500 text-xs mt-1">{errors.cccd}</p>
+                )}
               </div>
 
               <div>
