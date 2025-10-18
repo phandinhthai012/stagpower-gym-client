@@ -183,8 +183,8 @@ export interface HealthInfo {
   updatedAt: string;
 }
 
-// Schedule Types
-export interface Schedule {
+// Old Schedule Types (deprecated - use schedule.types.ts instead)
+export interface OldSchedule {
   _id: string;
   trainerId: string;
   memberId?: string;

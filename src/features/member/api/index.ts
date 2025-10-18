@@ -3,6 +3,8 @@ export * from './healthInfo.api';
 export * from './user.api';
 export * from './package.api';
 export * from './subscription.api';
+export * from './schedule.api';
+export * from './trainer.api';
 
 // Query exports
 export * from './healthInfo.queries';

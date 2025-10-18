@@ -103,6 +103,7 @@ export const API_ENDPOINTS = {
        CREATE_SCHEDULE: `${API_PREFIX}/schedules`,
        UPDATE_SCHEDULE: (scheduleId: string) => `${API_PREFIX}/schedules/${scheduleId}`,
        DELETE_SCHEDULE: (scheduleId: string) => `${API_PREFIX}/schedules/${scheduleId}`,
+       GET_MY_SCHEDULES: (memberId: string) => `${API_PREFIX}/schedules/member/${memberId}`,
        GET_SCHEDULE_BY_MEMBERID: (memberId: string) => `${API_PREFIX}/schedules/member/${memberId}`,
        GET_SCHEDULE_BY_TRAINERID: (trainerId: string) => `${API_PREFIX}/schedules/trainer/${trainerId}`,
        //paginated thích thì dùng cái này option không thì cứ get all rồi filter hay làm gì đó

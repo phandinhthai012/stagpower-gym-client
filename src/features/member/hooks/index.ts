@@ -35,3 +35,18 @@ export {
   useCheckIns,
   useCheckInByMemberId
 } from './useCheckIns';
+
+// Schedule hooks
+export {
+  useMySchedules,
+  useCreateSchedule,
+  useCancelSchedule,
+  useScheduleDetail,
+  scheduleQueryKeys
+} from './useSchedules';
+
+// Trainer hooks
+export {
+  useTrainers,
+  trainerQueryKeys
+} from './useTrainers';

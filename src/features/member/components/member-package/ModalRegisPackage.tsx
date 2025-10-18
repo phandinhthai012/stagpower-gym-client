@@ -58,7 +58,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
   useScrollLock(isOpen);
 
   // Get data from API responses
-  const branches: Branch[] = branchesResponse?.data || [];
+  const branches: Branch[] = branchesResponse || [];
   const packages: Package[] = packagesResponse || [];
 
   // Update form data when selectedPackage changes
