@@ -1,2 +1,2 @@
-export { TrainerSidebar } from './TrainerSidebar';
-export { TrainerLayout } from './TrainerLayout';
+// Components exports
+export * from './ModalCreateSchedule';
