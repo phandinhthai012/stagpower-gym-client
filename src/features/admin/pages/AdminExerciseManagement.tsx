@@ -5,9 +5,9 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
-import { 
-  Dumbbell, 
-  Plus, 
+import {
+  Dumbbell,
+  Plus,
   Search,
   Filter,
   Edit,
@@ -16,8 +16,9 @@ import {
   Clock
 } from 'lucide-react';
 import { useExercises, useDeleteExercise } from '../hooks/useExercises';
-import { Exercise } from '../types/exercise.types';   
+import { Exercise } from '../types/exercise.types';
 import { ModalCreateExercise, ModalEditExercise, ModalViewExercise } from '../components/exercises-management';
+import { DeleteConfirmationDialog } from '../../../components/common/DeleteConfirmationDialog';
 
 export function AdminExerciseManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +29,10 @@ export function AdminExerciseManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
   // API hooks
   const { data: exercises = [], isLoading, error } = useExercises();
   const deleteExerciseMutation = useDeleteExercise();
@@ -40,7 +44,7 @@ export function AdminExerciseManagement() {
       acc[exercise.category] = (acc[exercise.category] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    
+
     const byDifficulty = exercises.reduce((acc, exercise) => {
       acc[exercise.difficultyLevel] = (acc[exercise.difficultyLevel] || 0) + 1;
       return acc;
@@ -54,7 +58,7 @@ export function AdminExerciseManagement() {
       inactive: exercises.filter(e => !e.isActive).length
     };
   };
-  
+
   const stats = getExerciseStats();
 
 
@@ -106,13 +110,24 @@ export function AdminExerciseManagement() {
     setSelectedExercise(exercise);
     setShowEditModal(true);
   };
-
   const handleDeleteExercise = (exercise: Exercise) => {
-    if (confirm(`Bạn có chắc muốn xóa bài tập ${exercise.name}?`)) {
-      deleteExerciseMutation.mutate(exercise._id);
-    }
+    setExerciseToDelete(exercise);
+    setShowDeleteDialog(true);
   };
 
+  const handleConfirmDelete = () => {
+    if (exerciseToDelete) {
+      deleteExerciseMutation.mutate(exerciseToDelete._id);
+      setShowDeleteDialog(false);
+      setExerciseToDelete(null);
+    }
+  };
+  
+  const handleCancelDelete = () => {
+    setShowDeleteDialog(false);
+    setExerciseToDelete(null);
+  };
+  
   const handleViewExercise = (exercise: Exercise) => {
     setSelectedExercise(exercise);
     setShowViewModal(true);
@@ -132,12 +147,12 @@ export function AdminExerciseManagement() {
   // Filter exercises based on search and filters
   const filteredExercises = exercises.filter(exercise => {
     const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         exercise.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         exercise.instructions.toLowerCase().includes(searchTerm.toLowerCase());
+      exercise.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exercise.instructions.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || exercise.category === categoryFilter;
     const matchesDifficulty = difficultyFilter === 'all' || exercise.difficultyLevel === difficultyFilter;
     const matchesEquipment = equipmentFilter === 'all' || exercise.equipment === equipmentFilter;
-    
+
     return matchesSearch && matchesCategory && matchesDifficulty && matchesEquipment;
   });
 
@@ -197,7 +212,7 @@ export function AdminExerciseManagement() {
                 className="pl-10"
               />
             </div>
-            
+
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn danh mục" />
@@ -300,16 +315,20 @@ export function AdminExerciseManagement() {
                     <td className="p-4">
                       <Badge variant="outline">{exercise.equipment}</Badge>
                     </td>
-                    <td className="p-4 flex items-center gap-1">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      {exercise.sets}x{exercise.reps} {exercise.weight > 0 && `${exercise.weight}kg`}
+                    <td className="p-4 align-middle">
+                      <div className="flex items-center justify-center gap-1">
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <span>{exercise.sets}x{exercise.reps} {exercise.weight > 0 && `${exercise.weight}kg`}</span>
+                      </div>
                     </td>
-                    <td className="p-4 flex items-center gap-1">
-                      {exercise.isActive ? (
-                        <Badge className="bg-green-100 text-green-800">Active</Badge>
-                      ) : (
-                        <Badge className="bg-red-100 text-red-800">Inactive</Badge>
-                      )}
+                    <td className="p-4">
+                      <div className="flex items-center justify-center align-middle">
+                        {exercise.isActive ? (
+                          <Badge className="bg-green-100 text-green-800 align-middle">Active</Badge>
+                        ) : (
+                          <Badge className="bg-red-100 text-red-800 align-middle">Inactive</Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
@@ -363,6 +382,16 @@ export function AdminExerciseManagement() {
         isOpen={showViewModal}
         onClose={handleModalClose}
         exercise={selectedExercise}
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={showDeleteDialog}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        title="Xóa bài tập"
+        description="Bạn có chắc muốn xóa bài tập này?"
+        itemName={exerciseToDelete?.name}
+        isLoading={deleteExerciseMutation.isPending}
       />
     </div>
   );

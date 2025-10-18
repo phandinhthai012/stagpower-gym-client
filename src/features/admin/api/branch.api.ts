@@ -8,7 +8,9 @@ export interface Branch {
   phone: string;
   email: string;
   managerId: string;
-  status: 'Active' | 'Inactive';
+  status: 'Active' | 'Maintenance' | 'Closed';
+  openTime: string;        // ✅ Thêm
+  closeTime: string; 
   createdAt: string;
   updatedAt: string;
 }
@@ -18,8 +20,8 @@ export interface CreateBranchRequest {
   address: string;
   phone: string;
   email: string;
-  managerId: string;
-  status?: 'Active' | 'Inactive';
+  managerId?: string;
+  status?: 'Active' | 'Maintenance' | 'Closed';
 }
 
 export interface UpdateBranchRequest {
@@ -28,7 +30,7 @@ export interface UpdateBranchRequest {
   phone?: string;
   email?: string;
   managerId?: string;
-  status?: 'Active' | 'Inactive';
+  status?: 'Active' | 'Maintenance' | 'Closed';
 }
 
 // API functions
@@ -63,7 +65,7 @@ export const branchApi = {
   },
 
   // Change branch status
-  changeBranchStatus: async (branchId: string, status: 'Active' | 'Inactive'): Promise<Branch> => {
+  changeBranchStatus: async (branchId: string, status: 'Active' | 'Maintenance' | 'Closed'): Promise<Branch> => {
     const response = await apiClient.put(API_ENDPOINTS.BRANCH.CHANGE_BRANCH_STATUS(branchId), { status });
     return response.data.data;
   },

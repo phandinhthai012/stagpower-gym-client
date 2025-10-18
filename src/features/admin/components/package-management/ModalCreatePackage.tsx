@@ -148,7 +148,7 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
     createPackageMutation.mutate(packageData, {
       onSuccess: (data) => {
         console.log('Package created successfully:', data);
-        toast.success('Gói tập đã được tạo thành công!');
+        // toast.success('Gói tập đã được tạo thành công!');
         
         // Reset form
         setFormData({

@@ -36,9 +36,9 @@ export function MemberPackages() {
   // API hooks
   const { data: packagesResponse, isLoading: packagesLoading, isError: packagesError } = usePackages();
   const { data: subscriptionsResponse, isLoading: subscriptionsLoading, isError: subscriptionsError } = useSubscriptionsByMemberId(user?.id || '');
-
+  console.log(subscriptionsResponse);
   // Get data from API responses
-  const packages: any[] = packagesResponse || [];
+  const packages: any[] = Array.isArray(packagesResponse) ? packagesResponse : [];
   const subscriptions: any[] = subscriptionsResponse?.data || [];
 
   // Get active subscription
