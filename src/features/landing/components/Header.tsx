@@ -150,7 +150,7 @@ export const Header: React.FC = () => {
               <Button 
                 onClick={() => navigate('/login')}
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-gray-900 px-4 py-2 rounded-full font-semibold transition-all"
+                className="bg-white border-black text-black hover:bg-white hover:text-red-500 hover:border-red-500 px-4 py-2 rounded-full font-semibold transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-red-500/30"
               >
                 Đăng Nhập
               </Button>

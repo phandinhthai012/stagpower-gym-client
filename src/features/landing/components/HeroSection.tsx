@@ -40,7 +40,7 @@ export const HeroSection: React.FC = () => {
           <Button 
             onClick={() => scrollToSection('packages')}
             variant="outline"
-            className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 rounded-full text-lg font-semibold transition-all hover:-translate-y-1"
+            className="bg-white border-2 border-black text-black hover:bg-white hover:text-red-500 hover:border-red-500 px-8 py-4 rounded-full text-lg font-semibold transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-red-500/30"
           >
             Xem Gói Tập
           </Button>
