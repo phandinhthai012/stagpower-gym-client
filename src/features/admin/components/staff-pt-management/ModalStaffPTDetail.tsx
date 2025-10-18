@@ -15,7 +15,8 @@ import {
   Briefcase,
   Star,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Edit
 } from 'lucide-react';
 import { StaffTrainerUser } from '../../types/staff-trainer.types';
 import { useBranches } from '../../hooks';
@@ -24,13 +25,20 @@ interface StaffPTDetailModalProps {
   user: StaffTrainerUser | null;
   isOpen: boolean;
   onClose: () => void;
+  onEdit?: () => void;
 }
 
-export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModalProps) {
+export function StaffPTDetailModal({ user, isOpen, onClose, onEdit }: StaffPTDetailModalProps) {
   const { data: branchesData } = useBranches();
   const branches = branchesData || [];
 
   if (!isOpen || !user) return null;
+
+  const handleEditClick = () => {
+    if (onEdit) {
+      onEdit();
+    }
+  };
 
   const trainerInfo = user.role === 'trainer' ? user.trainerInfo : undefined;
   const staffInfo = user.role === 'staff' ? user.staffInfo : undefined;
@@ -308,9 +316,15 @@ export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModal
             <Button variant="outline" onClick={onClose}>
               Đóng
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              Chỉnh sửa thông tin
-            </Button>
+            {onEdit && (
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={handleEditClick}
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Chỉnh sửa thông tin
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

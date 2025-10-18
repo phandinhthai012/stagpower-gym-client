@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectWithScrollLock } from '../../../components/ui/select';
+import { SelectContent, SelectItem, SelectTrigger, SelectValue, SelectWithScrollLock } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
 import { 
   Users, 
@@ -13,28 +12,21 @@ import {
   Edit, 
   Trash2, 
   Eye,
-  Save,
-  X,
   Clock,
   MapPin,
   Award,
   Phone,
   Mail,
-  Dumbbell,
-  Briefcase,
   Loader2
 } from 'lucide-react';
-import { StaffPTDetailModal, ModalCreateStaffPT } from '../components/staff-pt-management';
+import { StaffPTDetailModal, ModalCreateStaffPT, ModalEditStaffPT } from '../components/staff-pt-management';
 import { 
   useStaffTrainers,
-  useUpdateStaffTrainer,
   useChangeStaffTrainerStatus,
   useBranches
 } from '../hooks';
 import { 
-  StaffTrainerFormData,
-  StaffTrainerUser,
-  UpdateStaffTrainerRequest
+  StaffTrainerUser
 } from '../types/staff-trainer.types';
 
 export function AdminStaffPTManagement() {
@@ -45,29 +37,9 @@ export function AdminStaffPTManagement() {
   const [roleFilter, setRoleFilter] = useState<'all' | 'trainer' | 'staff' | 'admin'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'pending' | 'banned'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditForm, setShowEditForm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<StaffTrainerUser | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<StaffTrainerFormData>({
-    fullName: '',
-    email: '',
-    password: '',
-    phone: '',
-    gender: 'male',
-    dateOfBirth: '',
-    cccd: '',
-    role: 'trainer',
-    status: 'active',
-    specialty: '',
-    experience_years: 0,
-    certifications: [],
-    working_hours: { start: '06:00', end: '22:00' },
-    branch_id: '',
-    position: '',
-    permissions: [],
-    managed_branches: []
-  });
 
   // Fetch data
   const { data: staffTrainersData, isLoading } = useStaffTrainers({
@@ -82,7 +54,6 @@ export function AdminStaffPTManagement() {
   const branches = branchesData || [];
 
   // Mutations
-  const updateMutation = useUpdateStaffTrainer();
   const changeStatusMutation = useChangeStaffTrainerStatus();
 
   // Data from API
@@ -99,36 +70,20 @@ export function AdminStaffPTManagement() {
   };
 
   const handleEdit = (user: StaffTrainerUser) => {
-    const trainerInfo = user.role === 'trainer' ? user.trainerInfo : undefined;
-    const staffInfo = user.role === 'staff' ? user.staffInfo : undefined;
-
-    setFormData({
-      fullName: user.fullName,
-      email: user.email,
-      phone: user.phone,
-      gender: user.gender,
-      dateOfBirth: user.dateOfBirth,
-      cccd: user.cccd,
-      role: user.role,
-      status: user.status,
-      specialty: trainerInfo?.specialty || '',
-      experience_years: trainerInfo?.experience_years || 0,
-      certifications: trainerInfo?.certificate || [],
-      working_hours: trainerInfo?.working_hour 
-        ? { start: trainerInfo.working_hour[0] || '06:00', end: trainerInfo.working_hour[1] || '22:00' }
-        : { start: '06:00', end: '22:00' },
-      branch_id: staffInfo?.brand_id || '',
-      position: staffInfo?.position || '',
-      permissions: [],
-      managed_branches: []
-    });
-    setEditingId(user._id);
-    setShowEditForm(true);
+    setSelectedUser(user);
+    setShowEditModal(true);
   };
 
   const handleViewDetail = (user: StaffTrainerUser) => {
     setSelectedUser(user);
     setShowDetailModal(true);
+  };
+
+  const handleEditFromDetail = () => {
+    // Đóng modal detail và mở modal edit
+    setShowDetailModal(false);
+    setShowEditModal(true);
+    // selectedUser đã được set rồi, giữ nguyên
   };
 
   const handleDelete = async (userId: string) => {
@@ -144,60 +99,6 @@ export function AdminStaffPTManagement() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validation
-    if (!formData.fullName || !formData.email || !formData.phone) {
-      alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
-      return;
-    }
-
-    if (formData.role === 'staff' && !formData.branch_id) {
-      alert('Nhân viên phải chọn chi nhánh!');
-      return;
-    }
-
-    try {
-      // Update existing user
-      const updateData: UpdateStaffTrainerRequest = {
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        gender: formData.gender,
-        dateOfBirth: formData.dateOfBirth,
-        cccd: formData.cccd,
-      };
-
-      if (formData.role === 'trainer') {
-        updateData['trainerInfo.specialty'] = formData.specialty;
-        updateData['trainerInfo.experience_years'] = formData.experience_years;
-        updateData['trainerInfo.certificate'] = formData.certifications;
-        updateData['trainerInfo.working_hour'] = [
-          formData.working_hours?.start || '06:00',
-          formData.working_hours?.end || '22:00'
-        ];
-      } else if (formData.role === 'staff') {
-        updateData['staffInfo.brand_id'] = formData.branch_id;
-        updateData['staffInfo.position'] = formData.position as 'manager' | 'receptionist' | 'staff';
-      }
-
-      await updateMutation.mutateAsync({
-        userId: editingId!,
-        data: updateData
-      });
-      
-      setShowEditForm(false);
-      setEditingId(null);
-    } catch (error) {
-      // Error handled by mutations
-    }
-  };
-
-  const handleCancel = () => {
-    setShowEditForm(false);
-    setEditingId(null);
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -312,239 +213,6 @@ export function AdminStaffPTManagement() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Edit Form (inline) */}
-      {showEditForm && (
-        <Card className="border-2 border-blue-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Edit className="w-5 h-5 text-blue-600" />
-              Chỉnh sửa thông tin
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="fullName">Họ và tên *</Label>
-                  <Input
-                    id="fullName"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    required
-                  />
-                </div>
-                {!editingId && (
-                  <div>
-                    <Label htmlFor="password">Mật khẩu *</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      required={!editingId}
-                      placeholder="Tối thiểu 6 ký tự"
-                    />
-                  </div>
-                )}
-                <div>
-                  <Label htmlFor="phone">Số điện thoại *</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cccd">CCCD</Label>
-                  <Input
-                    id="cccd"
-                    value={formData.cccd}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cccd: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="gender">Giới tính</Label>
-                  <SelectWithScrollLock 
-                    value={formData.gender} 
-                    onValueChange={(value: 'male' | 'female' | 'other') => setFormData(prev => ({ ...prev, gender: value }))}
-                    lockScroll={true}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent lockScroll={true}>
-                      <SelectItem value="male">Nam</SelectItem>
-                      <SelectItem value="female">Nữ</SelectItem>
-                      <SelectItem value="other">Khác</SelectItem>
-                    </SelectContent>
-                  </SelectWithScrollLock>
-                </div>
-                <div>
-                  <Label htmlFor="dateOfBirth">Ngày sinh</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={formData.dateOfBirth}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="role">Vai trò *</Label>
-                  <SelectWithScrollLock 
-                    value={formData.role} 
-                    onValueChange={(value: 'trainer' | 'staff' | 'admin') => setFormData(prev => ({ ...prev, role: value }))}
-                    lockScroll={true}
-                    disabled={!!editingId} // Không cho đổi role khi edit
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent lockScroll={true}>
-                      <SelectItem value="trainer">PT</SelectItem>
-                      <SelectItem value="staff">Nhân viên</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </SelectWithScrollLock>
-              <p className="text-xs text-gray-500 mt-1">Không thể thay đổi vai trò khi chỉnh sửa</p>
-            </div>
-          </div>
-
-              {/* Role-specific Information */}
-              {formData.role === 'trainer' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Dumbbell className="w-5 h-5 text-orange-600" />
-                    Thông tin PT
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="specialty">Chuyên môn</Label>
-                      <Input
-                        id="specialty"
-                        value={formData.specialty}
-                        onChange={(e) => setFormData(prev => ({ ...prev, specialty: e.target.value }))}
-                        placeholder="Yoga, Cardio, Strength Training..."
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="experience_years">Số năm kinh nghiệm</Label>
-                      <Input
-                        id="experience_years"
-                        type="number"
-                        value={formData.experience_years}
-                        onChange={(e) => setFormData(prev => ({ ...prev, experience_years: parseInt(e.target.value) || 0 }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="working_hours_start">Giờ làm việc bắt đầu</Label>
-                      <Input
-                        id="working_hours_start"
-                        type="time"
-                        value={formData.working_hours?.start}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          working_hours: { ...prev.working_hours!, start: e.target.value }
-                        }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="working_hours_end">Giờ làm việc kết thúc</Label>
-                      <Input
-                        id="working_hours_end"
-                        type="time"
-                        value={formData.working_hours?.end}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          working_hours: { ...prev.working_hours!, end: e.target.value }
-                        }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {formData.role === 'staff' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-blue-600" />
-                    Thông tin nhân viên
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="branch_id">Chi nhánh *</Label>
-                      <SelectWithScrollLock 
-                        value={formData.branch_id} 
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, branch_id: value }))}
-                        lockScroll={true}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn chi nhánh" />
-                        </SelectTrigger>
-                        <SelectContent lockScroll={true}>
-                          {branches.map((branch) => (
-                            <SelectItem key={branch._id} value={branch._id}>
-                              {branch.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </SelectWithScrollLock>
-                    </div>
-                    <div>
-                      <Label htmlFor="position">Vị trí</Label>
-                      <SelectWithScrollLock 
-                        value={formData.position} 
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}
-                        lockScroll={true}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Chọn vị trí" />
-                        </SelectTrigger>
-                        <SelectContent lockScroll={true}>
-                          <SelectItem value="manager">Quản lý</SelectItem>
-                          <SelectItem value="receptionist">Lễ tân</SelectItem>
-                          <SelectItem value="staff">Nhân viên</SelectItem>
-                        </SelectContent>
-                      </SelectWithScrollLock>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Form Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={handleCancel}>
-                  <X className="w-4 h-4 mr-2" />
-                  Hủy
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-blue-600 hover:bg-blue-700"
-                  disabled={updateMutation.isPending}
-                >
-                  {updateMutation.isPending && (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  )}
-                  <Save className="w-4 h-4 mr-2" />
-                  Cập nhật
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Staff/PT List */}
       <Card>
@@ -761,23 +429,33 @@ export function AdminStaffPTManagement() {
         </CardContent>
       </Card>
 
+      {/* Modals */}
       {/* Create Modal */}
       <ModalCreateStaffPT
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
       />
 
+      {/* Edit Modal */}
+      <ModalEditStaffPT
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+      />
+
       {/* Detail Modal */}
-      {selectedUser && (
-        <StaffPTDetailModal 
-          user={selectedUser}
-          isOpen={showDetailModal}
-          onClose={() => {
-            setShowDetailModal(false);
-            setSelectedUser(null);
-          }}
-        />
-      )}
+      <StaffPTDetailModal 
+        user={selectedUser}
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedUser(null);
+        }}
+        onEdit={handleEditFromDetail}
+      />
     </div>
   );
 }
