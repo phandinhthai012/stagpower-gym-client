@@ -1,85 +1,216 @@
 import React, { useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { TrainerSidebar } from './TrainerSidebar';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Menu, Bell, LogOut } from 'lucide-react';
+import { TrainerSidebar } from './TrainerSidebar';
+import { Button } from '../../../components/ui/button';
+import { Badge } from '../../../components/ui/badge';
+import { Menu, MapPin, Bell, LogOut, Settings, ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Avatar,
+  AvatarFallback,
+} from '../../../components/ui';
+import LogoStagPower from '../../../assets/Logo_StagPower_4x.png';
 
 export function TrainerLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Always open on desktop
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path.includes('/dashboard')) return 'Trang chủ';
-    if (path.includes('/member-management')) return 'Quản Lý Hội Viên';
-    if (path.includes('/schedule')) return 'Lịch Dạy';
-    if (path.includes('/progress')) return 'Theo Dõi Tiến Độ';
-    if (path.includes('/profile')) return 'Thông Tin Cá Nhân';
-    if (path.includes('/notifications')) return 'Thông Báo';
-    return 'Dashboard';
+    if (path.includes('/dashboard')) return 'Dashboard';
+    if (path.includes('/member-management')) return 'Hội viên';
+    if (path.includes('/schedule')) return 'Lịch dạy';
+    if (path.includes('/progress')) return 'Theo dõi tiến độ';
+    if (path.includes('/profile')) return 'Thông tin cá nhân';
+    if (path.includes('/notifications')) return 'Thông báo';
+    if (path.includes('/session')) return 'Chi tiết buổi tập';
+    return 'PT Dashboard';
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const [now, setNow] = useState<Date>(new Date());
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  React.useEffect(() => {
+    const intervalId = setInterval(() => setNow(new Date()), 30 * 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      logout();
+      // navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
+
+  const getUserDisplayName = (user: any) => {
+    return user?.fullName || user?.full_name || 'Personal Trainer';
+  };
+
+  const getUserRoleDisplayName = (user: any) => {
+    return user?.role === 'PersonalTrainer' ? 'Huấn luyện viên' : 'Người dùng';
+  };
+
+  const userDisplayName = getUserDisplayName(user);
+  const userRole = getUserRoleDisplayName(user);
+  const userInitials = userDisplayName
+    .split(' ')
+    .map((name: string) => name.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  const formatVNTime = (date: Date) => {
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const isAM = hours < 12;
+    const suffix = isAM ? 'SA' : 'CH';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    const hh = hours.toString().padStart(2, '0');
+    const mm = minutes.toString().padStart(2, '0');
+    return `${hh}:${mm} ${suffix}`;
+  };
+
+  const formatVNDate = (date: Date) => {
+    const d = date.getDate();
+    const m = date.getMonth() + 1;
+    const y = date.getFullYear();
+    return `${d}/${m}/${y}`;
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
       <TrainerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      {/* Header  */}
-      <header className="bg-transparent lg:ml-64">
+      {/* Header */}
+      <header className={`bg-transparent transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         <div className="mx-4 my-4 bg-white shadow-sm border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center">
-          {/* Left: page title and menu */}
+          {/* Left: Logo and brand */}
           <div className="flex items-center gap-3">
-            <button
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden text-gray-500 hover:text-gray-700"
             >
               <Menu className="w-5 h-5" />
-            </button>
-            <h1 className="text-xl md:text-2xl font-semibold text-blue-900">{getPageTitle()}</h1>
+            </Button>
+            
+            {/* Desktop sidebar toggle button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="hidden lg:flex text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-2"
+              title={sidebarOpen ? "Thu gọn menu" : "Mở rộng menu"}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="2"/>
+                <line x1="9" y1="4" x2="9" y2="20" strokeWidth="2"/>
+              </svg>
+            </Button>
+            
+            <img src={LogoStagPower} alt="StagPower" className="w-16 h-16 rounded-full object-cover hidden md:block" />
+            <div>
+              <span className="text-sm md:text-2xl font-semibold text-blue-900">StagPower</span>
+              <p className="text-xs md:text-sm text-gray-600">PT Dashboard</p>
+            </div>
+          </div>
+          
+          {/* Center: Page Title */}
+          <div className="text-center">
+            <h1 className="text-sm md:text-lg font-semibold text-gray-800">{getPageTitle()}</h1>
           </div>
 
-          {/* Center: reserved */}
-          <div />
-
-          {/* Right: notifications, profile, logout */}
+          {/* Right: Info, notifications, profile */}
           <div className="flex items-center justify-end gap-4">
+            <span className="hidden md:flex items-center gap-2 text-gray-600 text-sm">
+              <MapPin className="w-4 h-4 text-gray-500" />
+              {`Gò Vấp • ${formatVNTime(now)} • ${formatVNDate(now)}`}
+            </span>
+            
             {/* Notification */}
-            <button className="relative p-2 text-gray-500 hover:text-gray-700">
+            <Button variant="ghost" size="sm" className="relative p-2 text-gray-500 hover:text-gray-700">
               <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
-            </button>
-
-            {/* User avatar + info */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">{user?.fullName?.charAt(0) || 'P'}</span>
-              </div>
-              <div className="hidden md:block">
-                <h4 className="text-sm font-medium text-blue-900">{user?.fullName || 'Personal Trainer'}</h4>
-                <p className="text-xs text-gray-500">Personal Trainer</p>
-              </div>
-            </div>
-
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-              title="Đăng xuất"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+              <Badge variant="destructive" className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center">3</Badge>
+            </Button>
+            
+            {/* User menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-10 w-auto px-2 sm:px-3"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-xs bg-orange-500 text-white">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden md:flex md:flex-col md:items-start md:text-left">
+                      <span className="text-sm font-medium text-blue-900">
+                        {userDisplayName}
+                      </span>
+                      <span className="text-xs text-gray-600">
+                        {userRole}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm leading-none font-medium">
+                      {userDisplayName}
+                    </p>
+                    <p className="text-xs leading-none text-gray-500">
+                      {user?.email || 'Không có email'}
+                    </p>
+                    <p className="text-xs leading-none text-gray-500">
+                      {userRole}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/trainer/profile')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Thông tin cá nhân</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="lg:ml-64 p-6">
+      <main className={`transition-all duration-300 p-6 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         <Outlet />
       </main>
     </div>
