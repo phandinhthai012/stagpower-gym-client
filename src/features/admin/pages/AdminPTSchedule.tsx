@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { Input } from '../../../components/ui/input';
+import { Calendar as CalendarComponent, ModalDaySchedules } from '../../../components/ui';
 import { 
-  Calendar, 
+  Calendar,
   CalendarCheck, 
   ChevronLeft, 
   ChevronRight, 
@@ -18,7 +19,7 @@ import {
   User,
   XCircle
 } from 'lucide-react';
-import { ModalDirectSchedule, ModalCoachingSchedule, ModalDaySchedules } from '../components/schedule-management';
+import { ModalDirectSchedule, ModalCoachingSchedule } from '../components/schedule-management';
 import { useAllSchedules, useDeleteSchedule } from '../hooks';
 import { ScheduleWithDetails } from '../types/schedule.types';
 
@@ -38,7 +39,7 @@ export function AdminPTSchedule() {
   
   // Filter states for CRUD view
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow'>('all');
   const [page, setPage] = useState(1);
 
   // Calendar state
@@ -121,21 +122,8 @@ export function AdminPTSchedule() {
     return { label: 'Lịch PT', color: 'bg-orange-100 text-orange-800' };
   };
 
-  const handleDayClick = (dayNumber: number) => {
-    if (!dayNumber) return;
-    
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const clickedDate = new Date(year, month, dayNumber);
-    
-    const daySchedules = (allSchedules || []).filter(s => {
-      const scheduleDate = new Date(s.dateTime);
-      return scheduleDate.getDate() === dayNumber &&
-             scheduleDate.getMonth() === month &&
-             scheduleDate.getFullYear() === year;
-    });
-
-    setSelectedDate(clickedDate);
+  const handleDayClick = (date: Date, daySchedules: ScheduleWithDetails[]) => {
+    setSelectedDate(date);
     setSelectedDaySchedules(daySchedules);
     setShowDaySchedulesModal(true);
   };
@@ -196,95 +184,20 @@ export function AdminPTSchedule() {
 
       {/* TAB 1: Calendar View */}
       {activeTab === 'calendar' && (
-        <div className="space-y-6">
-          {/* Calendar Header */}
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-gray-900 text-center">{currentMonth}</h2>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Calendar View */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-7 gap-2 mb-4">
-                {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day) => (
-                  <div key={day} className="text-center font-semibold text-gray-600 py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 35 }, (_, i) => {
-                  const dayNumber = i - 6; // Start from Sunday
-                  const daySchedules = (allSchedules || []).filter(s => {
-                    const scheduleDate = new Date(s.dateTime);
-                    return scheduleDate.getDate() === dayNumber && 
-                           scheduleDate.getMonth() === currentDate.getMonth();
-                  });
-
-                  const hasSchedules = daySchedules.length > 0;
-                  
-                  return (
-                    <div 
-                      key={i} 
-                      className={`min-h-[100px] border border-gray-200 rounded-lg p-2 transition-all ${
-                        hasSchedules 
-                          ? 'hover:bg-blue-50 hover:border-blue-300 cursor-pointer' 
-                          : 'hover:bg-gray-50'
-                      }`}
-                      onClick={() => hasSchedules && dayNumber && handleDayClick(dayNumber as number)}
-                    >
-                      <div className={`text-sm font-medium mb-2 ${
-                        hasSchedules ? 'text-blue-600' : 'text-gray-600'
-                      }`}>
-                        {dayNumber}
-                      </div>
-                      {hasSchedules && (
-                        <div className="space-y-1">
-                          {daySchedules.slice(0, 2).map(schedule => (
-                            <div 
-                              key={schedule._id} 
-                              className={`text-xs p-1 rounded truncate ${
-                                isDirectSchedule(schedule)
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-orange-100 text-orange-800'
-                              }`}
-                              title={`${formatTime(schedule.dateTime)} - ${isDirectSchedule(schedule) ? 'Lịch trực' : 'Lịch PT'} - ${getTrainerName(schedule)} - ${schedule.durationMinutes} phút`}
-                            >
-                              <div className="font-semibold">{formatTime(schedule.dateTime)}</div>
-                              <div className="text-xs opacity-80">{getTrainerName(schedule)}</div>
-                            </div>
-                          ))}
-                          {daySchedules.length > 2 && (
-                            <div className="text-xs text-gray-500 font-medium">
-                              +{daySchedules.length - 2} khác
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <CalendarComponent
+          schedules={allSchedules || []}
+          onDayClick={handleDayClick}
+          getScheduleDisplayText={(schedule) => {
+            const time = new Date(schedule.dateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const trainerName = getTrainerName(schedule as ScheduleWithDetails);
+            return `${time} - ${trainerName}`;
+          }}
+          getScheduleColor={(schedule) => {
+            return isDirectSchedule(schedule) 
+              ? 'bg-blue-100 text-blue-800' 
+              : 'bg-orange-100 text-orange-800';
+          }}
+        />
       )}
 
       {/* TAB 2: CRUD View */}
@@ -316,7 +229,7 @@ export function AdminPTSchedule() {
                 <select 
                   value={statusFilter} 
                   onChange={(e) => {
-                    setStatusFilter(e.target.value as 'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending');
+                    setStatusFilter(e.target.value as 'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow');
                     setPage(1);
                   }}
                   className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -326,6 +239,7 @@ export function AdminPTSchedule() {
                   <option value="Pending">Chờ xác nhận</option>
                   <option value="Completed">Hoàn thành</option>
                   <option value="Cancelled">Đã hủy</option>
+                  <option value="NoShow">Vắng mặt</option>
                 </select>
               </div>
             </CardContent>
@@ -419,12 +333,14 @@ export function AdminPTSchedule() {
                                   schedule.status === 'Pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
                                   schedule.status === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-300' :
                                   schedule.status === 'Completed' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                  schedule.status === 'NoShow' ? 'bg-orange-100 text-orange-800 border-orange-300' :
                                   'bg-gray-100 text-gray-800 border-gray-300'
                                 } text-xs font-semibold px-3 py-1`}>
                                   {schedule.status === 'Confirmed' ? 'Đã xác nhận' :
                                    schedule.status === 'Pending' ? 'Chờ xác nhận' :
                                    schedule.status === 'Cancelled' ? 'Đã hủy' :
-                                   schedule.status === 'Completed' ? 'Hoàn thành' : schedule.status}
+                                   schedule.status === 'Completed' ? 'Hoàn thành' :
+                                   schedule.status === 'NoShow' ? 'Vắng mặt' : schedule.status}
                                 </Badge>
                               </div>
                               <div className="flex gap-2">
@@ -485,6 +401,9 @@ export function AdminPTSchedule() {
         }}
         date={selectedDate}
         schedules={selectedDaySchedules}
+        getMemberName={getMemberName}
+        getTrainerName={getTrainerName}
+        getBranchName={getBranchName}
       />
     </div>
   );

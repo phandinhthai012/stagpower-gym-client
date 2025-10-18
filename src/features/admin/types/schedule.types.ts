@@ -4,11 +4,11 @@ export interface Schedule {
   _id: string;
   memberId: string;
   trainerId: string;
-  subscriptionId: string;
+  subscriptionId?: string;
   branchId: string;
   dateTime: string;
   durationMinutes: number;
-  status: 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending';
+  status: 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow';
   notes?: string;
   assignedExercises?: Array<{
     exerciseId: string;
@@ -42,7 +42,7 @@ export interface ScheduleWithDetails extends Omit<Schedule, 'memberId' | 'traine
     name: string;
     address: string;
   };
-  subscriptionId: string | {
+  subscriptionId?: string | {
     _id: string;
     type: string;
     membershipType: string;
@@ -87,7 +87,7 @@ export interface CreateScheduleRequest {
   branchId: string;
   dateTime: string;
   durationMinutes: number;
-  status?: 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending';
+  status?: 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow';
   notes?: string;
   assignedExercises?: Array<{
     exerciseId: string;
@@ -101,7 +101,7 @@ export interface UpdateScheduleRequest {
   branchId?: string;
   dateTime?: string;
   durationMinutes?: number;
-  status?: 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending';
+  status?: 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow';
   notes?: string;
   assignedExercises?: Array<{
     exerciseId: string;
@@ -112,7 +112,7 @@ export interface ScheduleFilters {
   page?: number;
   limit?: number;
   search?: string;
-  status?: 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | '';
+  status?: 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow' | '';
 }
 
 export interface PaginatedScheduleResponse {

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
+import { Calendar as CalendarComponent, ModalDaySchedules } from '../../../components/ui';
 import {
   Calendar,
   ChevronLeft,
@@ -31,6 +32,9 @@ export function TrainerSchedulePage() {
 
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDaySchedulesModal, setShowDaySchedulesModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDaySchedules, setSelectedDaySchedules] = useState<ScheduleWithDetails[]>([]);
 
   // Data fetching
   const { data: schedulesData, isLoading, refetch } = useMySchedules();
@@ -179,9 +183,15 @@ export function TrainerSchedulePage() {
     });
   };
 
-  // Get current month and year for calendar header
-  const currentDate = new Date();
-  const currentMonth = currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' }).toUpperCase();
+  const getTrainerName = (schedule: ScheduleWithDetails) => {
+    return 'PT'; // Trainer is always the current user
+  };
+
+  const handleDayClick = (date: Date, daySchedules: ScheduleWithDetails[]) => {
+    setSelectedDate(date);
+    setSelectedDaySchedules(daySchedules);
+    setShowDaySchedulesModal(true);
+  };
 
   return (
     <div>
@@ -190,18 +200,13 @@ export function TrainerSchedulePage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="sm">
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+                  <div className="flex gap-2">
+                    {/* Calendar navigation is now handled by Calendar component */}
+                  </div>
 
             </div>
             <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold text-gray-900 text-center">{currentMonth}</h2>
+              <h2 className="text-2xl font-bold text-gray-900 text-center">Lịch làm việc</h2>
             </div>
             <div className="flex gap-2">
               <Button
@@ -239,50 +244,18 @@ export function TrainerSchedulePage() {
 
       {/* Calendar View */}
       {currentView === 'calendar' && (
-        <Card>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-7 gap-2 mb-4">
-              {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day) => (
-                <div key={day} className="text-center font-semibold text-gray-600 py-2">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-2">
-              {/* Calendar days would be generated here */}
-              {Array.from({ length: 35 }, (_, i) => {
-                const dayNumber = i < 31 ? i + 1 : '';
-                const daySchedules = schedules.filter(s => {
-                  const scheduleDate = new Date(s.dateTime);
-                  return scheduleDate.getDate() === dayNumber;
-                });
-
-                return (
-                  <div key={i} className="min-h-[100px] border border-gray-200 rounded-lg p-2">
-                    <div className="text-sm font-medium text-gray-600 mb-2">
-                      {dayNumber}
-                    </div>
-                    {daySchedules.length > 0 && (
-                      <div className="space-y-1">
-                        {daySchedules.slice(0, 2).map(schedule => (
-                          <div key={schedule._id} className="text-xs bg-blue-100 text-blue-800 p-1 rounded truncate">
-                            {new Date(schedule.dateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {getMemberName(schedule)}
-                          </div>
-                        ))}
-                        {daySchedules.length > 2 && (
-                          <div className="text-xs text-gray-500">
-                            +{daySchedules.length - 2} khác
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <CalendarComponent
+          schedules={schedules}
+          onDayClick={handleDayClick}
+          getScheduleDisplayText={(schedule) => {
+            const time = new Date(schedule.dateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const memberName = getMemberName(schedule as ScheduleWithDetails);
+            return `${time} - ${memberName}`;
+          }}
+          getScheduleColor={(schedule) => {
+            return 'bg-blue-100 text-blue-800';
+          }}
+        />
       )}
 
       {/* List View */}
@@ -486,10 +459,24 @@ export function TrainerSchedulePage() {
         </div>
       )}
       
-      {/* Modal */}
+      {/* Modals */}
       <ModalCreateSchedule
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+      />
+      
+      <ModalDaySchedules
+        isOpen={showDaySchedulesModal}
+        onClose={() => {
+          setShowDaySchedulesModal(false);
+          setSelectedDate(null);
+          setSelectedDaySchedules([]);
+        }}
+        date={selectedDate}
+        schedules={selectedDaySchedules}
+        getMemberName={getMemberName}
+        getTrainerName={getTrainerName}
+        getBranchName={getBranchName}
       />
     </div>
   );
