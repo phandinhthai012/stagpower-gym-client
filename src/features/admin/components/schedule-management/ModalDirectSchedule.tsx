@@ -128,16 +128,18 @@ export function ModalDirectSchedule({ isOpen, onClose }: ModalDirectScheduleProp
         branchId: formData.branchId,
         dateTime: new Date(dateTimeString).toISOString(),
         durationMinutes: Math.round(duration),
-        status: 'Confirmed',
+        status: 'Pending',
         notes: `[LỊCH TRỰC] ${shiftLabel} (${formData.startTime}-${formData.endTime})${formData.notes ? ' - ' + formData.notes : ''}`,
       };
 
       console.log('🚀 Creating direct schedule:', scheduleData);
       await createMutation.mutateAsync(scheduleData);
+      
+      toast.success('Tạo lịch trực thành công! Lịch đang chờ xác nhận.');
       handleClose();
     } catch (error: any) {
       console.error('❌ Error creating schedule:', error?.response?.data);
-      // Error already handled by mutation hook
+      toast.error('Có lỗi xảy ra khi tạo lịch. Vui lòng thử lại!');
     }
   };
 

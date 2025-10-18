@@ -73,6 +73,13 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
     }
     if (!formData.sessionDateTime) {
       newErrors.sessionDateTime = 'Vui lòng chọn ngày giờ';
+    } else {
+      // Validate future date
+      const selectedDate = new Date(formData.sessionDateTime);
+      const now = new Date();
+      if (selectedDate <= now) {
+        newErrors.sessionDateTime = 'Ngày giờ phải trong tương lai';
+      }
     }
 
     setErrors(newErrors);
@@ -91,19 +98,22 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
       const createData: CreateScheduleRequest = {
         memberId: formData.memberId,
         trainerId: formData.trainerId,
-        subscriptionId: formData.subscriptionId || formData.memberId, // Fallback
+        subscriptionId: undefined,
         branchId: formData.branchId,
         dateTime: new Date(formData.sessionDateTime).toISOString(),
         durationMinutes: formData.sessionDuration,
-        status: 'Confirmed',
-        notes: formData.notes,
+        status: 'Pending',
+        notes: formData.notes || 'Buổi tập PT',
       };
 
       console.log('🚀 Creating coaching schedule:', createData);
       await createMutation.mutateAsync(createData);
+      
+      toast.success('Tạo lịch hướng dẫn PT thành công! Lịch đang chờ xác nhận.');
       handleClose();
     } catch (error: any) {
       console.error('❌ Error creating schedule:', error?.response?.data);
+      toast.error('Có lỗi xảy ra khi tạo lịch. Vui lòng thử lại!');
     }
   };
 
@@ -163,6 +173,9 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                   ))}
                 </SelectContent>
               </SelectWithScrollLock>
+              <p className="text-xs text-gray-500 mt-1">
+                Chọn Personal Trainer sẽ hướng dẫn buổi tập
+              </p>
               {errors.trainerId && (
                 <p className="text-red-500 text-xs mt-1">{errors.trainerId}</p>
               )}
@@ -193,6 +206,9 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                   ))}
                 </SelectContent>
               </SelectWithScrollLock>
+              <p className="text-xs text-gray-500 mt-1">
+                Chọn hội viên sẽ được hướng dẫn tập luyện
+              </p>
               {errors.memberId && (
                 <p className="text-red-500 text-xs mt-1">{errors.memberId}</p>
               )}
@@ -218,6 +234,9 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                   ))}
                 </SelectContent>
               </SelectWithScrollLock>
+              <p className="text-xs text-gray-500 mt-1">
+                Chọn chi nhánh nơi diễn ra buổi tập
+              </p>
               {errors.branchId && (
                 <p className="text-red-500 text-xs mt-1">{errors.branchId}</p>
               )}
@@ -233,7 +252,11 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                 value={formData.sessionDateTime}
                 onChange={(e) => handleChange('sessionDateTime', e.target.value)}
                 className={errors.sessionDateTime ? 'border-red-500' : ''}
+                min={new Date().toISOString().slice(0, 16)}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Chọn ngày và giờ trong tương lai cho buổi tập
+              </p>
               {errors.sessionDateTime && (
                 <p className="text-red-500 text-xs mt-1">{errors.sessionDateTime}</p>
               )}
@@ -255,6 +278,9 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                   <SelectItem value="120">120 phút</SelectItem>
                 </SelectContent>
               </SelectWithScrollLock>
+              <p className="text-xs text-gray-500 mt-1">
+                Thời lượng tiêu chuẩn cho buổi tập PT
+              </p>
             </div>
 
             <div>
@@ -267,6 +293,9 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                 value={formData.notes}
                 onChange={(e) => handleChange('notes', e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Ghi chú về nội dung, mục tiêu hoặc yêu cầu đặc biệt của buổi tập
+              </p>
             </div>
 
             {/* Form Actions */}

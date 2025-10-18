@@ -83,7 +83,7 @@ export interface ScheduleWithDetails extends Omit<Schedule, 'memberId' | 'traine
 export interface CreateScheduleRequest {
   memberId: string;
   trainerId: string;
-  subscriptionId: string;
+  subscriptionId?: string;
   branchId: string;
   dateTime: string;
   durationMinutes: number;
