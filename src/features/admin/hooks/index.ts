@@ -79,3 +79,16 @@ export {
   useDeleteStaffTrainer,
   staffTrainerQueryKeys
 } from './useStaffTrainers';
+
+// Schedule hooks
+export {
+  useSchedules,
+  useAllSchedules,
+  useSchedule,
+  useSchedulesByTrainer,
+  useSchedulesByMember,
+  useCreateSchedule,
+  useUpdateSchedule,
+  useDeleteSchedule,
+  scheduleQueryKeys
+} from './useSchedules';
