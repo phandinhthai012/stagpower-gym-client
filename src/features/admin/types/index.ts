@@ -2,3 +2,4 @@
 export * from './exercise.types';
 export * from './discount.types';
 export * from './invoice.types';
+export * from './staff-trainer.types';
