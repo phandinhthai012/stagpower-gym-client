@@ -1,7 +1,7 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Badge } from '../../../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
+import { Button } from '../../../../components/ui/button';
+import { Badge } from '../../../../components/ui/badge';
 import { 
   X, 
   Mail, 
@@ -15,45 +15,64 @@ import {
   Briefcase,
   Star,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Edit
 } from 'lucide-react';
-import { mockBranches } from '../../../mockdata';
+import { StaffTrainerUser } from '../../types/staff-trainer.types';
+import { useBranches } from '../../hooks';
 
 interface StaffPTDetailModalProps {
-  user: any;
+  user: StaffTrainerUser | null;
   isOpen: boolean;
   onClose: () => void;
+  onEdit?: () => void;
 }
 
-export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModalProps) {
+export function StaffPTDetailModal({ user, isOpen, onClose, onEdit }: StaffPTDetailModalProps) {
+  const { data: branchesData } = useBranches();
+  const branches = branchesData || [];
+
   if (!isOpen || !user) return null;
 
+  const handleEditClick = () => {
+    if (onEdit) {
+      onEdit();
+    }
+  };
+
+  const trainerInfo = user.role === 'trainer' ? user.trainerInfo : undefined;
+  const staffInfo = user.role === 'staff' ? user.staffInfo : undefined;
+
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Active':
+    switch (status.toLowerCase()) {
+      case 'active':
         return <Badge className="bg-green-100 text-green-800">Hoạt động</Badge>;
-      case 'Inactive':
+      case 'inactive':
         return <Badge className="bg-gray-100 text-gray-800">Không hoạt động</Badge>;
-      case 'Suspended':
-        return <Badge className="bg-red-100 text-red-800">Tạm ngưng</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800">Chờ duyệt</Badge>;
+      case 'banned':
+        return <Badge className="bg-red-100 text-red-800">Bị khóa</Badge>;
       default:
-        return <Badge className="bg-yellow-100 text-yellow-800">Chưa xác định</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">Chưa xác định</Badge>;
     }
   };
 
   const getRoleBadge = (role: string) => {
-    switch (role) {
-      case 'Trainer':
+    switch (role.toLowerCase()) {
+      case 'trainer':
         return <Badge className="bg-orange-100 text-orange-800">PT</Badge>;
-      case 'Staff':
+      case 'staff':
         return <Badge className="bg-blue-100 text-blue-800">Nhân viên</Badge>;
+      case 'admin':
+        return <Badge className="bg-purple-100 text-purple-800">Admin</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">Khác</Badge>;
     }
   };
 
   const getBranchName = (branchId: string) => {
-    return mockBranches.find(b => b.id === branchId)?.name || 'Chưa chọn';
+    return branches.find(b => b._id === branchId)?.name || 'Chưa chọn';
   };
 
   const formatDate = (dateString: string) => {
@@ -73,7 +92,7 @@ export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModal
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
@@ -117,19 +136,21 @@ export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModal
                     <p className="font-medium">{user.phone}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-600">Ngày sinh</p>
-                    <p className="font-medium">{formatDate(user.date_of_birth)} ({calculateAge(user.date_of_birth)} tuổi)</p>
+                {user.dateOfBirth && (
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <div> 
+                      <p className="text-sm text-gray-600">Ngày sinh</p>
+                      <p className="font-medium">{formatDate(user.dateOfBirth)} ({calculateAge(user.dateOfBirth)} tuổi)</p>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="flex items-center gap-3">
                   <User className="w-4 h-4 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-600">Giới tính</p>
                     <p className="font-medium">
-                      {user.gender === 'Male' ? 'Nam' : user.gender === 'Female' ? 'Nữ' : 'Khác'}
+                      {user.gender === 'male' ? 'Nam' : user.gender === 'female' ? 'Nữ' : 'Khác'}
                     </p>
                   </div>
                 </div>
@@ -149,50 +170,48 @@ export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModal
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  {user.role === 'Trainer' ? (
+                  {user.role === 'trainer' ? (
                     <Dumbbell className="w-5 h-5 text-orange-600" />
                   ) : (
                     <Briefcase className="w-5 h-5 text-blue-600" />
                   )}
-                  {user.role === 'Trainer' ? 'Thông tin PT' : 'Thông tin nhân viên'}
+                  {user.role === 'trainer' ? 'Thông tin PT' : 'Thông tin nhân viên'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {user.role === 'Trainer' ? (
+                {user.role === 'trainer' && trainerInfo ? (
                   <>
                     <div className="flex items-center gap-3">
                       <Award className="w-4 h-4 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-600">Kinh nghiệm</p>
-                        <p className="font-medium">{user.trainer_info?.experience_years || 0} năm</p>
+                        <p className="font-medium">{trainerInfo.experience_years || 0} năm</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Giờ làm việc</p>
-                        <p className="font-medium">
-                          {user.trainer_info?.working_hours?.start} - {user.trainer_info?.working_hours?.end}
-                        </p>
-                      </div>
-                    </div>
-                    {user.trainer_info?.specialty && user.trainer_info.specialty.length > 0 && (
-                      <div>
-                        <p className="text-sm text-gray-600 mb-2">Chuyên môn</p>
-                        <div className="flex flex-wrap gap-1">
-                          {user.trainer_info.specialty.map((specialty: string, index: number) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {specialty}
-                            </Badge>
-                          ))}
+                    {trainerInfo.working_hour && trainerInfo.working_hour.length >= 2 && (
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm text-gray-600">Giờ làm việc</p>
+                          <p className="font-medium">
+                            {trainerInfo.working_hour[0]} - {trainerInfo.working_hour[1]}
+                          </p>
                         </div>
                       </div>
                     )}
-                    {user.trainer_info?.certifications && user.trainer_info.certifications.length > 0 && (
+                    {trainerInfo.specialty && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-2">Chuyên môn</p>
+                        <Badge variant="outline" className="text-xs">
+                          {trainerInfo.specialty}
+                        </Badge>
+                      </div>
+                    )}
+                    {trainerInfo.certificate && trainerInfo.certificate.length > 0 && (
                       <div>
                         <p className="text-sm text-gray-600 mb-2">Chứng chỉ</p>
                         <div className="space-y-1">
-                          {user.trainer_info.certifications.map((cert: string, index: number) => (
+                          {trainerInfo.certificate.map((cert: string, index: number) => (
                             <div key={index} className="flex items-center gap-2">
                               <Star className="w-3 h-3 text-yellow-500" />
                               <span className="text-sm">{cert}</span>
@@ -202,24 +221,26 @@ export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModal
                       </div>
                     )}
                   </>
-                ) : (
+                ) : staffInfo ? (
                   <>
-                    <div className="flex items-center gap-3">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">Chi nhánh</p>
-                        <p className="font-medium">{getBranchName(user.staff_info?.branch_id || '')}</p>
+                    {staffInfo.brand_id && (
+                      <div className="flex items-center gap-3">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm text-gray-600">Chi nhánh</p>
+                          <p className="font-medium">{getBranchName(staffInfo.brand_id)}</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
                     <div className="flex items-center gap-3">
                       <Briefcase className="w-4 h-4 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-600">Vị trí</p>
-                        <p className="font-medium">{user.staff_info?.position || 'Nhân viên'}</p>
+                        <p className="font-medium">{staffInfo.position || 'Nhân viên'}</p>
                       </div>
                     </div>
                   </>
-                )}
+                ) : null}
               </CardContent>
             </Card>
           </div>
@@ -236,24 +257,24 @@ export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModal
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">
-                    {user.role === 'Trainer' ? '15' : '8'}
+                    {user.role === 'trainer' ? '15' : '8'}
                   </div>
                   <p className="text-sm text-gray-600">
-                    {user.role === 'Trainer' ? 'Hội viên phụ trách' : 'Năm kinh nghiệm'}
+                    {user.role === 'trainer' ? 'Hội viên phụ trách' : 'Năm kinh nghiệm'}
                   </p>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">
-                    {user.role === 'Trainer' ? '4.8' : '4.9'}
+                    {user.role === 'trainer' ? '4.8' : '4.9'}
                   </div>
                   <p className="text-sm text-gray-600">Đánh giá trung bình</p>
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
                   <div className="text-2xl font-bold text-orange-600">
-                    {user.role === 'Trainer' ? '120' : '45'}
+                    {user.role === 'trainer' ? '120' : '45'}
                   </div>
                   <p className="text-sm text-gray-600">
-                    {user.role === 'Trainer' ? 'Buổi tập tháng này' : 'Giờ làm việc/tuần'}
+                    {user.role === 'trainer' ? 'Buổi tập tháng này' : 'Giờ làm việc/tuần'}
                   </p>
                 </div>
               </div>
@@ -295,9 +316,15 @@ export function StaffPTDetailModal({ user, isOpen, onClose }: StaffPTDetailModal
             <Button variant="outline" onClick={onClose}>
               Đóng
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              Chỉnh sửa thông tin
-            </Button>
+            {onEdit && (
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={handleEditClick}
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Chỉnh sửa thông tin
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

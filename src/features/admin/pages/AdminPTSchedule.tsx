@@ -1,492 +1,374 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
+import { Input } from '../../../components/ui/input';
 import { 
   Calendar, 
-  Dumbbell, 
-  Search, 
-  Filter, 
-  Check, 
-  Edit, 
-  X, 
-  Clock,
-  User,
-  Users,
-  CalendarCheck
+  CalendarCheck, 
+  ChevronLeft, 
+  ChevronRight, 
+  Dumbbell,
+  Search,
+  Filter,
+  Loader2,
+  Eye
 } from 'lucide-react';
-import { mockUsers } from '../../../mockdata/users';
-import { mockSchedules } from '../../../mockdata/schedules';
-import { mockSubscriptions } from '../../../mockdata/subscriptions';
+import { ModalDirectSchedule, ModalCoachingSchedule, ModalDaySchedules } from '../components/schedule-management';
+import { useAllSchedules, useDeleteSchedule } from '../hooks';
+import { ScheduleWithDetails } from '../types/schedule.types';
 
 export function AdminPTSchedule() {
+  // Tab state
+  const [activeTab, setActiveTab] = useState('calendar');
+  
+  // Modal states
+  const [showDirectScheduleModal, setShowDirectScheduleModal] = useState(false);
+  const [showCoachingScheduleModal, setShowCoachingScheduleModal] = useState(false);
+  const [showDaySchedulesModal, setShowDaySchedulesModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDaySchedules, setSelectedDaySchedules] = useState<ScheduleWithDetails[]>([]);
+  
+  // Filter states for calendar view
+  const [currentFilter, setCurrentFilter] = useState('all');
+  
+  // Filter states for CRUD view
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [directScheduleForm, setDirectScheduleForm] = useState({
-    staffSelect: '',
-    workDate: new Date().toISOString().split('T')[0],
-    startTime: '06:00',
-    endTime: '22:00',
-    shiftType: '',
-    notes: ''
-  });
-  const [coachingScheduleForm, setCoachingScheduleForm] = useState({
-    trainerSelect: '',
-    memberSelect: '',
-    sessionDateTime: new Date().toISOString().slice(0, 16),
-    sessionDuration: '90',
-    notes: ''
-  });
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending'>('all');
+  const [page, setPage] = useState(1);
 
-  // Get staff and trainers
-  const staffAndTrainers = mockUsers.filter(user => user.role === 'Trainer' || user.role === 'Staff');
-  const trainers = mockUsers.filter(user => user.role === 'Trainer');
-  const members = mockUsers.filter(user => user.role === 'Member');
+  // Calendar state
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Get schedules with member info
-  const schedulesWithInfo = mockSchedules.map(schedule => {
-    const trainer = mockUsers.find(user => user.id === schedule.trainer_id);
-    const member = mockUsers.find(user => user.id === schedule.member_id);
-    const subscription = mockSubscriptions.find(sub => sub.id === schedule.subscription_id);
-    
-    return {
-      ...schedule,
-      trainer,
-      member,
-      subscription
-    };
-  });
+  // Data fetching
+  const { data: allSchedules, isLoading, error } = useAllSchedules();
+  const deleteScheduleMutation = useDeleteSchedule();
 
-  const handleDirectScheduleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!directScheduleForm.staffSelect || !directScheduleForm.workDate || !directScheduleForm.shiftType) {
-      alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
-      return;
-    }
-    alert('Đã tạo lịch trực thành công!');
-    setDirectScheduleForm({
-      staffSelect: '',
-      workDate: new Date().toISOString().split('T')[0],
-      startTime: '06:00',
-      endTime: '22:00',
-      shiftType: '',
-      notes: ''
-    });
-  };
-
-  const handleCoachingScheduleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!coachingScheduleForm.trainerSelect || !coachingScheduleForm.memberSelect || !coachingScheduleForm.sessionDateTime) {
-      alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
-      return;
-    }
-    alert('Đã tạo lịch hướng dẫn thành công!');
-    setCoachingScheduleForm({
-      trainerSelect: '',
-      memberSelect: '',
-      sessionDateTime: new Date().toISOString().slice(0, 16),
-      sessionDuration: '90',
-      notes: ''
-    });
-  };
-
-  const handleShiftTypeChange = (value: string) => {
-    switch (value) {
-      case 'morning':
-        setDirectScheduleForm(prev => ({ ...prev, startTime: '06:00', endTime: '14:00' }));
-        break;
-      case 'afternoon':
-        setDirectScheduleForm(prev => ({ ...prev, startTime: '14:00', endTime: '22:00' }));
-        break;
-      case 'full':
-        setDirectScheduleForm(prev => ({ ...prev, startTime: '06:00', endTime: '22:00' }));
-        break;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Confirmed':
-        return <Badge className="bg-green-100 text-green-800">Đã xác nhận</Badge>;
-      case 'Completed':
-        return <Badge className="bg-blue-100 text-blue-800">Hoàn thành</Badge>;
-      case 'Cancelled':
-        return <Badge className="bg-red-100 text-red-800">Đã hủy</Badge>;
-      default:
-        return <Badge className="bg-yellow-100 text-yellow-800">Chờ xác nhận</Badge>;
-    }
-  };
-
-  const formatDateTime = (dateTime: string) => {
-    const date = new Date(dateTime);
-    return date.toLocaleDateString('vi-VN');
-  };
+  // Calendar helpers
+  const currentMonth = currentDate.toLocaleDateString('vi-VN', { 
+    month: 'long', 
+    year: 'numeric' 
+  }).toUpperCase();
 
   const formatTime = (dateTime: string) => {
-    const date = new Date(dateTime);
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const d = new Date(dateTime);
+    return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const isDirectSchedule = (schedule: any) => {
+    return schedule.notes?.startsWith('[LỊCH TRỰC]') || 
+           (schedule.memberId === schedule.trainerId);
+  };
+
+  const getScheduleType = (schedule: any) => {
+    if (isDirectSchedule(schedule)) {
+      return { label: 'Lịch trực', color: 'bg-blue-100 text-blue-800' };
+    }
+    return { label: 'Lịch PT', color: 'bg-orange-100 text-orange-800' };
+  };
+
+  const handleDayClick = (dayNumber: number) => {
+    if (!dayNumber) return;
+    
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const clickedDate = new Date(year, month, dayNumber);
+    
+    const daySchedules = (allSchedules || []).filter(s => {
+      const scheduleDate = new Date(s.dateTime);
+      return scheduleDate.getDate() === dayNumber &&
+             scheduleDate.getMonth() === month &&
+             scheduleDate.getFullYear() === year;
+    });
+
+    setSelectedDate(clickedDate);
+    setSelectedDaySchedules(daySchedules);
+    setShowDaySchedulesModal(true);
   };
 
   return (
     <div className="space-y-6">
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Direct Schedule Assignment */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-600" />
-              Phân lịch trực cho PT/ Nhân viên
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleDirectScheduleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="staffSelect">Chọn PT/Nhân viên</Label>
-                <Select 
-                  value={directScheduleForm.staffSelect} 
-                  onValueChange={(value) => setDirectScheduleForm(prev => ({ ...prev, staffSelect: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn PT/ nhân viên" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {staffAndTrainers.map((staff) => (
-                      <SelectItem key={staff.id} value={staff.id}>
-                        {staff.fullName} - {staff.role === 'Trainer' ? 'PT' : 'Nhân viên'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="workDate">Ngày làm việc</Label>
-                <Input
-                  id="workDate"
-                  type="date"
-                  value={directScheduleForm.workDate}
-                  onChange={(e) => setDirectScheduleForm(prev => ({ ...prev, workDate: e.target.value }))}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startTime">Giờ bắt đầu</Label>
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={directScheduleForm.startTime}
-                    onChange={(e) => setDirectScheduleForm(prev => ({ ...prev, startTime: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="endTime">Giờ kết thúc</Label>
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={directScheduleForm.endTime}
-                    onChange={(e) => setDirectScheduleForm(prev => ({ ...prev, endTime: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="shiftType">Loại ca làm việc</Label>
-                <Select 
-                  value={directScheduleForm.shiftType} 
-                  onValueChange={(value) => {
-                    setDirectScheduleForm(prev => ({ ...prev, shiftType: value }));
-                    handleShiftTypeChange(value);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn loại ca" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="morning">Ca sáng (06:00 - 14:00)</SelectItem>
-                    <SelectItem value="afternoon">Ca chiều (14:00 - 22:00)</SelectItem>
-                    <SelectItem value="full">Ca toàn ngày (06:00 - 22:00)</SelectItem>
-                    <SelectItem value="custom">Ca bán thời gian (tùy chỉnh)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="directNotes">Ghi chú</Label>
-                <textarea
-                  id="directNotes"
-                  className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                  rows={2}
-                  placeholder="Ghi chú về ca làm việc..."
-                  value={directScheduleForm.notes}
-                  onChange={(e) => setDirectScheduleForm(prev => ({ ...prev, notes: e.target.value }))}
-                />
-              </div>
-
-              <Button type="submit" className="w-full">
-                Tạo lịch trực
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Coaching Schedule Assignment */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Dumbbell className="w-5 h-5 text-orange-600" />
-              Phân lịch hướng dẫn cho PT
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleCoachingScheduleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="trainerSelect">Chọn PT</Label>
-                <Select 
-                  value={coachingScheduleForm.trainerSelect} 
-                  onValueChange={(value) => setCoachingScheduleForm(prev => ({ ...prev, trainerSelect: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn PT" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trainers.map((trainer) => (
-                      <SelectItem key={trainer.id} value={trainer.id}>
-                        {trainer.fullName} - PT
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="memberSelect">Chọn hội viên</Label>
-                <Select 
-                  value={coachingScheduleForm.memberSelect} 
-                  onValueChange={(value) => setCoachingScheduleForm(prev => ({ ...prev, memberSelect: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn hội viên" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {members.map((member) => {
-                      const activeSub = mockSubscriptions.find(sub => 
-                        sub.member_id === member.id && sub.status === 'Active'
-                      );
-                      const remainingSessions = activeSub?.pt_sessions_remaining || 0;
-                      return (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.fullName} - {member.member_info?.membership_level} (Còn {remainingSessions} buổi)
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="sessionDateTime">Ngày và giờ buổi tập</Label>
-                <Input
-                  id="sessionDateTime"
-                  type="datetime-local"
-                  value={coachingScheduleForm.sessionDateTime}
-                  onChange={(e) => setCoachingScheduleForm(prev => ({ ...prev, sessionDateTime: e.target.value }))}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="sessionDuration">Thời lượng buổi tập (phút)</Label>
-                <Select 
-                  value={coachingScheduleForm.sessionDuration} 
-                  onValueChange={(value) => setCoachingScheduleForm(prev => ({ ...prev, sessionDuration: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn thời lượng" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="60">60 phút</SelectItem>
-                    <SelectItem value="90">90 phút</SelectItem>
-                    <SelectItem value="120">120 phút</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="coachingNotes">Ghi chú về buổi tập</Label>
-                <textarea
-                  id="coachingNotes"
-                  className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                  rows={3}
-                  placeholder="Nhập ghi chú về buổi tập..."
-                  value={coachingScheduleForm.notes}
-                  onChange={(e) => setCoachingScheduleForm(prev => ({ ...prev, notes: e.target.value }))}
-                />
-              </div>
-
-              <Button type="submit" className="w-full">
-                Tạo lịch hướng dẫn
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý Lịch Làm Việc & PT</h1>
+          <p className="text-gray-600 mt-2">Quản lý lịch trực và lịch hướng dẫn PT</p>
+        </div>
       </div>
 
-      {/* Search and Filter */}
+      {/* Custom Tabs */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-purple-600" />
-            Tìm kiếm và lọc
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Tìm kiếm theo tên"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <Button
+                variant={activeTab === 'calendar' ? 'default' : 'outline'}
+                className="flex items-center gap-2"
+                onClick={() => setActiveTab('calendar')}
+              >
+                <Calendar className="w-4 h-4" />
+                Lịch Làm Việc
+              </Button>
+              <Button
+                variant={activeTab === 'crud' ? 'default' : 'outline'}
+                className="flex items-center gap-2"
+                onClick={() => setActiveTab('crud')}
+              >
+                <CalendarCheck className="w-4 h-4" />
+                Quản Lý Lịch
+              </Button>
             </div>
-            
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn vai trò" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="Trainer">PT</SelectItem>
-                <SelectItem value="Staff">Nhân viên</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="Pending">Chờ xác nhận</SelectItem>
-                <SelectItem value="Confirmed">Đã xác nhận</SelectItem>
-                <SelectItem value="Completed">Hoàn thành</SelectItem>
-                <SelectItem value="Cancelled">Đã hủy</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button variant="outline">
-              Đặt lại
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowDirectScheduleModal(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+                size="sm"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Phân lịch trực
+              </Button>
+              <Button 
+                onClick={() => setShowCoachingScheduleModal(true)}
+                className="bg-orange-600 hover:bg-orange-700"
+                size="sm"
+              >
+                <Dumbbell className="w-4 h-4 mr-2" />
+                Phân lịch PT
+              </Button>
+            </div>
           </div>
-        </CardContent>
+        </CardHeader>
       </Card>
 
-      {/* Schedule Management Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarCheck className="w-5 h-5 text-green-600" />
-            Quản lý lịch làm việc
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 font-medium text-gray-600">Tên</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Ngày</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Giờ làm việc</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Loại buổi</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Hội viên</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Trạng thái</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedulesWithInfo.slice(0, 10).map((schedule) => (
-                  <tr key={schedule.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">
-                      <div>
-                        <p className="font-medium text-gray-900">{schedule.trainer?.fullName}</p>
-                        <p className="text-sm text-gray-500">{schedule.trainer?.role === 'Trainer' ? 'PT' : 'NV'}</p>
+      {/* TAB 1: Calendar View */}
+      {activeTab === 'calendar' && (
+        <div className="space-y-6">
+          {/* Calendar Header */}
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-bold text-gray-900 text-center">{currentMonth}</h2>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Calendar View */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-7 gap-2 mb-4">
+                {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day) => (
+                  <div key={day} className="text-center font-semibold text-gray-600 py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 35 }, (_, i) => {
+                  const dayNumber = i - 6; // Start from Sunday
+                  const daySchedules = (allSchedules || []).filter(s => {
+                    const scheduleDate = new Date(s.dateTime);
+                    return scheduleDate.getDate() === dayNumber && 
+                           scheduleDate.getMonth() === currentDate.getMonth();
+                  });
+
+                  const hasSchedules = daySchedules.length > 0;
+                  
+                  return (
+                    <div 
+                      key={i} 
+                      className={`min-h-[100px] border border-gray-200 rounded-lg p-2 transition-all ${
+                        hasSchedules 
+                          ? 'hover:bg-blue-50 hover:border-blue-300 cursor-pointer' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => hasSchedules && dayNumber && handleDayClick(dayNumber as number)}
+                    >
+                      <div className={`text-sm font-medium mb-2 ${
+                        hasSchedules ? 'text-blue-600' : 'text-gray-600'
+                      }`}>
+                        {dayNumber}
                       </div>
-                    </td>
-                    <td className="p-3">
-                      {formatDateTime(schedule.date_time)}
-                    </td>
-                    <td className="p-3">
-                      {formatTime(schedule.date_time)} - {formatTime(new Date(new Date(schedule.date_time).getTime() + schedule.duration_minutes * 60000).toISOString())}
-                    </td>
-                    <td className="p-3">
-                      <Badge className="bg-blue-100 text-blue-800">
-                        {schedule.member ? 'Cá nhân' : 'Trực'}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      {schedule.member ? (
-                        <div>
-                          <p className="font-medium text-gray-900">{schedule.member.fullName}</p>
-                          {schedule.subscription && (
-                            <div className="bg-blue-50 p-2 rounded text-xs mt-1">
-                              <p><strong>Gói:</strong> {schedule.subscription.type} | <strong>Còn:</strong> {schedule.subscription.pt_sessions_remaining} buổi</p>
+                      {hasSchedules && (
+                        <div className="space-y-1">
+                          {daySchedules.slice(0, 2).map(schedule => (
+                            <div 
+                              key={schedule._id} 
+                              className={`text-xs p-1 rounded truncate ${
+                                isDirectSchedule(schedule)
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-orange-100 text-orange-800'
+                              }`}
+                              title={`${formatTime(schedule.dateTime)} - ${schedule.notes || 'Buổi tập'}`}
+                            >
+                              {formatTime(schedule.dateTime)}
+                            </div>
+                          ))}
+                          {daySchedules.length > 2 && (
+                            <div className="text-xs text-gray-500 font-medium">
+                              +{daySchedules.length - 2} khác
                             </div>
                           )}
                         </div>
-                      ) : (
-                        <span className="text-gray-400">---------</span>
                       )}
-                    </td>
-                    <td className="p-3">
-                      {getStatusBadge(schedule.status)}
-                    </td>
-                    <td className="p-3">
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="text-green-600 hover:text-green-700">
-                          <Check className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-          {/* Pagination */}
-          <div className="flex justify-between items-center mt-6 pt-4 border-t">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>Số dòng/trang:</span>
-              <Input type="number" value={10} min={5} max={50} className="w-16 h-8" />
-            </div>
-            <div className="flex gap-1">
-              <Button variant="outline" size="sm">«</Button>
-              <Button variant="outline" size="sm">‹</Button>
-              <Button variant="outline" size="sm" className="bg-blue-600 text-white">1</Button>
-              <Button variant="outline" size="sm">2</Button>
-              <Button variant="outline" size="sm">3</Button>
-              <Button variant="outline" size="sm">›</Button>
-              <Button variant="outline" size="sm">»</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* TAB 2: CRUD View */}
+      {activeTab === 'crud' && (
+        <div className="space-y-6">
+          {/* Search and Filter */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-purple-600" />
+                Tìm kiếm và lọc
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Tìm kiếm theo ghi chú"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setPage(1);
+                    }}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <select 
+                  value={statusFilter} 
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value as 'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending');
+                    setPage(1);
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="Confirmed">Đã xác nhận</option>
+                  <option value="Pending">Chờ xác nhận</option>
+                  <option value="Completed">Hoàn thành</option>
+                  <option value="Cancelled">Đã hủy</option>
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Schedule Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                Danh sách lịch ({allSchedules?.length || 0})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(allSchedules || []).length > 0 ? (
+                    (allSchedules || []).map((schedule) => (
+                      <div key={schedule._id} className="border rounded-lg p-4 hover:bg-gray-50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="text-center">
+                              <div className="text-lg font-bold text-blue-600">
+                                {formatTime(schedule.dateTime)}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {schedule.durationMinutes} phút
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-semibold">
+                                {(typeof schedule.trainerId === 'object' ? schedule.trainerId?.fullName : schedule.trainer?.fullName) || 'PT'}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {schedule.notes || 'Buổi tập'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={
+                              isDirectSchedule(schedule)
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-orange-100 text-orange-800'
+                            }>
+                              {getScheduleType(schedule).label}
+                            </Badge>
+                            <Badge className={
+                              schedule.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                              schedule.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                              schedule.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }>
+                              {schedule.status === 'Confirmed' ? 'Đã xác nhận' :
+                               schedule.status === 'Completed' ? 'Hoàn thành' :
+                               schedule.status === 'Cancelled' ? 'Đã hủy' : 'Chờ xác nhận'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p>Không có lịch nào</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modals */}
+      <ModalDirectSchedule
+        isOpen={showDirectScheduleModal}
+        onClose={() => setShowDirectScheduleModal(false)}
+      />
+
+      <ModalCoachingSchedule
+        isOpen={showCoachingScheduleModal}
+        onClose={() => setShowCoachingScheduleModal(false)}
+      />
+
+      <ModalDaySchedules
+        isOpen={showDaySchedulesModal}
+        onClose={() => {
+          setShowDaySchedulesModal(false);
+          setSelectedDate(null);
+          setSelectedDaySchedules([]);
+        }}
+        date={selectedDate}
+        schedules={selectedDaySchedules}
+      />
     </div>
   );
 }
