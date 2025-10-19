@@ -13,7 +13,7 @@ export interface HealthInfo {
   allergies?: string;
   goal: 'WeightLoss' | 'MuscleGain' | 'Health';
   experience: 'Beginner' | 'Intermediate' | 'Advanced';
-  fitnessLevel: 'Low' | 'Medium' | 'High';
+  fitnessLevel: 'low' | 'medium' | 'high';
   preferredTime?: 'Morning' | 'Afternoon' | 'Evening';
   weeklySessions?: '1-2' | '3-4' | '5+';
   createdAt?: string;

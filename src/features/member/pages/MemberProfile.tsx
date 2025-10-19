@@ -263,7 +263,7 @@ export function MemberProfile() {
                 </div>
                 <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
                   <span className="text-blue-900 text-sm font-semibold">Thể lực</span>
-                  <span className="text-gray-700 text-sm truncate">{healthInfo?.fitnessLevel === 'Low' ? 'Thấp' : healthInfo?.fitnessLevel === 'Medium' ? 'Trung bình' : 'Cao'}</span>
+                  <span className="text-gray-700 text-sm truncate">{healthInfo?.fitnessLevel === 'low' ? 'Thấp' : healthInfo?.fitnessLevel === 'medium' ? 'Trung bình' : 'Cao'}</span>
                 </div>
               </div>
             </div>

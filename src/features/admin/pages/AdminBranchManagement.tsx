@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
-import { 
-  Building2, 
-  Plus, 
-  Download, 
-  BarChart3, 
-  Map, 
-  Edit, 
-  Eye, 
-  Users, 
-  Pause, 
-  Play, 
+import {
+  Building2,
+  Plus,
+  Download,
+  BarChart3,
+  Map,
+  Edit,
+  Eye,
+  Users,
+  Pause,
+  Play,
   Search,
   Filter,
   ArrowUp,
@@ -25,9 +25,15 @@ import {
   MapPin,
   Phone,
   Clock,
-  User
+  User,
+  AtSign,
+  Send
 } from 'lucide-react';
-import { mockBranches } from '../../../mockdata/branches';
+import { LoadingSpinner } from '../../../components/common';
+// import { mockBranches } from '../../../mockdata/branches';
+import { useBranches, useCreateBranch, useUpdateBranch, useChangeBranchStatus } from '../hooks';
+import { ModalCreateBranch } from '../components/branch-management/ModalCreateBranch';
+import { ModelEditBranch } from '../components/branch-management/ModelEditBranch';
 
 export function AdminBranchManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,18 +45,66 @@ export function AdminBranchManagement() {
     name: '',
     address: '',
     phone: '',
-    openingHours: '',
-    description: '',
-    status: 'Active'
+    email: '',           // ✅ Thêm
+    openTime: '',        // ✅ Thêm
+    closeTime: '',       // ✅ Thêm
+    status: 'Active' as 'Active' | 'Maintenance' | 'Closed'
   });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    branch: any | null;
+    action: 'deactivate' | 'activate' | null;
+  }>({
+    isOpen: false,
+    branch: null,
+    action: null
+  });
+  const { data: branches = [], isLoading, error } = useBranches();
+
+  const createBranch = useCreateBranch();
+  const updateBranch = useUpdateBranch();
+  const changeBranchStatus = useChangeBranchStatus();
+  console.log(branches);
+
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <LoadingSpinner />
+          <p className="mt-2 text-gray-600">Đang tải dữ liệu chi nhánh...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center text-red-600">
+          <p className="text-red-500">
+            {error?.message || 'Có lỗi xảy ra khi tải dữ liệu chi nhánh'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+
 
   // Calculate statistics from mock data
-  const totalBranches = mockBranches.length;
-  const activeBranches = mockBranches.filter(branch => branch.status === 'Active').length;
-  const maintenanceBranches = mockBranches.filter(branch => branch.status === 'Maintenance').length;
-  const totalStaff = mockBranches.reduce((sum, branch) => sum + (branch.staff_count || 0), 0);
-  const totalMembers = mockBranches.reduce((sum, branch) => sum + (branch.member_count || 0), 0);
-
+  const totalBranches = branches.length;
+  const activeBranches = branches.filter((branch: any) => branch.status === 'Active').length;
+  const maintenanceBranches = branches.filter((branch: any) => branch.status === 'Maintenance').length;
+  const closedBranches = branches.filter((branch: any) => branch.status === 'Closed').length;
+  // const totalStaff = branches.reduce((sum: any, branch: any) => sum + (branch.staff_count || 0), 0);
+  // const totalMembers = branches.reduce((sum: any, branch: any) => sum + (branch.member_count || 0), 0);
+  const filteredBranches = branches.filter(branch => {
+    const matchesSearch = branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      branch.address.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || branch.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -58,7 +112,7 @@ export function AdminBranchManagement() {
         return <Badge className="bg-green-100 text-green-800">Đang hoạt động</Badge>;
       case 'Maintenance':
         return <Badge className="bg-yellow-100 text-yellow-800">Bảo trì</Badge>;
-      case 'Inactive':
+      case 'Closed':
         return <Badge className="bg-red-100 text-red-800">Tạm dừng</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">Không xác định</Badge>;
@@ -83,15 +137,45 @@ export function AdminBranchManagement() {
   };
 
   const handleDeactivateBranch = (branch: any) => {
-    if (confirm(`Bạn có chắc muốn tạm dừng chi nhánh ${branch.name}?`)) {
-      alert(`Đã tạm dừng chi nhánh: ${branch.name}`);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      branch: branch,
+      action: 'deactivate'
+    });
   };
 
   const handleActivateBranch = (branch: any) => {
-    if (confirm(`Bạn có chắc muốn mở lại chi nhánh ${branch.name}?`)) {
-      alert(`Đã mở lại chi nhánh: ${branch.name}`);
+    setConfirmDialog({
+      isOpen: true,
+      branch: branch,
+      action: 'activate'
+    });
+  };
+  const confirmAction = async () => {
+    if (!confirmDialog.branch || !confirmDialog.action) return;
+
+    try {
+      const  newStatus = confirmDialog.action === 'deactivate' ? 'Maintenance' : 'Active';
+      await changeBranchStatus.mutateAsync({
+        branchId: confirmDialog.branch._id,
+        status: newStatus
+      });
+      setConfirmDialog({
+        isOpen: false,
+        branch: null,
+        action: null
+      });
+    } catch (error) {
+      console.error('Error changing branch status:', error);
     }
+  };
+
+  const cancelAction = () => {
+    setConfirmDialog({
+      isOpen: false,
+      branch: null,
+      action: null
+    });
   };
 
   const handleExportData = () => {
@@ -106,28 +190,77 @@ export function AdminBranchManagement() {
     alert('Đang mở bản đồ chi nhánh...');
   };
 
-  const handleAddBranchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert('Đã thêm chi nhánh mới thành công!');
-    setShowAddModal(false);
-    setNewBranch({
-      name: '',
-      address: '',
-      phone: '',
-      openingHours: '',
-      description: '',
-      status: 'Active'
-    });
+  const handleAddBranchSubmit = async (BranchData: any) => {
+    console.log(BranchData);
+    try {
+      const response = await createBranch.mutateAsync(BranchData);
+      setShowAddModal(false);
+      console.log(response);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const handleEditBranchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert('Đã cập nhật thông tin chi nhánh thành công!');
-    setShowEditModal(false);
+  const handleEditBranchSubmit = async (branchData: any) => {
+    console.log(branchData);
+    try {
+      const response = await updateBranch.mutateAsync({ branchId: selectedBranch._id, data: branchData });
+      setShowEditModal(false);
+      console.log(response);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* {statistics} */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Tổng chi nhánh</p>
+                <p className="text-2xl font-bold">{totalBranches}</p>
+              </div>
+              <Building2 className="w-8 h-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Đang hoạt động</p>
+                <p className="text-2xl font-bold text-green-600">{activeBranches}</p>
+              </div>
+              <Play className="w-8 h-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Bảo trì</p>
+                <p className="text-2xl font-bold text-yellow-600">{maintenanceBranches}</p>
+              </div>
+              <Pause className="w-8 h-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Đã đóng</p>
+                <p className="text-2xl font-bold text-red-600">{closedBranches}</p>
+              </div>
+              <Building2 className="w-8 h-8 text-red-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       {/* Action Buttons */}
       <Card>
         <CardContent className="p-6">
@@ -171,7 +304,7 @@ export function AdminBranchManagement() {
                 className="pl-10"
               />
             </div>
-            
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn trạng thái" />
@@ -180,7 +313,7 @@ export function AdminBranchManagement() {
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Active">Đang hoạt động</SelectItem>
                 <SelectItem value="Maintenance">Bảo trì</SelectItem>
-                <SelectItem value="Inactive">Tạm dừng</SelectItem>
+                <SelectItem value="Closed">Đóng cửa</SelectItem>
               </SelectContent>
             </Select>
 
@@ -194,8 +327,8 @@ export function AdminBranchManagement() {
 
       {/* Branch Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {mockBranches.map((branch) => (
-          <Card key={branch.id} className="hover:shadow-lg transition-shadow">
+        {filteredBranches.map((branch: any) => (
+          <Card key={branch._id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -204,7 +337,7 @@ export function AdminBranchManagement() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">{branch.name}</h3>
-                    <p className="text-sm text-gray-600">{branch.description}</p>
+                    <p className="text-sm text-gray-500">ID: {branch._id}</p>
                   </div>
                 </div>
                 {getStatusBadge(branch.status)}
@@ -221,9 +354,13 @@ export function AdminBranchManagement() {
                   <span className="text-sm text-gray-600">{branch.phone}</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Send className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-600">{branch.email || 'Chưa có'}</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-gray-500" />
                   <span className="text-sm text-gray-600">
-                    {branch.status === 'Maintenance' ? 'Tạm đóng' : branch.opening_hours}
+                    {branch.status === 'Maintenance' ? 'Tạm đóng' : `${branch.openTime} - ${branch.closeTime}`}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -235,7 +372,7 @@ export function AdminBranchManagement() {
                   <span className="text-sm text-gray-600">{branch.member_count || 0} hội viên</span>
                 </div>
               </div>
-              
+
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
@@ -287,222 +424,65 @@ export function AdminBranchManagement() {
           </Card>
         ))}
       </div>
-
-      {/* Add Branch Modal */}
-      {showAddModal && (
+      <ModalCreateBranch
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddBranchSubmit}
+      />
+      <ModelEditBranch
+        isOpen={showEditModal}
+        branchData={selectedBranch}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedBranch(null);
+        }}
+        onSubmit={handleEditBranchSubmit}
+      />
+      {/* Confirmation Dialog */}
+      {confirmDialog.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <Card className="w-full max-w-md mx-4 bg-white rounded-lg shadow-lg">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Thêm Chi Nhánh Mới</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  ×
-                </Button>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <PauseCircle className="w-5 h-5 text-red-600" />
+                Xác nhận tạm dừng chi nhánh
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleAddBranchSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="branchName">Tên chi nhánh</Label>
-                    <Input
-                      id="branchName"
-                      value={newBranch.name}
-                      onChange={(e) => setNewBranch(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Nhập tên chi nhánh..."
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="branchStatus">Trạng thái</Label>
-                    <Select 
-                      value={newBranch.status} 
-                      onValueChange={(value) => setNewBranch(prev => ({ ...prev, status: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Active">Đang hoạt động</SelectItem>
-                        <SelectItem value="Maintenance">Bảo trì</SelectItem>
-                        <SelectItem value="Inactive">Tạm dừng</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="branchAddress">Địa chỉ</Label>
-                  <Input
-                    id="branchAddress"
-                    value={newBranch.address}
-                    onChange={(e) => setNewBranch(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="Nhập địa chỉ chi nhánh..."
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="branchPhone">Số điện thoại</Label>
-                    <Input
-                      id="branchPhone"
-                      value={newBranch.phone}
-                      onChange={(e) => setNewBranch(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="Nhập số điện thoại..."
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="branchHours">Giờ mở cửa</Label>
-                    <Input
-                      id="branchHours"
-                      value={newBranch.openingHours}
-                      onChange={(e) => setNewBranch(prev => ({ ...prev, openingHours: e.target.value }))}
-                      placeholder="VD: 06:00 - 23:00"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="branchDescription">Mô tả</Label>
-                  <textarea
-                    id="branchDescription"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={3}
-                    placeholder="Nhập mô tả chi nhánh..."
-                    value={newBranch.description}
-                    onChange={(e) => setNewBranch(prev => ({ ...prev, description: e.target.value }))}
-                  />
-                </div>
-                
-                <div className="flex justify-end gap-4 pt-4 border-t">
+              <div className="space-y-4">
+                <p className="text-gray-600">
+                  Bạn có chắc chắn muốn tạm dừng chi nhánh{' '}
+                  <span className="font-semibold text-blue-600">
+                    {confirmDialog.branch?.name}
+                  </span>?
+                </p>
+                <p className="text-sm text-gray-500">
+                  Chi nhánh sẽ không thể tiếp nhận khách hàng mới sau khi tạm dừng.
+                </p>
+                <div className="flex justify-end gap-3 pt-4">
                   <Button
-                    type="button"
                     variant="outline"
-                    onClick={() => setShowAddModal(false)}
+                    onClick={cancelAction}
                   >
                     Hủy
                   </Button>
-                  <Button type="submit">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Thêm chi nhánh
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Edit Branch Modal */}
-      {showEditModal && selectedBranch && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Chỉnh Sửa Chi Nhánh</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowEditModal(false)}
-                >
-                  ×
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleEditBranchSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="editBranchName">Tên chi nhánh</Label>
-                    <Input
-                      id="editBranchName"
-                      defaultValue={selectedBranch.name}
-                      placeholder="Nhập tên chi nhánh..."
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="editBranchStatus">Trạng thái</Label>
-                    <Select defaultValue={selectedBranch.status}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Active">Đang hoạt động</SelectItem>
-                        <SelectItem value="Maintenance">Bảo trì</SelectItem>
-                        <SelectItem value="Inactive">Tạm dừng</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="editBranchAddress">Địa chỉ</Label>
-                  <Input
-                    id="editBranchAddress"
-                    defaultValue={selectedBranch.address}
-                    placeholder="Nhập địa chỉ chi nhánh..."
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="editBranchPhone">Số điện thoại</Label>
-                    <Input
-                      id="editBranchPhone"
-                      defaultValue={selectedBranch.phone}
-                      placeholder="Nhập số điện thoại..."
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="editBranchHours">Giờ mở cửa</Label>
-                    <Input
-                      id="editBranchHours"
-                      defaultValue={selectedBranch.opening_hours}
-                      placeholder="VD: 06:00 - 23:00"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="editBranchDescription">Mô tả</Label>
-                  <textarea
-                    id="editBranchDescription"
-                    className="w-full p-3 border border-gray-300 rounded-md resize-none"
-                    rows={3}
-                    placeholder="Nhập mô tả chi nhánh..."
-                    defaultValue={selectedBranch.description}
-                  />
-                </div>
-                
-                <div className="flex justify-end gap-4 pt-4 border-t">
                   <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowEditModal(false)}
+                    variant="destructive"
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={confirmAction}
+                    disabled={changeBranchStatus.isPending}
                   >
-                    Hủy
-                  </Button>
-                  <Button type="submit">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Cập nhật
+                    {changeBranchStatus.isPending ? (
+                      <>
+                        <LoadingSpinner />
+                        <span className="ml-2">Đang xử lý...</span>
+                      </>
+                    ) : (
+                      confirmDialog.action === 'deactivate' ? 'Tạm dừng' : 'Mở lại'
+                    )}
                   </Button>
                 </div>
-              </form>
+              </div>
             </CardContent>
           </Card>
         </div>

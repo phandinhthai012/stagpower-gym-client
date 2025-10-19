@@ -80,7 +80,7 @@ export const useChangeBranchStatus = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ branchId, status }: { branchId: string; status: 'Active' | 'Inactive' }) => 
+    mutationFn: ({ branchId, status }: { branchId: string; status: 'Active' | 'Maintenance' | 'Closed' }) => 
       branchApi.changeBranchStatus(branchId, status),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: branchQueryKeys.lists() });
