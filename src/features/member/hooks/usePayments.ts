@@ -94,6 +94,30 @@ export const useDeletePayment = () => {
     });
 }
 
+export const useCreateMomoPayment = () => {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: (data: any) => paymentApi.createMomoPayment(data),
+        onSuccess: (response) => {
+            // queryClient.invalidateQueries({ queryKey: ['payments'] });
+            // if (response.data?.memberId) {
+            //     queryClient.invalidateQueries({ 
+            //         queryKey: ['payments', 'member', response.data.memberId] 
+            //     });
+            // }
+            // ✅ KHÔNG toast ở đây - để component tự handle redirect/modal
+            console.log('MoMo payment created:', response);
+        },
+        onError: (error: any) => {
+            const errorMsg = error?.response?.data?.message || error?.message || 'Không thể tạo thanh toán MoMo';
+            toast.error(`Lỗi MoMo: ${errorMsg}`);
+        },
+    });
+};
+
+
+
 export const usePaymentStats = () => {
     return useQuery({
         queryKey: ['paymentStats'],

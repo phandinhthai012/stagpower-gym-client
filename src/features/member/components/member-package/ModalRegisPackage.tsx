@@ -8,13 +8,13 @@ import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
 import { useCreateSubscription, useSubscriptionsByMemberId } from '../../hooks/useSubscriptions';
-import { useCreatePayment } from '../../hooks/usePayments';
+import { useCreatePayment, useCreateMomoPayment } from '../../hooks/usePayments';
 import { useBranches } from '../../hooks/useBranches';
 import { usePackages } from '../../hooks/usePackages';
 import { Branch, Package } from '../../types';
-import { 
-  X, 
-  Package as PackageIcon, 
+import {
+  X,
+  Package as PackageIcon,
   CreditCard,
   MapPin,
   Clock,
@@ -24,6 +24,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { formatDate } from '../../../../lib/date-utils';
+import { ModalMomoPayment } from '../momo/ModalMomoPayment';
 
 interface ModalRegisPackageProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
   const { data: branchesResponse, isLoading: branchesLoading } = useBranches();
   const { data: packagesResponse, isLoading: packagesLoading } = usePackages();
   const { data: subscriptionsResponse } = useSubscriptionsByMemberId(user?._id || user?.id || '');
-  
+  const createMomoPaymentMutation = useCreateMomoPayment();
   const [formData, setFormData] = useState({
     packageId: selectedPackage?._id || '',
     branchId: '',
@@ -53,6 +54,14 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // momo
+  const [showMomoModal, setShowMomoModal] = useState(false);
+  const [momoData, setMomoData] = useState<{
+    qrCodeUrl: string;
+    deeplink: string;
+    paymentId: string;
+  } | null>(null);
 
   // Lock scroll when modal is open
   useScrollLock(isOpen);
@@ -103,13 +112,13 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Calculate end date based on package duration
       const packageInfo = selectedPackageInModal;
@@ -138,7 +147,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
       };
 
       const subscription = await createSubscriptionMutation.mutateAsync(newSubscriptionData);
-      
+
       // Step 2: Tạo payment record cho subscription vừa tạo
       const createdSubscription = subscription?.data;
       if (createdSubscription && createdSubscription._id) {
@@ -147,28 +156,54 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
           memberId: createdSubscription.memberId,
           originalAmount: packageInfo.price,
           amount: packageInfo.price, // Có thể áp dụng discount sau
-          paymentMethod: formData.paymentMethod === 'cash' ? 'Cash' : 
-                        formData.paymentMethod === 'card' ? 'Card' :
-                        formData.paymentMethod === 'momo' ? 'Momo' : 'BankTransfer',
+          paymentMethod: formData.paymentMethod === 'cash' ? 'Cash' :
+            formData.paymentMethod === 'card' ? 'Card' :
+              formData.paymentMethod === 'momo' ? 'Momo' : 'BankTransfer',
           paymentStatus: 'Pending' as const,
           // KHÔNG set paymentDate khi chưa thanh toán
           notes: formData.notes || ''
         };
 
         // Gọi API tạo payment
-        try {
-          await createPaymentMutation.mutateAsync(paymentData);
-          console.log('Payment created successfully');
-          
-        } catch (paymentError) {
-          console.error('Error creating payment:', paymentError);
-          // Vẫn hiển thị thành công vì subscription đã được tạo
-          alert('Đăng ký gói tập thành công! Vui lòng liên hệ admin để thanh toán.');
+        // try {
+        //   await createPaymentMutation.mutateAsync(paymentData);
+        //   console.log('Payment created successfully');
+
+        // } catch (paymentError) {
+        //   console.error('Error creating payment:', paymentError);
+        //   // Vẫn hiển thị thành công vì subscription đã được tạo
+        //   alert('Đăng ký gói tập thành công! Vui lòng liên hệ admin để thanh toán.');
+        // }
+        if (formData.paymentMethod === 'momo') {
+          try {
+            console.log('paymentData', paymentData);
+            const response = await createMomoPaymentMutation.mutateAsync(paymentData);
+            console.log('response', response);
+            setMomoData({
+              qrCodeUrl: response.data.qrCodeUrl,
+              deeplink: response.data.deeplink,
+              paymentId: response.data.orderId
+            });
+            console.log('MoMo payment created successfully');
+          } catch (momoError) {
+            console.error('Error creating MoMo payment:', momoError);
+          }
+          setShowMomoModal(true);
+
+        } else {
+          try {
+            await createPaymentMutation.mutateAsync(paymentData);
+            console.log('Payment created successfully');
+          } catch (paymentError) {
+            console.error('Error creating payment:', paymentError);
+            alert('Đăng ký gói tập thành công! Vui lòng liên hệ admin để thanh toán.');
+          }
+          // Hiển thị modal xác nhận
+          setShowSuccessModal(true);
         }
       }
-      
-      // Hiển thị modal xác nhận
-      setShowSuccessModal(true);
+
+
     } catch (error) {
       console.error('Error creating subscription:', error);
       alert('Có lỗi xảy ra khi đăng ký gói tập. Vui lòng thử lại.');
@@ -183,6 +218,20 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
     }
   };
 
+  const handleMomoCancel = () => {
+    setShowMomoModal(false);
+    setMomoData(null);
+    // Có thể hủy payment hoặc để user tự xử lý
+    alert('Bạn đã hủy thanh toán. Vui lòng liên hệ admin để hoàn tất.');
+    onClose();
+  };
+  const handleMomoSuccess = () => {
+    setShowMomoModal(false);
+    setMomoData(null);
+    setShowSuccessModal(true); // Hiển thị success modal
+    onSuccess?.(); // Gọi callback
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -195,11 +244,11 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={handleClose}
       />
-      
+
       {/* Modal */}
       <div className="relative w-full max-w-4xl max-h-[90vh] mx-4 bg-white rounded-lg shadow-xl overflow-hidden flex flex-col">
         {/* Header */}
@@ -298,7 +347,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
                         </Badge>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex items-center space-x-2 text-sm">
                         <Clock className="h-4 w-4 text-gray-500" />
@@ -410,8 +459,8 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
                       <span>Phương thức thanh toán:</span>
                       <span className="font-medium">
                         {formData.paymentMethod === 'cash' ? 'Tiền mặt' :
-                         formData.paymentMethod === 'card' ? 'Thẻ' :
-                         formData.paymentMethod === 'momo' ? 'MoMo' : 'Chuyển khoản'}
+                          formData.paymentMethod === 'card' ? 'Thẻ' :
+                            formData.paymentMethod === 'momo' ? 'MoMo' : 'Chuyển khoản'}
                       </span>
                     </div>
                     <div className="flex justify-between text-base font-semibold border-t pt-2">
@@ -419,7 +468,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
                       <span className="text-blue-600">{formatPrice(selectedPackageInModal.price)}</span>
                     </div>
                   </div>
-                  
+
                   {/* Payment Status Info */}
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div className="flex items-center space-x-2">
@@ -468,7 +517,7 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
       {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div 
+          <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => {
               setShowSuccessModal(false);
@@ -515,6 +564,20 @@ export function ModalRegisPackage({ isOpen, onClose, onSuccess, selectedPackage 
           </div>
         </div>
       )}
+      {/* ✅ THÊM MỚI: MoMo Payment Modal */}
+      {showMomoModal && momoData && (
+        <ModalMomoPayment
+          open={showMomoModal}
+          qrCodeUrl={momoData.qrCodeUrl}
+          deeplink={momoData.deeplink}
+          amount={selectedPackageInModal?.price || 0}
+          paymentId={momoData.paymentId}
+          onCancel={handleMomoCancel}
+          onSuccess={handleMomoSuccess}
+        />
+      )}
     </div>
   );
 }
+
+

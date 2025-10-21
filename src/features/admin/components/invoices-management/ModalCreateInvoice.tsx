@@ -31,8 +31,8 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
 
   const createInvoiceMutation = useCreateInvoice();
   const { data: membersResponse } = useMembers();
-  const { data: packages = [] } = usePackages();
-
+  const { data: packagesResponse = [] } = usePackages();
+  const packages = Array.isArray(packagesResponse?.data) ? packagesResponse.data : [];
   const members = membersResponse && 'success' in membersResponse && membersResponse.success 
     ? membersResponse.data || [] 
     : [];
@@ -89,6 +89,7 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
     if (!validateForm()) return;
 
     try {
+      console.log(formData);
       await createInvoiceMutation.mutateAsync(formData);
       onSuccess?.();
       onClose();

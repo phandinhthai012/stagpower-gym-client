@@ -41,12 +41,45 @@ export function MemberPackages() {
   const packages: any[] = Array.isArray(packagesResponse) ? packagesResponse : [];
   const subscriptions: any[] = subscriptionsResponse?.data || [];
 
-  // Get active subscription
-  const activeSubscription = useMemo(() => {
-    return subscriptions.find(sub => sub.status === 'Active');
+  // ===== LOGIC XỬ LÝ CÁC GÓI ACTIVE =====
+  // Theo nghiệp vụ mới: Member có thể có 2 loại gói đồng thời:
+  // 1. GÓI GYM (Membership/Combo): Cho phép vào phòng gym - CHỈ CÓ 1 GÓI
+  // 2. GÓI PT (PT hoặc Combo có PT): Buổi tập với PT - CÓ THỂ NHIỀU GÓI
+
+  // Lấy gói GYM đang active (Membership hoặc Combo)
+  // Member chỉ có thể có 1 gói gym active tại một thời điểm
+  const activeGymSubscription = useMemo(() => {
+    return subscriptions.find(sub => 
+      sub.status === 'Active' && 
+      (sub.type === 'Membership' || sub.type === 'Combo')
+    );
   }, [subscriptions]);
 
-  // Get subscription history
+  // Lấy TẤT CẢ gói PT đang active
+  // Member có thể có nhiều gói PT chạy đồng thời (sau khi thanh toán thành công)
+  // Bao gồm: gói PT thuần túy HOẶC gói Combo có buổi PT
+  const activePTSubscriptions = useMemo(() => {
+    return subscriptions.filter(sub => 
+      sub.status === 'Active' && 
+      (sub.type === 'PT' || (sub.type === 'Combo' && sub.ptsessionsRemaining > 0))
+    );
+  }, [subscriptions]);
+
+  // Tính tổng số buổi PT còn lại từ TẤT CẢ gói PT đang active
+  const totalPTSessionsRemaining = useMemo(() => {
+    return activePTSubscriptions.reduce((total, sub) => {
+      return total + (sub.ptsessionsRemaining || 0);
+    }, 0);
+  }, [activePTSubscriptions]);
+
+  // Tính tổng số buổi PT đã sử dụng từ TẤT CẢ gói PT đang active
+  const totalPTSessionsUsed = useMemo(() => {
+    return activePTSubscriptions.reduce((total, sub) => {
+      return total + (sub.ptsessionsUsed || 0);
+    }, 0);
+  }, [activePTSubscriptions]);
+
+  // Lịch sử tất cả gói tập (sắp xếp theo ngày bắt đầu)
   const subscriptionHistory = useMemo(() => {
     return subscriptions
       .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
@@ -157,47 +190,60 @@ export function MemberPackages() {
         </Button>
       </div>
 
-      {/* Current Package */}
-      {activeSubscription ? (
-        <Card>
+      {/* ===== CARD 1: GÓI GYM (MEMBERSHIP/COMBO) ===== */}
+      {/* Card này hiển thị gói cho phép vào phòng gym */}
+      {/* Member chỉ có thể có 1 gói gym active tại một thời điểm */}
+      {activeGymSubscription ? (
+        <Card className="border-blue-200">
           <CardContent className="p-6">
             {(() => {
-              const packageInfo = getPackageInfo(activeSubscription.packageId);
-              const daysLeft = getDaysUntilExpiry(activeSubscription.endDate);
+              const packageInfo = getPackageInfo(activeGymSubscription.packageId);
+              const daysLeft = getDaysUntilExpiry(activeGymSubscription.endDate);
               return (
                 <div className="space-y-6">
-                  {/* Header row */}
+                  {/* Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center">
                         <Crown className="w-8 h-8 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-xl font-semibold text-blue-900">{packageInfo?.name || 'Gói tập'}</h3>
-                        <p className="text-gray-600">{activeSubscription.membershipType === 'VIP' ? 'Tập tại tất cả chi nhánh' : 'Tập tại 1 chi nhánh'}{activeSubscription.ptsessionsRemaining ? ` + ${activeSubscription.ptsessionsRemaining} buổi PT` : ''}</p>
-                        <Badge className="mt-2 bg-green-100 text-green-700">Đang hoạt động</Badge>
+                        <h3 className="text-xl font-semibold text-blue-900">
+                          {packageInfo?.name || 'Gói tập Gym'}
+                        </h3>
+                        <p className="text-gray-600">
+                          Quyền vào phòng gym • {activeGymSubscription.membershipType === 'VIP' ? 'Tất cả chi nhánh' : '1 chi nhánh'}
+                        </p>
+                        <Badge className="mt-2 bg-green-100 text-green-700">
+                          Đang hoạt động
+                        </Badge>
                       </div>
                     </div>
                   </div>
 
-                  {/* Stats row */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Thông tin chi tiết */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
                       <div className="text-sm font-semibold text-blue-900 mb-1">Ngày bắt đầu</div>
-                      <div className="text-gray-700">{formatDate(activeSubscription.startDate)}</div>
+                      <div className="text-gray-700">{formatDate(activeGymSubscription.startDate)}</div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
                       <div className="text-sm font-semibold text-blue-900 mb-1">Ngày hết hạn</div>
-                      <div className="text-gray-700">{formatDate(activeSubscription.endDate)}</div>
-                    </div>
-                    <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
-                      <div className="text-sm font-semibold text-blue-900 mb-1">Buổi PT còn lại</div>
-                      <div className="text-gray-700">{activeSubscription.ptsessionsRemaining || 0} buổi</div>
+                      <div className="text-gray-700">{formatDate(activeGymSubscription.endDate)}</div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-xl border border-blue-100">
                       <div className="text-sm font-semibold text-blue-900 mb-1">Trạng thái</div>
                       <div className="text-gray-700">{daysLeft > 0 ? `Còn ${daysLeft} ngày` : 'Đã hết hạn'}</div>
                     </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Tiến độ sử dụng</span>
+                      <span className="text-gray-600">{getSubscriptionProgress(activeGymSubscription).toFixed(0)}%</span>
+                    </div>
+                    <Progress value={getSubscriptionProgress(activeGymSubscription)} className="h-2" />
                   </div>
 
                   {/* Actions */}
@@ -228,13 +274,122 @@ export function MemberPackages() {
                 <AlertTriangle className="h-6 w-6 text-yellow-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-yellow-800">Chưa có gói tập</h3>
-                <p className="text-yellow-600">Bạn cần đăng ký gói tập để sử dụng dịch vụ</p>
+                <h3 className="text-lg font-semibold text-yellow-800">Chưa có gói tập gym</h3>
+                <p className="text-yellow-600">Bạn cần đăng ký gói để có quyền vào phòng gym</p>
               </div>
               <Button className="ml-auto" onClick={() => handleOpenRegisModal()}>
                 <PackageIcon className="h-4 w-4 mr-2" />
                 Đăng ký ngay
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ===== CARD 2: GÓI PT (PERSONAL TRAINING) ===== */}
+      {/* Card này hiển thị TẤT CẢ gói PT đang active và tổng số buổi */}
+      {/* Member có thể có NHIỀU gói PT chạy đồng thời */}
+      {activePTSubscriptions.length > 0 && (
+        <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {/* Header với tổng số buổi PT */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center">
+                    <Users className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-purple-900">Buổi tập PT</h3>
+                    <p className="text-purple-600">
+                      {activePTSubscriptions.length} gói PT đang hoạt động
+                    </p>
+                    <Badge className="mt-2 bg-purple-100 text-purple-700">
+                      {totalPTSessionsRemaining} buổi còn lại
+                    </Badge>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-4xl font-bold text-purple-900">
+                    {totalPTSessionsRemaining}
+                  </div>
+                  <div className="text-sm text-purple-600">buổi khả dụng</div>
+                </div>
+              </div>
+
+              {/* Progress bar tổng hợp */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-purple-700">Đã sử dụng: {totalPTSessionsUsed} buổi</span>
+                  <span className="text-purple-700">
+                    Tổng: {totalPTSessionsUsed + totalPTSessionsRemaining} buổi
+                  </span>
+                </div>
+                <Progress 
+                  value={(totalPTSessionsUsed / (totalPTSessionsUsed + totalPTSessionsRemaining)) * 100} 
+                  className="h-3 bg-purple-200"
+                />
+              </div>
+
+              {/* Chi tiết từng gói PT */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-purple-900">Chi tiết các gói:</h4>
+                <div className="space-y-2">
+                  {activePTSubscriptions.map((sub) => {
+                    const packageInfo = getPackageInfo(sub.packageId);
+                    const daysLeft = getDaysUntilExpiry(sub.endDate);
+                    return (
+                      <div 
+                        key={sub._id} 
+                        className="flex items-center justify-between p-4 bg-white rounded-lg border border-purple-200 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <Users className="w-5 h-5 text-purple-600" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">
+                              {packageInfo?.name || 'Gói PT'}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {sub.type}
+                              </Badge>
+                              <span className="text-xs text-gray-500">
+                                Còn {daysLeft} ngày
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-purple-900">
+                            {sub.ptsessionsRemaining || 0}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            / {(sub.ptsessionsRemaining || 0) + (sub.ptsessionsUsed || 0)} buổi
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Actions cho PT */}
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Button variant="outline" className="border-purple-600 text-purple-700 hover:bg-purple-50">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Đặt lịch PT
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="border-purple-600 text-purple-700 hover:bg-purple-50"
+                  onClick={() => handleOpenRegisModal()}
+                >
+                  <PackageIcon className="h-4 w-4 mr-2" />
+                  Mua thêm buổi
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
