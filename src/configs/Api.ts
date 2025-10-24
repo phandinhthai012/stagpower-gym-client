@@ -36,6 +36,8 @@ export const API_ENDPOINTS = {
        GET_ALL_USERS_WITH_PAGINATION: `${API_PREFIX}/user/paginated`,
        GET_ALL_MEMBERS_WITH_PAGINATION: `${API_PREFIX}/user/members/paginated`,
        GET_ALL_STAFFS_WITH_PAGINATION: `${API_PREFIX}/user/staffs/paginated`,
+
+       GET_MEMBERS_WITH_ACTIVE_SUBSCRIPTIONS: `${API_PREFIX}/user/members/active-subscriptions`,
     },
     HEALTH_INFO: {
         GET_ALL_HEALTH_INFOS: `${API_PREFIX}/health-info`,
@@ -54,6 +56,8 @@ export const API_ENDPOINTS = {
         GET_CHECK_IN_BY_MEMBER_ID: (memberId: string) => `${API_PREFIX}/check-ins/member/${memberId}`,
         GET_CHECK_IN_BY_CHECK_IN_TIME: (checkInTime: string) => `${API_PREFIX}/check-ins/checkInTime/${checkInTime}`,
         CHECK_OUT_CHECK_IN: (checkInId: string) => `${API_PREFIX}/check-ins/${checkInId}/checkOut`,
+        GENERATE_QR_CODE_CHECK_IN: (memberId: string) => `${API_PREFIX}/check-ins/qrCode/${memberId}`,
+        PROCESS_QR_CODE_CHECK_IN: `${API_PREFIX}/check-ins/qrCode/checkIn`,
     },
     PACKAGE: {
         GET_ALL_PACKAGES: `${API_PREFIX}/packages`,

@@ -71,5 +71,10 @@ export const invoiceApi = {
       responseType: 'blob'
     });
     return response.data;
-  }
+  },
+
+  // createSubscriptionWithPayment: async (data: CreateSubscriptionWithPaymentData): Promise<Subscription> => {
+  //   const response = await apiClient.post(API_ENDPOINTS.INVOICE.CREATE_SUBSCRIPTION_WITH_PAYMENT, data);
+  //   return response.data.data;
+  // },
 };

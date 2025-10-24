@@ -5,15 +5,15 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Badge } from '../../../components/ui/badge';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  MapPin, 
-  CreditCard, 
-  Edit3, 
-  Save, 
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  CreditCard,
+  Edit3,
+  Save,
   X,
   Camera,
   Shield,
@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 export function MemberProfile() {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedUser, setEditedUser] = useState<{fullName: string, email: string} | null>(null);
+  const [editedUser, setEditedUser] = useState<{ fullName: string, email: string } | null>(null);
   const [isEditingHealth, setIsEditingHealth] = useState(false);
   const [editedHealth, setEditedHealth] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<'health' | 'personal'>('health');
@@ -41,7 +41,7 @@ export function MemberProfile() {
   const updateProfileMutation = useUpdateProfile();
   const createHealthInfoMutation = useCreateHealthInfo();
   const updateHealthInfoMutation = useUpdateHealthInfo();
-  
+
   const initEditedHealth = () => {
     if (!healthInfo) return null;
     return {
@@ -65,7 +65,7 @@ export function MemberProfile() {
 
   const handleInputChange = (field: string, value: string) => {
     if (!editedUser) return;
-    
+
     setEditedUser({
       ...editedUser,
       [field]: value
@@ -74,7 +74,7 @@ export function MemberProfile() {
 
   const handleSave = async () => {
     if (!editedUser) return;
-    
+
     try {
       await updateProfileMutation.mutateAsync({
         fullName: editedUser.fullName,
@@ -137,7 +137,7 @@ export function MemberProfile() {
 
   const handleHealthSave = async () => {
     if (!editedHealth || !userData) return;
-    
+
     try {
       if (healthInfo) {
         // Update existing health info
@@ -233,11 +233,10 @@ export function MemberProfile() {
               <p className="text-gray-600">
                 {userData?.memberInfo?.membership_level === 'vip' ? 'Hội viên VIP' : 'Hội viên Basic'} - Chi nhánh Gò Vấp
               </p>
-              <Badge className={`mt-1 ${
-                userData?.status === 'active' 
-                  ? 'bg-green-100 text-green-700 hover:bg-green-100' 
+              <Badge className={`mt-1 ${userData?.status === 'active'
+                  ? 'bg-green-100 text-green-700 hover:bg-green-100'
                   : 'bg-red-100 text-red-700 hover:bg-red-100'
-              }`}>
+                }`}>
                 <CheckCircle className="w-4 h-4 mr-1" />
                 {userData?.status === 'active' ? 'Đang hoạt động' : 'Không hoạt động'}
               </Badge>
@@ -275,21 +274,19 @@ export function MemberProfile() {
       <div className="bg-white rounded-lg shadow-sm mb-6 flex">
         <button
           onClick={() => setActiveTab('health')}
-          className={`flex-1 px-5 py-4 text-base font-medium transition-all duration-300 border-b-3 ${
-            activeTab === 'health'
+          className={`flex-1 px-5 py-4 text-base font-medium transition-all duration-300 border-b-3 ${activeTab === 'health'
               ? 'text-blue-900 border-b-blue-900 bg-blue-50'
               : 'text-gray-600 border-b-transparent hover:text-blue-900'
-          }`}
+            }`}
         >
           Thông tin sức khỏe
         </button>
         <button
           onClick={() => setActiveTab('personal')}
-          className={`flex-1 px-5 py-4 text-base font-medium transition-all duration-300 border-b-3 ${
-            activeTab === 'personal'
+          className={`flex-1 px-5 py-4 text-base font-medium transition-all duration-300 border-b-3 ${activeTab === 'personal'
               ? 'text-blue-900 border-b-blue-900 bg-blue-50'
               : 'text-gray-600 border-b-transparent hover:text-blue-900'
-          }`}
+            }`}
         >
           Thông tin cá nhân
         </button>
@@ -297,18 +294,18 @@ export function MemberProfile() {
 
       {/* Personal Information (tab) */}
       {activeTab === 'personal' && (
-      <div className="bg-white rounded-2xl p-8 shadow-sm mb-8 border-l-4 border-blue-900">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold text-blue-900">Thông Tin Cá Nhân</h3>
-          {!isEditing ? (
-            <Button onClick={handleEdit} size="sm" variant="outline">
-              <Edit3 />
-              <span>Chỉnh sửa</span>
-            </Button>
+        <div className="bg-white rounded-2xl p-8 shadow-sm mb-8 border-l-4 border-blue-900">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-blue-900">Thông Tin Cá Nhân</h3>
+            {!isEditing ? (
+              <Button onClick={handleEdit} size="sm" variant="outline">
+                <Edit3 />
+                <span>Chỉnh sửa</span>
+              </Button>
             ) : (
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleSave} 
+                <Button
+                  onClick={handleSave}
                   size="sm"
                   disabled={updateProfileMutation.isPending}
                 >
@@ -325,101 +322,104 @@ export function MemberProfile() {
                 </Button>
               </div>
             )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Họ và tên</Label>
-            {isEditing ? (
-              <Input
-                id="fullName"
-                value={editedUser?.fullName || ''}
-                onChange={(e) => handleInputChange('fullName', e.target.value)}
-              />
-            ) : (
-              <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-                <User className="h-4 w-4 text-gray-500" />
-                <span>{userData?.fullName || user?.fullName}</span>
-              </div>
-            )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            {isEditing ? (
-              <Input
-                id="email"
-                type="email"
-                value={editedUser?.email || ''}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-              />
-            ) : (
-              <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-                <Mail className="h-4 w-4 text-gray-500" />
-                <span>{userData?.email || user?.email}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Số điện thoại</Label>
-            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-              <Phone className="h-4 w-4 text-gray-500" />
-              <span>{userData?.phone || 'Chưa cập nhật'}</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="dateOfBirth">Ngày sinh</Label>
-            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              <span>{userData?.dateOfBirth ? formatDate(userData.dateOfBirth) : 'Chưa cập nhật'}</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="gender">Giới tính</Label>
-            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-              <User className="h-4 w-4 text-gray-500" />
-              <span>
-                {userData?.gender === 'male' ? 'Nam' : 
-                 userData?.gender === 'female' ? 'Nữ' : 
-                 userData?.gender === 'other' ? 'Khác' : 'Chưa cập nhật'}
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="cccd">CCCD/CMND</Label>
-            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-              <CreditCard className="h-4 w-4 text-gray-500" />
-              <span>{userData?.cccd || 'Chưa cập nhật'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="pt-4 border-t mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label>Ngày tham gia</Label>
+              <Label htmlFor="fullName">Họ và tên</Label>
+              {isEditing ? (
+                <Input
+                  id="fullName"
+                  value={editedUser?.fullName || ''}
+                  onChange={(e) => handleInputChange('fullName', e.target.value)}
+                />
+              ) : (
+                <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                  <User className="h-4 w-4 text-gray-500" />
+                  <span>{userData?.fullName || user?.fullName}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              {isEditing ? (
+                <Input
+                  id="email"
+                  type="email"
+                  value={editedUser?.email || ''}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                />
+              ) : (
+                <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <span>{userData?.email || user?.email}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Số điện thoại</Label>
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <span>{userData?.createdAt ? formatDate(userData.createdAt) : 'Chưa cập nhật'}</span>
+                <Phone className="h-4 w-4 text-gray-500" />
+                <span>{userData?.phone || 'Chưa cập nhật'}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>QR Code</Label>
+              <Label htmlFor="dateOfBirth">Ngày sinh</Label>
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
-                <Shield className="h-4 w-4 text-gray-500" />
-                <span className="font-mono text-sm">
-                  {userData?.memberInfo?.qr_code || 'Chưa có QR code'}
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span>{userData?.dateOfBirth ? formatDate(userData.dateOfBirth) : 'Chưa cập nhật'}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="gender">Giới tính</Label>
+              <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                <User className="h-4 w-4 text-gray-500" />
+                <span>
+                  {userData?.gender === 'male' ? 'Nam' :
+                    userData?.gender === 'female' ? 'Nữ' :
+                      userData?.gender === 'other' ? 'Khác' : 'Chưa cập nhật'}
                 </span>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cccd">CCCD/CMND</Label>
+              <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                <CreditCard className="h-4 w-4 text-gray-500" />
+                <span>{userData?.cccd || 'Chưa cập nhật'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label>Ngày tham gia</Label>
+                <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span>{userData?.createdAt ? formatDate(userData.createdAt) : 'Chưa cập nhật'}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>QR Code</Label>
+                <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+                  <Shield className="h-4 w-4 text-gray-500" />
+                  <span className="font-mono text-sm">
+                    {userData?.memberInfo?.qr_code ?
+                      `${userData.memberInfo.qr_code.substring(0, 20)}...${userData.memberInfo.qr_code.substring(userData.memberInfo.qr_code.length - 10)}` :
+                      'Chưa có QR code'
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
       )}
 
       {/* Health Information (tab) */}
@@ -434,8 +434,8 @@ export function MemberProfile() {
               </Button>
             ) : (
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleHealthSave} 
+                <Button
+                  onClick={handleHealthSave}
                   size="sm"
                   disabled={updateHealthInfoMutation.isPending || createHealthInfoMutation.isPending}
                 >

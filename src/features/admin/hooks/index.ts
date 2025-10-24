@@ -92,3 +92,14 @@ export {
   useDeleteSchedule,
   scheduleQueryKeys
 } from './useSchedules';
+
+// Check-in hooks
+export {
+  useAdminManageCheckInList,
+  useAdminCheckIn
+} from './useAdminCheckIn';
+
+// Member hooks
+export {
+  useMembersWithActiveSubscriptions
+} from './useMember';

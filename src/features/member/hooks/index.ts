@@ -33,7 +33,8 @@ export {
 // Check-in hooks
 export {
   useCheckIns,
-  useCheckInByMemberId
+  useCheckInByMemberId,
+  useCheckInMember
 } from './useCheckIns';
 
 // Schedule hooks

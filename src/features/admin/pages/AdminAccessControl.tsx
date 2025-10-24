@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
-import { 
-  QrCode, 
-  Search, 
-  User, 
-  CheckCircle, 
-  XCircle, 
+import {
+  QrCode,
+  Search,
+  User,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   Camera,
   Smartphone,
@@ -20,86 +20,66 @@ import {
   Eye,
   RefreshCw
 } from 'lucide-react';
-import { mockUsers } from '../../../mockdata/users';
-import { mockCheckIns } from '../../../mockdata/checkIns';
-import { mockSubscriptions } from '../../../mockdata/subscriptions';
-import { useCheckIns } from '../../member/hooks/useCheckIns';
+// import { mockUsers } from '../../../mockdata/users';
+// import { mockCheckIns } from '../../../mockdata/checkIns';
+// import { mockSubscriptions } from '../../../mockdata/subscriptions';
+import { useAdminManageCheckInList, useAdminCheckIn } from '../hooks/useAdminCheckIn';
+import { useBranches } from '../hooks/useBranches';
+import { useMembers } from '../../member/hooks/useMembers';
+import { CheckIn } from '../../member/api/checkin.api';
+import { formatDateTime } from '../../../lib/date-utils';
+import { useMembersWithActiveSubscriptions } from '../hooks/useMember';
+import { ModalManualCheckIn } from '../components/checkin-management';
+import { ModalQRCheckIn } from '../components/checkin-management';
 
 export function AdminAccessControl() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMember, setSelectedMember] = useState<any>(null);
-  const [checkInStatus, setCheckInStatus] = useState<'idle' | 'success' | 'error' | 'warning'>('idle');
-  const [validationMessage, setValidationMessage] = useState('');
+  const [isModalManualCheckInOpen, setIsModalManualCheckInOpen] = useState(false);
+  const [isModalQRCheckInOpen, setIsModalQRCheckInOpen] = useState(false);
+  const [displayedCheckInsCount, setDisplayedCheckInsCount] = useState(5);
 
-  const { data: response, isLoading, isError } = useCheckIns();
-  console.log(response);
-
+  // ===== USE HOOK - GET ALL CHECK-INS =====
+  const { data: response, isLoading, isError } = useAdminManageCheckInList();
+  const { data: branchesData } = useBranches();
+  const { data: membersData } = useMembers();
+  const { data: membersWithActiveSubscriptionsData } = useMembersWithActiveSubscriptions();
+  const checkInsData: CheckIn[] = response?.data || [];
+  const branches = branchesData;
+  const members = membersData?.success ? membersData?.data : [];
+  const membersWithActiveSubscriptions = membersWithActiveSubscriptionsData;
   // Get active check-ins
-  const activeCheckIns = mockCheckIns.filter(checkIn => checkIn.status === 'Active');
-  
-  // Get members with active subscriptions
-  const membersWithActiveSubs = mockUsers.filter(user => {
-    if (user.role !== 'Member') return false;
-    const activeSub = mockSubscriptions.find(sub => 
-      sub.member_id === user.id && sub.status === 'Active'
-    );
-    return !!activeSub;
-  });
+  // const activeCheckIns = mockCheckIns.filter(checkIn => checkIn.status === 'Active');
+  const activeCheckIns = checkInsData.filter(checkIn => checkIn.status === 'Active');
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    if (term.length >= 3) {
-      const foundMember = membersWithActiveSubs.find(member => 
-        member.fullName.toLowerCase().includes(term.toLowerCase()) ||
-        member.email.toLowerCase().includes(term.toLowerCase()) ||
-        member.phone.includes(term)
-      );
-      if (foundMember) {
-        setSelectedMember(foundMember);
-        setCheckInStatus('idle');
-        setValidationMessage('');
-      }
-    } else {
-      setSelectedMember(null);
-    }
+  // Get recent check-ins (last 10)
+  const recentCheckIns = checkInsData
+    .sort((a, b) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime())
+    .slice(0, displayedCheckInsCount);
+
+  const totalCheckInInWeek = checkInsData
+    .filter(checkIn => new Date(checkIn.checkInTime).getTime() >= new Date().setDate(new Date().getDate() - 7))
+    .length;
+
+  const handleLoadMore = () => {
+    setDisplayedCheckInsCount(prev => Math.min(prev + 5, checkInsData.length));
   };
-
-  const handleCheckIn = () => {
-    if (!selectedMember) return;
-
-    const activeSub = mockSubscriptions.find(sub => 
-      sub.member_id === selectedMember.id && sub.status === 'Active'
-    );
-
-    if (!activeSub) {
-      setCheckInStatus('error');
-      setValidationMessage('Hội viên không có gói tập đang hoạt động');
-      return;
-    }
-
-    const now = new Date();
-    const endDate = new Date(activeSub.end_date);
-    
-    if (now > endDate) {
-      setCheckInStatus('error');
-      setValidationMessage('Gói tập đã hết hạn');
-      return;
-    }
-
-    if (activeSub.is_suspended) {
-      setCheckInStatus('warning');
-      setValidationMessage('Gói tập đang bị tạm ngưng');
-      return;
-    }
-
-    setCheckInStatus('success');
-    setValidationMessage('Check-in thành công! Chào mừng hội viên đến phòng gym.');
+  const handleShowLess = () => {
+    setDisplayedCheckInsCount(5);
   };
 
   const handleManualCheckIn = () => {
-    setCheckInStatus('success');
-    setValidationMessage('Check-in thủ công thành công!');
+    setIsModalManualCheckInOpen(true);
   };
+  const handleCloseModalManualCheckIn = () => {
+    setIsModalManualCheckInOpen(false);
+  };
+
+  const handleQRCheckIn = () => {
+    setIsModalQRCheckInOpen(true);
+  };
+  const handleCloseModalQRCheckIn = () => {
+    setIsModalQRCheckInOpen(false);
+  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -108,16 +88,26 @@ export function AdminAccessControl() {
       case 'Suspended': return 'bg-yellow-100 text-yellow-800';
       case 'PendingPayment': return 'bg-orange-100 text-orange-800';
       case 'NotStarted': return 'bg-blue-100 text-blue-800';
+      case 'Completed': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getValidationMessageColor = () => {
-    switch (checkInStatus) {
-      case 'success': return 'bg-green-50 border-green-200 text-green-800';
-      case 'error': return 'bg-red-50 border-red-200 text-red-800';
-      case 'warning': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-      default: return 'bg-gray-50 border-gray-200 text-gray-800';
+  // Helper function to find member by ID
+  const findMemberById = (memberId: string) => {
+    return members?.find(m => m._id === memberId);
+  };
+
+  // Helper function to find branch by ID
+  const findBranchById = (branchId: string) => {
+    return branches?.find(b => b._id === branchId);
+  };
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'Active': return 'Đang tập';
+      case 'Completed': return 'Đã hoàn thành';
+      case 'Cancelled': return 'Đã hủy';
+      default: return status;
     }
   };
 
@@ -142,7 +132,7 @@ export function AdminAccessControl() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Hội viên hoạt động</p>
-                <p className="text-2xl font-bold text-blue-600">{membersWithActiveSubs.length}</p>
+                <p className="text-2xl font-bold text-blue-600">{members.length}</p>
               </div>
               <Users className="w-8 h-8 text-blue-600" />
             </div>
@@ -154,7 +144,7 @@ export function AdminAccessControl() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Check-in tuần này</p>
-                <p className="text-2xl font-bold text-purple-600">156</p>
+                <p className="text-2xl font-bold text-purple-600">{totalCheckInInWeek}</p>
               </div>
               <Clock className="w-8 h-8 text-purple-600" />
             </div>
@@ -165,8 +155,16 @@ export function AdminAccessControl() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Chi nhánh</p>
-                <p className="text-2xl font-bold text-orange-600">Gò Vấp</p>
+                {/* <p className="text-sm font-medium text-gray-600">Chi nhánh</p>
+                <p className="text-2xl font-bold text-orange-600">Gò Vấp</p> */}
+                <p className="text-sm font-medium text-gray-600">Check-in hôm nay</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {checkInsData.filter(ci => {
+                    const today = new Date();
+                    const checkInDate = new Date(ci.checkInTime);
+                    return checkInDate.toDateString() === today.toDateString();
+                  }).length}
+                </p>
               </div>
               <MapPin className="w-8 h-8 text-orange-600" />
             </div>
@@ -188,110 +186,18 @@ export function AdminAccessControl() {
             <div className="space-y-6">
               {/* Search Options */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Tìm kiếm hội viên</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Check-in hội viên</h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2">
+                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2" onClick={handleQRCheckIn}>
                     <Camera className="w-6 h-6" />
                     <span className="text-xs">Quét QR Code</span>
                   </Button>
-                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2">
+                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2" onClick={handleManualCheckIn}>
                     <Smartphone className="w-6 h-6" />
                     <span className="text-xs">Nhập thủ công</span>
                   </Button>
                 </div>
               </div>
-
-              {/* Search Input */}
-              <div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Tìm theo tên, email, số điện thoại..."
-                    value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              {/* Member Details */}
-              {selectedMember && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold text-lg">
-                        {selectedMember.fullName.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{selectedMember.fullName}</h3>
-                      <p className="text-sm text-gray-600">{selectedMember.email}</p>
-                      <p className="text-sm text-gray-600">{selectedMember.phone}</p>
-                    </div>
-                  </div>
-
-                  {/* Package Info */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">Thông tin gói tập</h4>
-                    {(() => {
-                      const activeSub = mockSubscriptions.find(sub => 
-                        sub.member_id === selectedMember.id && sub.status === 'Active'
-                      );
-                      return activeSub ? (
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span>Loại gói:</span>
-                            <span className="font-medium">{activeSub.type}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Trạng thái:</span>
-                            <Badge className={getStatusColor(activeSub.status)}>
-                              {activeSub.status === 'Active' ? 'Hoạt động' : 'Không hoạt động'}
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Hết hạn:</span>
-                            <span>{new Date(activeSub.end_date).toLocaleDateString('vi-VN')}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-red-600">Không có gói tập đang hoạt động</p>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Validation Actions */}
-                  <div className="flex gap-3 mt-4">
-                    <Button 
-                      onClick={handleCheckIn}
-                      className="flex-1"
-                      disabled={!selectedMember}
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Xác nhận Check-in
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={handleManualCheckIn}
-                    >
-                      <User className="w-4 h-4 mr-2" />
-                      Check-in thủ công
-                    </Button>
-                  </div>
-
-                  {/* Validation Message */}
-                  {validationMessage && (
-                    <div className={`mt-4 p-3 rounded-lg border ${getValidationMessageColor()}`}>
-                      <div className="flex items-center gap-2">
-                        {checkInStatus === 'success' && <CheckCircle className="w-4 h-4" />}
-                        {checkInStatus === 'error' && <XCircle className="w-4 h-4" />}
-                        {checkInStatus === 'warning' && <AlertTriangle className="w-4 h-4" />}
-                        <span className="text-sm font-medium">{validationMessage}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -308,9 +214,11 @@ export function AdminAccessControl() {
             <div className="space-y-4">
               {activeCheckIns.length > 0 ? (
                 activeCheckIns.map((checkIn) => {
-                  const member = mockUsers.find(user => user.id === checkIn.member_id);
+                  // const member = members.find(user => user._id === checkIn.memberId);
+                  const member = findMemberById(checkIn.memberId);
+                  const branch = findBranchById(checkIn.branchId);
                   return member ? (
-                    <div key={checkIn.id} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                    <div key={checkIn._id} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
                       <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
                           {member.fullName.charAt(0)}
@@ -319,8 +227,11 @@ export function AdminAccessControl() {
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{member.fullName}</h4>
                         <p className="text-sm text-gray-600">
-                          Check-in: {new Date(checkIn.check_in_time).toLocaleTimeString('vi-VN')}
+                          Check-in: {formatDateTime(checkIn.checkInTime)}
                         </p>
+                        {branch && (
+                          <p className="text-xs text-gray-500">{branch.name}</p>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm">
@@ -380,34 +291,81 @@ export function AdminAccessControl() {
           <CardTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-600" />
             Lịch sử check-in gần đây
+            <Badge variant="outline" className="ml-2">
+              {recentCheckIns.length}/{checkInsData.length}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockCheckIns.slice(0, 5).map((checkIn) => {
-              const member = mockUsers.find(user => user.id === checkIn.member_id);
-              return member ? (
-                <div key={checkIn.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {member.fullName.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{member.fullName}</h4>
-                    <p className="text-sm text-gray-600">
-                      {new Date(checkIn.check_in_time).toLocaleString('vi-VN')}
-                    </p>
-                  </div>
-                  <Badge className={checkIn.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                    {checkIn.status === 'Active' ? 'Đang tập' : 'Đã ra'}
-                  </Badge>
+            {recentCheckIns.length > 0 ? (
+              <>
+                {recentCheckIns.map((checkIn) => {
+                  const member = findMemberById(checkIn.memberId);
+                  const branch = findBranchById(checkIn.branchId);
+
+                  return member ? (
+                    <div key={checkIn._id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-white font-semibold text-sm">
+                          {member.fullName?.charAt(0) || 'U'}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{member.fullName}</h4>
+                        <p className="text-sm text-gray-600">
+                          {formatDateTime(checkIn.checkInTime)}
+                        </p>
+                        {branch && (
+                          <p className="text-xs text-gray-500">{branch.name}</p>
+                        )}
+                      </div>
+                      <Badge className={getStatusColor(checkIn.status)}>
+                        {getStatusText(checkIn.status)}
+                      </Badge>
+                    </div>
+                  ) : null;
+                })}
+                <div className="flex justify-center gap-2 pt-4">
+                  {displayedCheckInsCount < checkInsData.length && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLoadMore}
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Hiển thị thêm 5
+                    </Button>
+                  )}
+                  {displayedCheckInsCount > 5 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleShowLess}
+                    >
+                      Thu gọn
+                    </Button>
+                  )}
                 </div>
-              ) : null;
-            })}
+              </>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Clock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>Chưa có lịch sử check-in</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+      <ModalManualCheckIn
+        isOpen={isModalManualCheckInOpen}
+        onClose={handleCloseModalManualCheckIn}
+      />
+      <ModalQRCheckIn
+        isOpen={isModalQRCheckInOpen}
+        onClose={handleCloseModalQRCheckIn}
+      />
     </div>
   );
 }

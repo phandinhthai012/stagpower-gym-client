@@ -137,4 +137,9 @@ export const userApi = {
     });
     return response.data;
   },
+
+  getMembersWithActiveSubscriptions: async (): Promise<User[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.USER.GET_MEMBERS_WITH_ACTIVE_SUBSCRIPTIONS);
+    return response.data.data;
+  },
 };
