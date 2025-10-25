@@ -1,79 +1,98 @@
-// Import các thư viện cần thiết
 import React, { useRef, useEffect, useState } from 'react';
-import QrScanner from 'qr-scanner'; // Thư viện để quét QR code từ camera
+import QrScanner from 'qr-scanner';
 
-// Định nghĩa interface cho props của component QRScanner
 interface QRScannerProps {
-    onScan: (result: string) => void;    // Callback function được gọi khi quét thành công QR code
-    onError: (error: any) => void;       // Callback function được gọi khi có lỗi xảy ra
-    isActive: boolean;                   // Boolean để bật/tắt scanner
+  onScan: (result: string) => void;
+  onError: (error: any) => void;
+  isActive: boolean;
+  // Thêm props mới
+  preferredCamera?: 'environment' | 'user' | string; // 'environment' là camera sau
 }
 
-// Component chính để quét QR code bằng camera
-export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError, isActive }) => {
-    // useRef để lưu reference đến video element (hiển thị camera stream)
-    const videoRef = useRef<HTMLVideoElement>(null);
-    
-    // useRef để lưu reference đến instance của QrScanner (để quản lý lifecycle)
-    const qrScannerRef = useRef<QrScanner | null>(null);
+export const QRScanner: React.FC<QRScannerProps> = ({ 
+  onScan, 
+  onError, 
+  isActive,
+  preferredCamera = 'environment' 
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const qrScannerRef = useRef<QrScanner | null>(null);
+  const [availableCameras, setAvailableCameras] = useState<QrScanner.Camera[]>([]);
+  const [selectedCamera, setSelectedCamera] = useState<number>(0);
 
-    // useEffect để khởi tạo và quản lý QrScanner
-    useEffect(() => {
-        // Chỉ khởi tạo khi có video element và isActive = true
-        if (videoRef.current && isActive) {
-            // Tạo instance mới của QrScanner
-            qrScannerRef.current = new QrScanner(
-                videoRef.current,                    // Video element để hiển thị camera
-                (result) => onScan(result.data),    // Callback khi quét thành công QR code
-                {
-                    // Xử lý lỗi khi decode QR code
-                    onDecodeError: (error) => {
-                        // Kiểm tra kiểu dữ liệu để tránh lỗi TypeScript
-                        if (error instanceof Error && error.name !== 'NotFoundException') {
-                            // NotFoundException là lỗi bình thường khi không tìm thấy QR code
-                            // Chỉ báo lỗi cho các lỗi khác
-                            onError(error);
-                        } else if (typeof error === 'string') {
-                            // Nếu error là string, chuyển đổi thành Error object
-                            const errorObj = new Error(error);
-                            onError(errorObj);
-                        }
-                    },
-                    highlightScanRegion: true,       // Highlight vùng quét QR code
-                    highlightCodeOutline: true,      // Highlight đường viền QR code
-                }
-            );
-            // Bắt đầu quét QR code
-            qrScannerRef.current.start();
-        }
+  // Lấy danh sách camera có sẵn
+  useEffect(() => {
+    if (isActive) {
+      QrScanner.listCameras(true).then(cameras => {
+        setAvailableCameras(cameras);
+        console.log('Available cameras:', cameras);
+      });
+    }
+  }, [isActive]);
 
-        // Cleanup function - chạy khi component unmount hoặc dependencies thay đổi
-        return () => {
-            if (qrScannerRef.current) {
-                qrScannerRef.current.stop();     // Dừng camera stream
-                qrScannerRef.current.destroy();  // Giải phóng resources
+  useEffect(() => {
+    if (videoRef.current && isActive && availableCameras.length > 0) {
+      qrScannerRef.current = new QrScanner(
+        videoRef.current,
+        (result) => onScan(result.data),
+        {
+          onDecodeError: (error) => {
+            if (error instanceof Error && error.name !== 'NotFoundException') {
+              onError(error);
             }
-        };
-    }, [isActive, onScan, onError]); // Dependencies: re-run khi các giá trị này thay đổi
+          },
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          preferredCamera: availableCameras[selectedCamera]?.id, // Dùng camera đã chọn
+        }
+      );
+      qrScannerRef.current.start().catch(onError);
+    }
 
-    // Conditional rendering - không render gì nếu isActive = false
-    if (!isActive) return null;
+    return () => {
+      qrScannerRef.current?.stop();
+      qrScannerRef.current?.destroy();
+    };
+  }, [isActive, onScan, onError, selectedCamera, availableCameras]);
 
-    // JSX return - giao diện của component
-    return (
-        <div className="relative"> {/* Container với position relative để overlay elements */}
-            {/* Video element để hiển thị camera stream */}
-            <video
-                ref={videoRef}                                    // Gắn reference để QrScanner có thể control
-                className="w-full max-w-md mx-auto rounded-lg"  // Styling: responsive, rounded corners
-                style={{ maxHeight: '300px' }}                   // Giới hạn chiều cao tối đa
-            />
-            
-            {/* Overlay element - khung hướng dẫn để đưa QR code vào */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                {/* Khung hình vuông màu xanh để guide user */}
-                <div className="w-32 h-32 border-2 border-blue-500 rounded-lg bg-transparent"></div>
-            </div>
+  if (!isActive) return null;
+
+  return (
+    <div className="relative flex flex-col items-center space-y-4">
+      {/* Chọn camera nếu có nhiều camera */}
+      {availableCameras.length > 1 && (
+        <div className="w-full">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Chọn Camera:
+          </label>
+          <select
+            value={selectedCamera}
+            onChange={(e) => setSelectedCamera(Number(e.target.value))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {availableCameras.map((camera, index) => (
+              <option key={index} value={index}>
+                {camera.label || `Camera ${index + 1}`}
+              </option>
+            ))}
+          </select>
         </div>
-    );
+      )}
+
+      {/* Video hiển thị camera */}
+      <video
+        ref={videoRef}
+        className="w-full max-w-md mx-auto rounded-lg"
+        style={{ maxHeight: '300px' }}
+        playsInline
+        autoPlay
+        muted
+      />
+
+      {/* Khung hướng dẫn */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-12">
+        <div className="w-32 h-32 border-2 border-blue-500 rounded-lg"></div>
+      </div>
+    </div>
+  );
 };
