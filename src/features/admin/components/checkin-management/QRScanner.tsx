@@ -96,3 +96,6 @@ export const QRScanner: React.FC<QRScannerProps> = ({
     </div>
   );
 };
+
+
+
