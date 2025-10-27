@@ -140,8 +140,12 @@ export function TrainerLayout() {
               </div>
             </div>
             
-            {/* Center: Page Title (Hidden on mobile) */}
+            {/* Center: Branch + Page Title (Hidden on mobile) */}
             <div className="hidden md:block flex-1 text-center">
+              <div className="flex items-center justify-center gap-1 text-xs text-gray-500 mb-0.5">
+                <MapPin className="w-3 h-3" />
+                <span>Chi nhánh Gò Vấp</span>
+              </div>
               <h1 className="text-base lg:text-lg font-semibold text-gray-800 truncate px-2">
                 {getPageTitle()}
               </h1>
@@ -149,10 +153,9 @@ export function TrainerLayout() {
 
             {/* Right: Time + Notifications + Profile */}
             <div className="flex items-center justify-end gap-1.5 sm:gap-3 flex-shrink-0">
-              {/* Location & Time (Hidden on small screens) */}
+              {/* Time (Hidden on small screens) */}
               <span className="hidden xl:flex items-center gap-2 text-gray-600 text-xs whitespace-nowrap">
-                <MapPin className="w-3.5 h-3.5 text-gray-500" />
-                {`Gò Vấp • ${formatVNTime(now)} • ${formatVNDate(now)}`}
+                {`${formatVNTime(now)} • ${formatVNDate(now)}`}
               </span>
               
               {/* Notification */}
@@ -229,9 +232,13 @@ export function TrainerLayout() {
             </div>
           </div>
           
-          {/* Mobile: Page Title Below Header */}
-          <div className="md:hidden mt-2 pt-2 border-t border-gray-100">
-            <h1 className="text-sm font-semibold text-gray-800 text-center truncate">
+          {/* Mobile: Branch + Page Title Below Header */}
+          <div className="md:hidden mt-2 pt-2 border-t border-gray-100 text-center">
+            <div className="flex items-center justify-center gap-1 text-xs text-gray-500 mb-1">
+              <MapPin className="w-3 h-3" />
+              <span>Chi nhánh Gò Vấp</span>
+            </div>
+            <h1 className="text-base font-semibold text-gray-800 truncate">
               {getPageTitle()}
             </h1>
           </div>

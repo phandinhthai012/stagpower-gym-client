@@ -180,23 +180,23 @@ export function TrainerDashboardPage() {
       {/* Pending Booking Requests Alert */}
       {stats.pendingRequests > 0 && (
         <Card className="border-l-4 border-l-purple-500 bg-purple-50">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Bell className="w-5 h-5 text-purple-600" />
+          <CardContent className="py-3 sm:py-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1">
+                <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                  <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                 </div>
-                <div>
-                  <p className="font-semibold text-purple-900">
+                <div className="min-w-0">
+                  <p className="font-semibold text-purple-900 text-base sm:text-base">
                     Bạn có {stats.pendingRequests} yêu cầu đặt lịch đang chờ xử lý
                   </p>
-                  <p className="text-sm text-purple-700">
+                  <p className="text-base sm:text-sm text-purple-700 line-clamp-1">
                     Xem và xác nhận các yêu cầu mới từ hội viên
                   </p>
                 </div>
               </div>
-              <Link to="/trainer/booking-requests">
-                <Button className="bg-purple-600 hover:bg-purple-700">
+              <Link to="/trainer/booking-requests" className="w-full sm:w-auto">
+                <Button className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto text-sm">
                   Xem ngay
                 </Button>
               </Link>
@@ -208,14 +208,14 @@ export function TrainerDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Today's Schedule */}
         <Card className="lg:col-span-2 hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center text-lg text-blue-900">
-              <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                <CalendarIcon className="w-5 h-5 text-blue-600" />
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="flex items-center text-xl sm:text-lg text-blue-900">
+              <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg mr-2 sm:mr-3">
+                <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               </div>
               Lịch dạy hôm nay
             </CardTitle>
-            <p className="text-sm text-gray-600">
+            <p className="text-base sm:text-sm text-gray-600">
               Các buổi tập đã lên lịch cho hôm nay
             </p>
           </CardHeader>
@@ -224,32 +224,32 @@ export function TrainerDashboardPage() {
               {todaySchedule.length > 0 ? (
                 todaySchedule.map((session, index) => (
                   <React.Fragment key={session.id}>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-shadow">
-                      <div className="flex items-center space-x-3">
-                        <div className="relative">
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
-                            <span className="text-white font-semibold text-sm">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-shadow gap-3 sm:gap-0">
+                      <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                        <div className="relative flex-shrink-0">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-white font-semibold text-xs sm:text-sm">
                               {session.member.charAt(0)}
                             </span>
                           </div>
                           {session.status === 'confirmed' && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                            <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-white"></div>
                           )}
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900">{session.member}</h4>
-                          <p className="text-sm text-gray-600">{session.type} - {session.duration}</p>
-                          <p className="text-xs text-gray-500 flex items-center mt-1">
-                            <MapPin className="w-3 h-3 mr-1" />
-                            {session.branch}
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-gray-900 text-lg sm:text-base truncate">{session.member}</h4>
+                          <p className="text-base sm:text-sm text-gray-600">{session.type} - {session.duration}</p>
+                          <p className="text-sm sm:text-xs text-gray-500 flex items-center mt-0.5 sm:mt-1 truncate">
+                            <MapPin className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0" />
+                            <span className="truncate">{session.branch}</span>
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-900">{session.time}</p>
+                      <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0 w-full sm:w-auto">
+                        <p className="text-base sm:text-sm font-semibold text-gray-900 flex-1 sm:flex-none">{session.time}</p>
                         <Badge 
                           variant={session.status === 'confirmed' ? 'default' : 'secondary'}
-                          className={`mt-2 ${
+                          className={`sm:mt-2 text-sm sm:text-xs ${
                             session.status === 'confirmed' 
                               ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                               : session.status === 'pending'
@@ -261,30 +261,32 @@ export function TrainerDashboardPage() {
                         </Badge>
                       </div>
                     </div>
-                    {index < todaySchedule.length - 1 && <hr className="my-3" />}
+                    {index < todaySchedule.length - 1 && <hr className="my-2 sm:my-3" />}
                   </React.Fragment>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>Không có buổi tập nào hôm nay</p>
+                <div className="text-center py-6 sm:py-8 text-gray-500">
+                  <Calendar className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                  <p className="text-sm sm:text-base">Không có buổi tập nào hôm nay</p>
                 </div>
               )}
             </div>
-            <div className="flex justify-between items-center mt-6">
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex items-center gap-2">
-                  <ChevronLeft className="w-4 h-4" />
-                  Hôm qua
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 mt-4 sm:mt-6">
+              <div className="flex gap-2 flex-1 sm:flex-none">
+                <Button variant="outline" className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-none text-base sm:text-sm px-2 sm:px-4">
+                  <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Hôm qua</span>
+                  <span className="sm:hidden">Qua</span>
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2">
-                  Ngày mai
-                  <ChevronRight className="w-4 h-4" />
+                <Button variant="outline" className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-none text-base sm:text-sm px-2 sm:px-4">
+                  <span className="hidden sm:inline">Ngày mai</span>
+                  <span className="sm:hidden">Mai</span>
+                  <ChevronRight className="w-4 h-4 sm:w-4 sm:h-4" />
                 </Button>
               </div>
-              <Link to="/trainer/schedule">
-                <Button variant="secondary" className="flex items-center gap-2">
-                  <CalendarIcon className="w-4 h-4" />
+              <Link to="/trainer/schedule" className="w-full sm:w-auto">
+                <Button variant="secondary" className="flex items-center justify-center gap-2 w-full text-base sm:text-sm">
+                  <CalendarIcon className="w-4 h-4 sm:w-4 sm:h-4" />
                   Xem tất cả
                 </Button>
               </Link>
@@ -294,40 +296,40 @@ export function TrainerDashboardPage() {
 
         {/* Quick Actions */}
         <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center text-lg text-blue-900">
-              <div className="p-2 bg-green-100 rounded-lg mr-3">
-                <Activity className="w-5 h-5 text-green-600" />
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="flex items-center text-xl sm:text-lg text-blue-900">
+              <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg mr-2 sm:mr-3">
+                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
               </div>
               Thao tác nhanh
             </CardTitle>
-            <p className="text-sm text-gray-600">
+            <p className="text-base sm:text-sm text-gray-600">
               Các hành động thường dùng
             </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <Link to="/trainer/schedule">
-                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center text-center text-blue-800 hover:bg-blue-50">
-                  <CalendarIcon className="w-6 h-6 mb-2" />
+                <Button variant="outline" className="w-full h-20 sm:h-24 flex flex-col items-center justify-center text-center text-blue-800 hover:bg-blue-50 text-base sm:text-sm">
+                  <CalendarIcon className="w-6 h-6 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
                   <span>Xem lịch dạy</span>
                 </Button>
               </Link>
               <Link to="/trainer/schedule">
-                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center text-center text-green-800 hover:bg-green-50">
-                  <Plus className="w-6 h-6 mb-2" />
+                <Button variant="outline" className="w-full h-20 sm:h-24 flex flex-col items-center justify-center text-center text-green-800 hover:bg-green-50 text-base sm:text-sm">
+                  <Plus className="w-6 h-6 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
                   <span>Thêm lịch dạy</span>
                 </Button>
               </Link>
-              <Link to="/trainer/progress">
-                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center text-center text-purple-800 hover:bg-purple-50">
-                  <BarChart3 className="w-6 h-6 mb-2" />
+              <Link to="/trainer/member-management">
+                <Button variant="outline" className="w-full h-20 sm:h-24 flex flex-col items-center justify-center text-center text-purple-800 hover:bg-purple-50 text-base sm:text-sm">
+                  <BarChart3 className="w-6 h-6 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
                   <span>Ghi nhận tiến độ</span>
                 </Button>
               </Link>
               <Link to="/trainer/notifications">
-                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center text-center text-red-800 hover:bg-red-50">
-                  <Bell className="w-6 h-6 mb-2" />
+                <Button variant="outline" className="w-full h-20 sm:h-24 flex flex-col items-center justify-center text-center text-red-800 hover:bg-red-50 text-base sm:text-sm">
+                  <Bell className="w-6 h-6 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
                   <span>Xem thông báo</span>
                 </Button>
               </Link>
@@ -338,48 +340,49 @@ export function TrainerDashboardPage() {
 
       {/* Recent Members */}
       <Card className="hover:shadow-lg transition-shadow">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-lg text-blue-900">
-            <div className="p-2 bg-orange-100 rounded-lg mr-3">
-              <Users className="w-5 h-5 text-orange-600" />
-            </div>
-            Hội viên gần đây
-          </CardTitle>
-          <p className="text-sm text-gray-600">
-            Danh sách các hội viên bạn đã tương tác gần đây
-          </p>
+        <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="flex items-center text-xl sm:text-lg text-blue-900">
+              <div className="p-1.5 sm:p-2 bg-orange-100 rounded-lg mr-2 sm:mr-3">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+              </div>
+              Hội viên gần đây
+            </CardTitle>
+            <p className="text-base sm:text-sm text-gray-600">
+              Danh sách các hội viên bạn đã tương tác gần đây
+            </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {uniqueMembers.length > 0 ? (
               uniqueMembers.map((member) => (
-              <div key={member.id} className="flex items-center p-4 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-4">
+              <div key={member.id} className="flex items-center p-3 sm:p-4 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm mr-2 sm:mr-4 flex-shrink-0">
                   {member.avatar}
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">{member.name}</h4>
-                  <p className="text-sm text-gray-600">Buổi tập: {member.sessions}</p>
-                  <p className="text-xs text-gray-500">Lần cuối: {member.lastSession}</p>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-gray-900 text-base sm:text-base truncate">{member.name}</h4>
+                  <p className="text-base sm:text-sm text-gray-600">Buổi tập: {member.sessions}</p>
+                  <p className="text-sm sm:text-xs text-gray-500 truncate">Lần cuối: {member.lastSession}</p>
                 </div>
-                <div className="ml-auto">
+                <div className="ml-2 flex-shrink-0">
                   <Badge 
                     variant={member.status === 'active' ? 'default' : 'secondary'}
-                    className={`${
+                    className={`text-sm sm:text-xs ${
                       member.status === 'active' 
                         ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                         : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                     }`}
                   >
-                    {member.status === 'active' ? 'Hoạt động' : 'Chờ xác nhận'}
+                    <span className="hidden sm:inline">{member.status === 'active' ? 'Hoạt động' : 'Chờ xác nhận'}</span>
+                    <span className="sm:hidden">{member.status === 'active' ? 'HĐ' : 'Chờ'}</span>
                   </Badge>
                 </div>
               </div>
               ))
             ) : (
-              <div className="col-span-3 text-center py-8 text-gray-500">
-                <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>Chưa có hội viên nào</p>
+              <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-6 sm:py-8 text-gray-500">
+                <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
+                <p className="text-sm sm:text-base">Chưa có hội viên nào</p>
               </div>
             )}
           </div>
