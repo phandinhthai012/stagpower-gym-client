@@ -140,15 +140,12 @@ export function TrainerLayout() {
               </div>
             </div>
             
-            {/* Center: Branch + Page Title (Hidden on mobile) */}
-            <div className="hidden md:block flex-1 text-center">
-              <div className="flex items-center justify-center gap-1 text-xs text-gray-500 mb-0.5">
-                <MapPin className="w-3 h-3" />
-                <span>Chi nhánh Gò Vấp</span>
+            {/* Center: Branch */}
+            <div className="flex-1 text-center">
+              <div className="flex items-center justify-center gap-1.5 text-base sm:text-sm text-gray-700 sm:text-gray-600">
+                <MapPin className="w-4 h-4 sm:w-4 sm:h-4" />
+                <span className="font-semibold sm:font-medium">Gò Vấp</span>
               </div>
-              <h1 className="text-base lg:text-lg font-semibold text-gray-800 truncate px-2">
-                {getPageTitle()}
-              </h1>
             </div>
 
             {/* Right: Time + Notifications + Profile */}
@@ -230,17 +227,6 @@ export function TrainerLayout() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          </div>
-          
-          {/* Mobile: Branch + Page Title Below Header */}
-          <div className="md:hidden mt-2 pt-2 border-t border-gray-100 text-center">
-            <div className="flex items-center justify-center gap-1 text-xs text-gray-500 mb-1">
-              <MapPin className="w-3 h-3" />
-              <span>Chi nhánh Gò Vấp</span>
-            </div>
-            <h1 className="text-base font-semibold text-gray-800 truncate">
-              {getPageTitle()}
-            </h1>
           </div>
         </div>
       </header>

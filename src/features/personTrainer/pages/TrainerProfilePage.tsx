@@ -210,45 +210,47 @@ export function TrainerProfilePage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Thông Tin Cá Nhân</h1>
+      <h1 className="text-3xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">Thông Tin Cá Nhân</h1>
       
       {/* Profile Header */}
-      <Card className="mb-8">
-        <CardContent className="p-8">
-          <div className="flex items-center space-x-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center cursor-pointer hover:shadow-lg transition-shadow">
+      <Card className="mb-6 sm:mb-8">
+        <CardContent className="p-4 sm:p-6 md:p-8">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center cursor-pointer hover:shadow-lg transition-shadow flex-shrink-0">
               {profile.photo ? (
                 <img src={profile.photo} alt={profile.fullName} className="w-full h-full rounded-full object-cover" />
               ) : (
-                <span className="text-white font-bold text-2xl">
+                <span className="text-white font-bold text-xl sm:text-2xl">
                   {profile.fullName?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'PT'}
                 </span>
               )}
             </div>
-            <div className="flex-1">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            <div className="flex-1 text-center sm:text-left w-full">
+              <h2 className="text-3xl sm:text-3xl font-bold text-gray-900 mb-2">
                 {profile.fullName}
               </h2>
-              <p className="text-lg text-gray-600 mb-1">
+              <p className="text-lg sm:text-lg text-gray-600 mb-2">
                 Personal Trainer - {profile.trainerInfo?.specialty || 'Chuyên gia Fitness'}
               </p>
-              <Badge className={getStatusColor(profile.status)}>
-                {getStatusText(profile.status)}
-              </Badge>
-              <div className="flex space-x-8 mt-4">
+              <div className="flex justify-center sm:justify-start">
+                <Badge className={getStatusColor(profile.status)}>
+                  {getStatusText(profile.status)}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-8 mt-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{stats?.totalMembers || 0}</div>
-                  <div className="text-sm text-gray-500">Hội viên</div>
+                  <div className="text-2xl sm:text-2xl font-bold text-blue-600">{stats?.totalMembers || 0}</div>
+                  <div className="text-sm sm:text-sm text-gray-500">Hội viên</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">{stats?.averageRating || 0}</div>
-                  <div className="text-sm text-gray-500">Đánh giá</div>
+                  <div className="text-2xl sm:text-2xl font-bold text-yellow-600">{stats?.averageRating || 0}</div>
+                  <div className="text-sm sm:text-sm text-gray-500">Đánh giá</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl sm:text-2xl font-bold text-green-600">
                     {profile.trainerInfo?.experience_years || 0}
                   </div>
-                  <div className="text-sm text-gray-500">Năm kinh nghiệm</div>
+                  <div className="text-sm sm:text-sm text-gray-500">Năm KN</div>
                 </div>
               </div>
             </div>
@@ -256,16 +258,16 @@ export function TrainerProfilePage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Personal Information */}
           <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center text-lg">
-                  <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                    <User className="w-5 h-5 text-blue-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                <CardTitle className="flex items-center text-xl sm:text-lg">
+                  <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg mr-2 sm:mr-3">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
                   Thông tin cá nhân
                 </CardTitle>
@@ -273,7 +275,7 @@ export function TrainerProfilePage() {
                   variant="outline"
                   size="sm"
                   onClick={() => toggleEdit('personal')}
-                  className={editingSections.personal ? 'bg-red-50 text-red-600 border-red-200' : ''}
+                  className={`text-sm w-full sm:w-auto ${editingSections.personal ? 'bg-red-50 text-red-600 border-red-200' : ''}`}
                   disabled={editingSections.professional}
                 >
                   {editingSections.personal ? (
@@ -290,23 +292,23 @@ export function TrainerProfilePage() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Họ và tên:</label>
+                  <label className="text-base sm:text-sm font-medium text-gray-700">Họ và tên:</label>
                   {editingSections.personal ? (
                     <Input 
                       value={formData.fullName} 
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     />
                   ) : (
-                    <p className="text-gray-900 font-medium">{profile.fullName}</p>
+                    <p className="text-gray-900 font-medium text-lg sm:text-base">{profile.fullName}</p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Email:</label>
-                  <p className="text-gray-900 font-medium">{profile.email}</p>
-                  <p className="text-xs text-gray-500">Email không thể thay đổi</p>
+                  <label className="text-base sm:text-sm font-medium text-gray-700">Email:</label>
+                  <p className="text-gray-900 font-medium text-lg sm:text-base">{profile.email}</p>
+                  <p className="text-sm sm:text-xs text-gray-500">Email không thể thay đổi</p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Số điện thoại:</label>
@@ -365,11 +367,11 @@ export function TrainerProfilePage() {
                 </div>
               </div>
               {editingSections.personal && (
-                <div className="mt-4 flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => toggleEdit('personal')}>
+                <div className="mt-4 flex flex-col sm:flex-row justify-end gap-2">
+                  <Button variant="outline" onClick={() => toggleEdit('personal')} className="text-sm w-full sm:w-auto">
                     Hủy
                   </Button>
-                  <Button onClick={() => handleSave('personal')} disabled={updateMutation.isPending}>
+                  <Button onClick={() => handleSave('personal')} disabled={updateMutation.isPending} className="text-sm w-full sm:w-auto">
                     {updateMutation.isPending ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -389,11 +391,11 @@ export function TrainerProfilePage() {
 
           {/* Professional Information */}
           <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center text-lg">
-                  <div className="p-2 bg-green-100 rounded-lg mr-3">
-                    <Briefcase className="w-5 h-5 text-green-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                <CardTitle className="flex items-center text-xl sm:text-lg">
+                  <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg mr-2 sm:mr-3">
+                    <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   </div>
                   Thông tin nghề nghiệp
                 </CardTitle>
@@ -401,7 +403,7 @@ export function TrainerProfilePage() {
                   variant="outline"
                   size="sm"
                   onClick={() => toggleEdit('professional')}
-                  className={editingSections.professional ? 'bg-red-50 text-red-600 border-red-200' : ''}
+                  className={`text-sm w-full sm:w-auto ${editingSections.professional ? 'bg-red-50 text-red-600 border-red-200' : ''}`}
                   disabled={editingSections.personal}
                 >
                   {editingSections.professional ? (
@@ -463,11 +465,11 @@ export function TrainerProfilePage() {
                 </div>
               </div>
               {editingSections.professional && (
-                <div className="mt-4 flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => toggleEdit('professional')}>
+                <div className="mt-4 flex flex-col sm:flex-row justify-end gap-2">
+                  <Button variant="outline" onClick={() => toggleEdit('professional')} className="text-sm w-full sm:w-auto">
                     Hủy
                   </Button>
-                  <Button onClick={() => handleSave('professional')} disabled={updateMutation.isPending}>
+                  <Button onClick={() => handleSave('professional')} disabled={updateMutation.isPending} className="text-sm w-full sm:w-auto">
                     {updateMutation.isPending ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -487,11 +489,11 @@ export function TrainerProfilePage() {
 
           {/* Certifications */}
           <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center text-lg">
-                  <div className="p-2 bg-purple-100 rounded-lg mr-3">
-                    <Award className="w-5 h-5 text-purple-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                <CardTitle className="flex items-center text-xl sm:text-lg">
+                  <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg mr-2 sm:mr-3">
+                    <Award className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                   </div>
                   Chứng chỉ & Bằng cấp
                 </CardTitle>
@@ -499,24 +501,25 @@ export function TrainerProfilePage() {
                   variant="outline" 
                   size="sm"
                   onClick={() => setShowAddCertModal(true)}
+                  className="text-sm w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   Thêm
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               {profile.trainerInfo?.certificate && profile.trainerInfo.certificate.length > 0 ? (
                 <div className="space-y-3">
                   {profile.trainerInfo.certificate.map((cert, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 group">
-                      <div className="flex items-center flex-1">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mr-4">
-                          <Medal className="w-6 h-6 text-white" />
+                    <div key={idx} className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 group">
+                      <div className="flex items-center flex-1 min-w-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+                          <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{cert}</h4>
-                          <p className="text-sm text-gray-600">Chứng chỉ nghề nghiệp</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-900 text-base sm:text-base truncate">{cert}</h4>
+                          <p className="text-sm sm:text-sm text-gray-600">Chứng chỉ nghề nghiệp</p>
                         </div>
                       </div>
                       <Button
@@ -551,32 +554,32 @@ export function TrainerProfilePage() {
         </div>
 
         {/* Right Column */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Working Hours */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center text-lg">
-                <div className="p-2 bg-orange-100 rounded-lg mr-3">
-                  <Clock className="w-5 h-5 text-orange-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center text-xl sm:text-lg">
+                <div className="p-1.5 sm:p-2 bg-orange-100 rounded-lg mr-2 sm:mr-3">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
                 </div>
                 Lịch làm việc
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               {profile.trainerInfo?.working_hour && profile.trainerInfo.working_hour.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {profile.trainerInfo.working_hour.map((slot, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                      <Badge className="bg-orange-100 text-orange-800">
+                    <div key={index} className="p-2.5 sm:p-3 bg-gray-50 rounded-lg">
+                      <Badge className="bg-orange-100 text-orange-800 text-sm sm:text-sm">
                         {slot}
                       </Badge>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Chưa thiết lập lịch làm việc</p>
+                <div className="text-center py-6 sm:py-8 text-gray-500">
+                  <Clock className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-base sm:text-base">Chưa thiết lập lịch làm việc</p>
                 </div>
               )}
             </CardContent>
@@ -584,31 +587,31 @@ export function TrainerProfilePage() {
 
           {/* Achievements */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center text-lg">
-                <div className="p-2 bg-yellow-100 rounded-lg mr-3">
-                  <Trophy className="w-5 h-5 text-yellow-600" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center text-xl sm:text-lg">
+                <div className="p-1.5 sm:p-2 bg-yellow-100 rounded-lg mr-2 sm:mr-3">
+                  <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
                 </div>
                 Thành tích
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               {stats?.achievements && stats.achievements.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   {stats.achievements.map((achievement) => (
-                    <div key={achievement.id} className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200">
-                      <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <div key={achievement.id} className="text-center p-3 sm:p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
                         {getIcon(achievement.icon)}
                       </div>
-                      <h4 className="font-semibold text-gray-900 text-sm">{achievement.title}</h4>
-                      <p className="text-xs text-gray-600">{achievement.description}</p>
+                      <h4 className="font-semibold text-gray-900 text-sm sm:text-sm">{achievement.title}</h4>
+                      <p className="text-xs sm:text-xs text-gray-600">{achievement.description}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Chưa có thành tích nào</p>
+                <div className="text-center py-6 sm:py-8 text-gray-500">
+                  <Trophy className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-base sm:text-base">Chưa có thành tích nào</p>
                 </div>
               )}
             </CardContent>
