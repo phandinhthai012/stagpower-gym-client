@@ -14,7 +14,8 @@ import {
   Loader2,
   Calendar,
   Mail,
-  Phone as PhoneIcon
+  Phone as PhoneIcon,
+  Award
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTrainerMembers } from '../hooks/useTrainerMembers';
@@ -29,6 +30,7 @@ export function TrainerMemberManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [packageFilter, setPackageFilter] = useState('');
+  const [goalFilter, setGoalFilter] = useState('');
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
@@ -46,16 +48,33 @@ export function TrainerMemberManagementPage() {
     const matchesPackage = !packageFilter || 
       member.activeSubscriptions?.some(sub => sub.type.toLowerCase() === packageFilter);
     
-    return matchesSearch && matchesStatus && matchesPackage;
+    // Filter by goal
+    const matchesGoal = !goalFilter || member.healthInfo?.goal === goalFilter;
+    
+    return matchesSearch && matchesStatus && matchesPackage && matchesGoal;
   });
 
   // Add computed fields for sorting
-  const membersWithComputedFields = filteredMembers.map(member => ({
-    ...member,
-    // Computed field for package sorting
-    primaryPackageType: member.activeSubscriptions?.[0]?.type || 'zzz', // 'zzz' để đẩy "no package" xuống cuối
-    // Computed field for goal sorting (optional, already have healthInfo.goal)
-  }));
+  const membersWithComputedFields = filteredMembers.map(member => {
+    // Calculate achievements
+    const achievements = [];
+    if (member.completedSessions >= 5) achievements.push('Hoàn thành 5 buổi');
+    if (member.completedSessions >= 10) achievements.push('Hoàn thành 10 buổi');
+    if (member.progress >= 50) achievements.push('Đạt 50% mục tiêu');
+    if (member.progress >= 80) achievements.push('Đạt 80% mục tiêu');
+    if (member.healthInfo?.goal === 'WeightLoss' && member.completedSessions >= 8) {
+      achievements.push('Giảm cân thành công');
+    }
+    if (member.healthInfo?.goal === 'MuscleGain' && member.completedSessions >= 12) {
+      achievements.push('Tăng cơ thành công');
+    }
+
+    return {
+      ...member,
+      primaryPackageType: member.activeSubscriptions?.[0]?.type || 'zzz',
+      achievements,
+    };
+  });
 
   // Apply sorting
   const { sortedData, requestSort, getSortDirection } = useSortableTable({
@@ -182,6 +201,16 @@ export function TrainerMemberManagementPage() {
               <option value="combo">Combo</option>
               <option value="membership">Membership</option>
             </select>
+            <select
+              value={goalFilter}
+              onChange={(e) => setGoalFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Tất cả mục tiêu</option>
+              <option value="WeightLoss">Giảm cân</option>
+              <option value="MuscleGain">Tăng cơ</option>
+              <option value="Health">Sức khỏe</option>
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -283,6 +312,14 @@ export function TrainerMemberManagementPage() {
                     currentSortKey={getSortDirection('healthInfo.goal') ? 'healthInfo.goal' : ''}
                     sortDirection={getSortDirection('healthInfo.goal')}
                     onSort={requestSort}
+                  />
+                  <SortableTableHeader
+                    label="Thành tích"
+                    sortKey="achievements.length"
+                    currentSortKey={getSortDirection('achievements.length') ? 'achievements.length' : ''}
+                    sortDirection={getSortDirection('achievements.length')}
+                    onSort={requestSort}
+                    align="center"
                   />
                   <SortableTableHeader
                     label="Lần cuối"
@@ -390,11 +427,17 @@ export function TrainerMemberManagementPage() {
                         </div>
                       </td>
                       <td className="p-2 text-gray-800 text-xs">{getGoalText(member.healthInfo?.goal)}</td>
+                      <td className="p-2 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Award className="w-3.5 h-3.5 text-purple-600" />
+                          <span className="font-semibold text-purple-700 text-sm">{member.achievements?.length || 0}</span>
+                        </div>
+                      </td>
                       <td className="p-2 text-xs text-gray-600">
                         {member.lastSessionDate
                           ? format(new Date(member.lastSessionDate), 'dd/MM/yyyy', { locale: vi })
                           : 'Chưa có'}
-                    </td>
+                      </td>
                       <td className="p-2">
                         <div className="flex gap-1">
                           <Button
@@ -428,7 +471,7 @@ export function TrainerMemberManagementPage() {
                     <div className="relative">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                           {member.fullName.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                        </div>
+                      </div>
                         {hasVIPPackage && (
                           <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
                             <Crown className="w-2.5 h-2.5 text-white" />
@@ -512,6 +555,14 @@ export function TrainerMemberManagementPage() {
                     </div>
                     
                     <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+                      <span className="text-gray-600">Thành tích</span>
+                      <span className="flex items-center gap-1 text-purple-700 font-semibold">
+                        <Award className="w-3 h-3" />
+                        {member.achievements?.length || 0}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
                       <span className="text-gray-600">Lần tập cuối</span>
                       <span className="text-gray-600">
                         {member.lastSessionDate
@@ -534,7 +585,7 @@ export function TrainerMemberManagementPage() {
                   ? 'Không tìm thấy hội viên phù hợp'
                   : 'Chưa có hội viên nào'}
               </p>
-              {(searchTerm || statusFilter || packageFilter) && (
+              {(searchTerm || statusFilter || packageFilter || goalFilter) && (
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -542,6 +593,7 @@ export function TrainerMemberManagementPage() {
                     setSearchTerm('');
                     setStatusFilter('');
                     setPackageFilter('');
+                    setGoalFilter('');
                   }}
                   className="mt-2"
                 >

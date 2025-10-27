@@ -21,7 +21,6 @@ import { TrainerLayout } from './features/personTrainer/components/TrainerLayout
 import { TrainerDashboardPage } from './features/personTrainer/pages/TrainerDashboardPage';
 import { TrainerMemberManagementPage } from './features/personTrainer/pages/TrainerMemberManagementPage';
 import { TrainerSchedulePage } from './features/personTrainer/pages/TrainerSchedulePage';
-import { TrainerProgressPage } from './features/personTrainer/pages/TrainerProgressPage';
 import { TrainerProfilePage } from './features/personTrainer/pages/TrainerProfilePage';
 import { TrainerNotificationsPage } from './features/personTrainer/pages/TrainerNotificationsPage';
 import { TrainerSessionDetailPage } from './features/personTrainer/pages/TrainerSessionDetailPage';
@@ -88,7 +87,6 @@ function App() {
               <Route index element={<TrainerSchedulePage />} />
               <Route path="session/:sessionId" element={<TrainerSessionDetailPage />} />
             </Route>
-            <Route path="progress" element={<TrainerProgressPage />} />
             <Route path="profile" element={<TrainerProfilePage />} />
             <Route path="notifications" element={<TrainerNotificationsPage />} />
 

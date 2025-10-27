@@ -30,8 +30,7 @@ export function TrainerSidebar({ sidebarOpen, setSidebarOpen }: TrainerSidebarPr
   const menuItems: MenuItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/trainer/dashboard' },
     { id: 'schedule', label: 'Lịch dạy', icon: Calendar, path: '/trainer/schedule' },
-    { id: 'members', label: 'Hội viên', icon: Users, path: '/trainer/member-management' },
-    { id: 'progress', label: 'Theo dõi tiến độ', icon: TrendingUp, path: '/trainer/progress' },
+    { id: 'members', label: 'Quản lý hội viên', icon: Users, path: '/trainer/member-management' },
     { id: 'profile', label: 'Thông tin cá nhân', icon: Settings, path: '/trainer/profile' },
     { id: 'notifications', label: 'Thông báo', icon: Bell, path: '/trainer/notifications' },
   ];

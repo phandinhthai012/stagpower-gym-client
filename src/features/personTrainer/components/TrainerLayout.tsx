@@ -26,9 +26,8 @@ export function TrainerLayout() {
   const getPageTitle = () => {
     const path = location.pathname;
     if (path.includes('/dashboard')) return 'Dashboard';
-    if (path.includes('/member-management')) return 'Hội viên';
+    if (path.includes('/member-management')) return 'Quản lý hội viên';
     if (path.includes('/schedule')) return 'Lịch dạy';
-    if (path.includes('/progress')) return 'Theo dõi tiến độ';
     if (path.includes('/profile')) return 'Thông tin cá nhân';
     if (path.includes('/notifications')) return 'Thông báo';
     if (path.includes('/session')) return 'Chi tiết buổi tập';

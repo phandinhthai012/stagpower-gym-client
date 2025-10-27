@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -17,6 +17,8 @@ import {
   Loader2,
   AlertCircle,
   Package,
+  Award,
+  BarChart3,
 } from 'lucide-react';
 import { useMemberDetail } from '../hooks/useTrainerMembers';
 import { format } from 'date-fns';
@@ -30,7 +32,31 @@ interface MemberDetailModalProps {
 
 export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: MemberDetailModalProps) {
   const { data, isLoading, error } = useMemberDetail(memberId);
-  const [activeTab, setActiveTab] = useState<'info' | 'schedules' | 'health'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'schedules' | 'health' | 'achievements'>('info');
+
+  // Calculate achievements
+  const achievements = useMemo(() => {
+    if (!data) return [];
+    const results = [];
+    const completedSessions = data.schedules?.filter((s: any) => s.status === 'Completed').length || 0;
+    const totalSessions = data.schedules?.length || 0;
+    const progress = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
+
+    if (completedSessions >= 5) results.push({ text: 'Hoàn thành 5 buổi tập', icon: '🎯' });
+    if (completedSessions >= 10) results.push({ text: 'Hoàn thành 10 buổi tập', icon: '🏆' });
+    if (completedSessions >= 20) results.push({ text: 'Hoàn thành 20 buổi tập', icon: '⭐' });
+    if (progress >= 50) results.push({ text: 'Đạt 50% mục tiêu', icon: '📊' });
+    if (progress >= 80) results.push({ text: 'Đạt 80% mục tiêu', icon: '🎖️' });
+    if (data.healthInfo?.goal === 'WeightLoss' && completedSessions >= 8) {
+      results.push({ text: 'Giảm cân thành công', icon: '💪' });
+    }
+    if (data.healthInfo?.goal === 'MuscleGain' && completedSessions >= 12) {
+      results.push({ text: 'Tăng cơ thành công', icon: '💪' });
+    }
+    if (progress >= 100) results.push({ text: 'Hoàn thành mục tiêu', icon: '🎉' });
+    
+    return results;
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -165,6 +191,16 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
               }`}
             >
               Sức khỏe
+            </button>
+            <button
+              onClick={() => setActiveTab('achievements')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'achievements'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Thành tích ({achievements.length})
             </button>
           </div>
         </div>
@@ -341,6 +377,65 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
                 <div className="text-center py-12 text-gray-500">
                   <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Chưa có thông tin sức khỏe</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Achievements Tab */}
+          {activeTab === 'achievements' && (
+            <div className="space-y-6">
+              {achievements.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {achievements.map((achievement, idx) => (
+                      <div key={idx} className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+                        <div className="flex items-center gap-3">
+                          <div className="text-3xl">{achievement.icon}</div>
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{achievement.text}</p>
+                            <p className="text-xs text-gray-600 mt-1">Đạt được trong quá trình tập luyện</p>
+                          </div>
+                          <Award className="w-6 h-6 text-purple-600" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Progress Summary */}
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                      Tổng quan tiến độ
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {data.schedules?.filter((s: any) => s.status === 'Completed').length || 0}
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">Buổi hoàn thành</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-orange-600">
+                          {data.schedules?.filter((s: any) => 
+                            (s.status === 'Confirmed' || s.status === 'Pending') && 
+                            new Date(s.dateTime) > new Date()
+                          ).length || 0}
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">Buổi sắp tới</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">{achievements.length}</div>
+                        <div className="text-xs text-gray-600 mt-1">Thành tích</div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <Award className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Chưa đạt thành tích nào</p>
+                  <p className="text-sm mt-2">Tiếp tục tập luyện để unlock thành tích!</p>
                 </div>
               )}
             </div>
