@@ -29,6 +29,7 @@ import { mockSubscriptions } from '../../../mockdata/subscriptions';
 import { mockCheckIns } from '../../../mockdata/checkIns';
 import { useMembers } from '../../member/hooks/useMembers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSubscriptions, useCheckIns } from '../hooks';
 
 
 interface AdminMemberManagementProps {
@@ -53,9 +54,23 @@ export function AdminMemberManagement({
   // const members = mockUsers.filter(user => user.role === 'Member');
   const {data: response, isLoading, isError} = useMembers();
   const members = response && 'success' in response && response.success ? response.data || [] : [];
+  
+  // Fetch subscriptions and check-ins
+  const {data: subscriptionsResponse, isLoading: isLoadingSubscriptions} = useSubscriptions();
+  const subscriptions = subscriptionsResponse && 'success' in subscriptionsResponse && subscriptionsResponse.success 
+    ? subscriptionsResponse.data || [] 
+    : mockSubscriptions; // Fallback to mock data if API fails
+  
+  const {data: checkInsResponse, isLoading: isLoadingCheckIns} = useCheckIns();
+  const checkIns = checkInsResponse && 'success' in checkInsResponse && checkInsResponse.success 
+    ? checkInsResponse.data || [] 
+    : mockCheckIns; // Fallback to mock data if API fails
+  
   console.log('members', members);
+  console.log('subscriptions', subscriptions);
+  console.log('checkIns', checkIns);
 
-  if (isLoading) {
+  if (isLoading || isLoadingSubscriptions || isLoadingCheckIns) {
     return <div className="flex justify-center items-center h-64">Đang tải...</div>;
   }
 
@@ -68,20 +83,27 @@ export function AdminMemberManagement({
     const matchesSearch = member.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.phone.includes(searchTerm);
-    const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || member.status.toLowerCase() === statusFilter.toLowerCase();
     
+    // Support both snake_case (mock) and camelCase (API)
+    const membershipLevel = member.memberInfo?.membership_level || member.member_info?.membership_level || 'basic';
     const matchesMembership = membershipFilter === 'all' || 
-                             (membershipFilter === 'basic' && member.member_info?.membership_level === 'Basic') ||
-                             (membershipFilter === 'vip' && member.member_info?.membership_level === 'VIP');
+                             (membershipFilter === 'basic' && membershipLevel.toLowerCase() === 'basic') ||
+                             (membershipFilter === 'vip' && membershipLevel.toLowerCase() === 'vip');
 
     return matchesSearch && matchesStatus && matchesMembership;
   });
 
   // Calculate statistics
   const totalMembers = members.length;
-  const activeMembers = members.filter((member: any) => member.status === 'Active').length;
-  const vipMembers = members.filter((member: any) => member.member_info?.membership_level === 'VIP').length;
-  const hssvMembers = members.filter((member: any) => member.member_info?.is_hssv).length;
+  const activeMembers = members.filter((member: any) => member.status.toLowerCase() === 'active').length;
+  const vipMembers = members.filter((member: any) => {
+    const level = member.memberInfo?.membership_level || member.member_info?.membership_level || '';
+    return level.toLowerCase() === 'vip';
+  }).length;
+  const hssvMembers = members.filter((member: any) => 
+    member.memberInfo?.is_hssv || member.member_info?.is_hssv
+  ).length;
 
 
   const handleSelectMember = (memberId: string) => {
@@ -113,32 +135,34 @@ export function AdminMemberManagement({
   };
 
   const getMemberStatus = (member: any) => {
-    const activeSub = mockSubscriptions.find(sub => 
-      sub.member_id === member._id && sub.status === 'Active'
+    const activeSub = subscriptions.find((sub: any) => 
+      sub.memberId === member._id && sub.status === 'Active'
     );
     
-    if (!activeSub) return { status: 'No Subscription', color: 'bg-red-100 text-red-800' };
+    if (!activeSub) return { status: 'Không có gói', color: 'bg-red-100 text-red-800' };
     
     const now = new Date();
-    const endDate = new Date(activeSub.end_date);
+    const endDate = new Date(activeSub.endDate);
     
     if (now > endDate) {
-      return { status: 'Expired', color: 'bg-red-100 text-red-800' };
+      return { status: 'Hết hạn', color: 'bg-red-100 text-red-800' };
     }
     
-    if (activeSub.is_suspended) {
-      return { status: 'Suspended', color: 'bg-yellow-100 text-yellow-800' };
+    if (activeSub.isSuspended) {
+      return { status: 'Tạm ngưng', color: 'bg-yellow-100 text-yellow-800' };
     }
     
-    return { status: 'Active', color: 'bg-green-100 text-green-800' };
+    return { status: 'Đang hoạt động', color: 'bg-green-100 text-green-800' };
   };
 
   const getLastCheckIn = (memberId: string) => {
-    const lastCheckIn = mockCheckIns
-      .filter(checkIn => checkIn.member_id === memberId)
-      .sort((a, b) => new Date(b.check_in_time).getTime() - new Date(a.check_in_time).getTime())[0];
+    const memberCheckIns = checkIns
+      .filter((checkIn: any) => checkIn.memberId === memberId)
+      .sort((a: any, b: any) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime());
     
-    return lastCheckIn ? new Date(lastCheckIn.check_in_time).toLocaleDateString('vi-VN') : 'Chưa có';
+    const lastCheckIn = memberCheckIns[0];
+    
+    return lastCheckIn ? new Date(lastCheckIn.checkInTime).toLocaleDateString('vi-VN') : 'Chưa có';
   };
 
   const formatPrice = (price: number) => {
@@ -261,12 +285,12 @@ export function AdminMemberManagement({
               <tbody>
                 {filteredMembers.map((member: any) => {
                   const memberStatus = getMemberStatus(member);
-                  const activeSub = mockSubscriptions.find(sub => 
-                    sub.member_id === member.id && sub.status === 'Active'
+                  const activeSub = subscriptions.find((sub: any) => 
+                    sub.memberId === member._id && sub.status === 'Active'
                   );
                   
                   return (
-                    <tr key={member.id} className="border-b hover:bg-gray-50">
+                    <tr key={member._id} className="border-b hover:bg-gray-50">
                       <td className="p-3">
                         <input
                           type="checkbox"
@@ -285,7 +309,7 @@ export function AdminMemberManagement({
                           <div>
                             <p className="font-medium text-gray-900">{member.fullName}</p>
                             <p className="text-sm text-gray-500">ID: {member.uid}</p>
-                            {member.member_info?.is_hssv && (
+                            {(member.memberInfo?.is_hssv || member.member_info?.is_hssv) && (
                               <Badge className="bg-blue-100 text-blue-800 text-xs">HSSV</Badge>
                             )}
                           </div>
@@ -307,13 +331,13 @@ export function AdminMemberManagement({
                         {activeSub ? (
                           <div className="space-y-1">
                             <Badge className="bg-blue-100 text-blue-800">
-                              {activeSub.type}
+                              {activeSub.type || 'Membership'}
                             </Badge>
                             <p className="text-sm text-gray-600">
-                              {member.member_info?.membership_level}
+                              {activeSub.membershipType || member.memberInfo?.membership_level || 'Basic'}
                             </p>
                             <p className="text-xs text-gray-500">
-                              Hết hạn: {new Date(activeSub.end_date).toLocaleDateString('vi-VN')}
+                              Hết hạn: {new Date(activeSub.endDate).toLocaleDateString('vi-VN')}
                             </p>
                           </div>
                         ) : (
@@ -327,7 +351,7 @@ export function AdminMemberManagement({
                       </td>
                       <td className="p-3">
                         <div className="text-sm text-gray-600">
-                          {getLastCheckIn(member.id)}
+                          {getLastCheckIn(member._id)}
                         </div>
                       </td>
                       <td className="p-3">
@@ -359,7 +383,7 @@ export function AdminMemberManagement({
                             variant="outline" 
                             size="sm" 
                             className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeleteMember(member.id)}
+                            onClick={() => handleDeleteMember(member._id)}
                             title="Xóa thành viên"
                           >
                             <Trash2 className="w-4 h-4" />
