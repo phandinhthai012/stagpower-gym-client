@@ -9,16 +9,14 @@ import {
   Mail, 
   Phone, 
   Calendar, 
-  CreditCard,
   Clock,
-  QrCode,
   Edit,
-  Download,
-  Eye,
-  Activity
+  Activity,
+  Package
 } from 'lucide-react';
 import { User as UserType } from '../../../../mockdata/users';
 import { useHealthInfoByMemberId } from '../../../member/hooks/useHealthInfo';
+import { useSubscriptionByMemberId } from '../../hooks/useSubscriptions';
 import { HealthInfoSection } from './HealthInfoSection';
 import { UniversalUser, normalizeUser } from '../../types/user.types';
 
@@ -54,6 +52,13 @@ export function ModalDetailMember({
   // Extract health info from response
   // Response will be { success: true, data: {...} } or null (if 404)
   const healthInfo = healthInfoResponse?.data ?? null;
+
+  // Fetch subscription for this member
+  const { data: subscriptionResponse, isLoading: isLoadingSubscription } = useSubscriptionByMemberId(memberId);
+  const subscriptions = subscriptionResponse?.data ?? [];
+  
+  // Get active subscription
+  const activeSubscription = subscriptions.find((sub: any) => sub.status === 'Active');
 
   // Early return after all hooks
   if (!isOpen || !rawMember || !member) return null;
@@ -205,54 +210,6 @@ export function ModalDetailMember({
                 </CardContent>
               </Card>
 
-              {/* Member Information */}
-              {member.memberInfo && (
-                <Card className="border-l-4 border-l-green-500">
-                  <CardHeader className="bg-green-50/50">
-                    <CardTitle className="flex items-center space-x-2 text-green-900">
-                      <CreditCard className="h-5 w-5 text-green-600" />
-                      <span>Thông tin thành viên</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Cấp độ thành viên</label>
-                        <div className="mt-1">
-                          <Badge className={getMembershipLevelColor(member.memberInfo.membership_level)}>
-                            {member.memberInfo.membership_level}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Tổng chi tiêu</label>
-                        <p className="text-sm text-gray-900 font-medium">
-                          {formatCurrency(member.memberInfo.total_spending || 0)}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Tháng thành viên</label>
-                        <p className="text-sm text-gray-900">{member.memberInfo.membership_month || 0} tháng</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Học sinh/Sinh viên</label>
-                        <div className="mt-1">
-                          <Badge className={member.memberInfo.is_hssv ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}>
-                            {member.memberInfo.is_hssv ? 'Có' : 'Không'}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="text-sm font-medium text-gray-500">Ghi chú</label>
-                        <p className="text-sm text-gray-900 mt-1">
-                          {member.memberInfo.notes || 'Không có ghi chú'}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Health Information */}
               <HealthInfoSection 
                 healthInfo={healthInfo}
@@ -289,39 +246,62 @@ export function ModalDetailMember({
                 </CardContent>
               </Card>
 
-              {/* QR Code */}
+              {/* Subscription Information */}
               <Card className="border-l-4 border-l-green-500">
                 <CardHeader className="bg-green-50/50">
                   <CardTitle className="flex items-center space-x-2 text-green-900">
-                    <QrCode className="h-5 w-5 text-green-600" />
-                    <span>Mã QR Check-in</span>
+                    <Package className="h-5 w-5 text-green-600" />
+                    <span>Thông tin gói tập</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col items-center space-y-4">
-                    <div className="w-40 h-40 bg-white border-2 border-gray-200 rounded-lg flex items-center justify-center p-2">
-                      {member.memberInfo?.qr_code ? (
-                        <QrCode className="w-full h-full text-gray-800" />
-                      ) : (
-                        <div className="text-center">
-                          <QrCode className="h-16 w-16 text-gray-400 mx-auto mb-2" />
-                          <p className="text-xs text-gray-500">Chưa có mã QR</p>
-                        </div>
-                      )}
+                  {isLoadingSubscription ? (
+                    <div className="flex justify-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
                     </div>
-                    {member.memberInfo?.qr_code && (
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4 mr-2" />
-                          Tải xuống
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          Xem
-                        </Button>
+                  ) : activeSubscription ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-medium text-gray-500">Tên gói</label>
+                        <p className="text-sm font-semibold text-gray-900 mt-1">
+                          {activeSubscription.packageId?.name || 'N/A'}
+                        </p>
                       </div>
-                    )}
-                  </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-medium text-gray-500">Ngày bắt đầu</label>
+                          <p className="text-sm text-gray-900 mt-1">
+                            {new Date(activeSubscription.startDate).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-500">Ngày kết thúc</label>
+                          <p className="text-sm text-gray-900 mt-1">
+                            {new Date(activeSubscription.endDate).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500">Loại gói</label>
+                        <div className="mt-1">
+                          <Badge className="bg-blue-100 text-blue-800">
+                            {activeSubscription.type || 'N/A'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500">Số buổi PT còn lại</label>
+                        <p className="text-lg font-bold text-green-600 mt-1">
+                          {activeSubscription.ptsessionsRemaining || 0} buổi
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <Package className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Không có gói tập đang hoạt động</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

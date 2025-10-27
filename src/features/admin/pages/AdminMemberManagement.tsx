@@ -64,6 +64,15 @@ export function AdminMemberManagement({
   const checkIns = checkInsResponse && 'success' in checkInsResponse && checkInsResponse.success 
     ? checkInsResponse.data || [] 
     : mockCheckIns; // Fallback to mock data if API fails
+  
+  // Debug: Check subscription data
+  React.useEffect(() => {
+    if (subscriptions.length > 0) {
+      console.log('Subscriptions loaded:', subscriptions.length);
+      console.log('First subscription:', subscriptions[0]);
+      console.log('Package populated?', subscriptions[0]?.packageId);
+    }
+  }, [subscriptions]);
 
   if (isLoading || isLoadingSubscriptions || isLoadingCheckIns) {
     return <div className="flex justify-center items-center h-64">Đang tải...</div>;
@@ -130,9 +139,12 @@ export function AdminMemberManagement({
   };
 
   const getMemberStatus = (member: any) => {
-    const activeSub = subscriptions.find((sub: any) => 
-      sub.memberId === member._id && sub.status === 'Active'
-    );
+    const activeSub = subscriptions.find((sub: any) => {
+      // Handle both ObjectId and string comparison
+      const subMemberId = sub.memberId?._id || sub.memberId;
+      const memberId = member._id;
+      return String(subMemberId) === String(memberId) && sub.status === 'Active';
+    });
     
     if (!activeSub) return { status: 'Không có gói', color: 'bg-red-100 text-red-800' };
     
@@ -152,7 +164,10 @@ export function AdminMemberManagement({
 
   const getLastCheckIn = (memberId: string) => {
     const memberCheckIns = checkIns
-      .filter((checkIn: any) => checkIn.memberId === memberId)
+      .filter((checkIn: any) => {
+        const checkInMemberId = checkIn.memberId?._id || checkIn.memberId;
+        return String(checkInMemberId) === String(memberId);
+      })
       .sort((a: any, b: any) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime());
     
     const lastCheckIn = memberCheckIns[0];
@@ -280,9 +295,10 @@ export function AdminMemberManagement({
               <tbody>
                 {filteredMembers.map((member: any) => {
                   const memberStatus = getMemberStatus(member);
-                  const activeSub = subscriptions.find((sub: any) => 
-                    sub.memberId === member._id && sub.status === 'Active'
-                  );
+                  const activeSub = subscriptions.find((sub: any) => {
+                    const subMemberId = sub.memberId?._id || sub.memberId;
+                    return String(subMemberId) === String(member._id) && sub.status === 'Active';
+                  });
                   
                   return (
                     <tr key={member._id} className="border-b hover:bg-gray-50">
@@ -325,12 +341,12 @@ export function AdminMemberManagement({
                       <td className="p-3">
                         {activeSub ? (
                           <div className="space-y-1">
-                            <Badge className="bg-blue-100 text-blue-800">
+                            <p className="text-sm font-medium text-gray-900">
+                              {activeSub.packageId?.name || 'Gói tập'}
+                            </p>
+                            <Badge className="bg-blue-100 text-blue-800 text-xs">
                               {activeSub.type || 'Membership'}
                             </Badge>
-                            <p className="text-sm text-gray-600">
-                              {activeSub.membershipType || member.memberInfo?.membership_level || 'Basic'}
-                            </p>
                             <p className="text-xs text-gray-500">
                               Hết hạn: {new Date(activeSub.endDate).toLocaleDateString('vi-VN')}
                             </p>

@@ -74,7 +74,7 @@ export const API_ENDPOINTS = {
     SUBSCRIPTION: {
        GET_ALL_SUBSCRIPTIONS: `${API_PREFIX}/subscriptions`,
        CREATE_SUBSCRIPTION: `${API_PREFIX}/subscriptions`,
-       GET_SUBSCRIPTION_BY_MEMBERID: (subscriptionId: string) => `${API_PREFIX}/subscriptions/member/${subscriptionId}`,
+       GET_SUBSCRIPTION_BY_MEMBERID: (memberId: string) => `${API_PREFIX}/subscriptions/member/${memberId}`,
        GET_SUBSCRIPTION_BY_ID: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}`,
        UPDATE_SUBSCRIPTION: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}`,
        DELETE_SUBSCRIPTION: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}`,
