@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Separator } from '../../../components/ui/separator';
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { 
   User, 
   Briefcase, 
@@ -19,133 +20,158 @@ import {
   Star,
   Users,
   Heart,
-  CalendarCheck
+  CalendarCheck,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
-
-interface ProfileData {
-  personalInfo: {
-    fullName: string;
-    email: string;
-    phone: string;
-    birthDate: string;
-    gender: string;
-    address: string;
-  };
-  professionalInfo: {
-    specialties: string;
-    experience: string;
-    salary: string;
-    status: string;
-  };
-  certifications: Array<{
-    id: string;
-    title: string;
-    issuer: string;
-    icon: string;
-  }>;
-  workingHours: Array<{
-    day: string;
-    slots: string[];
-  }>;
-  achievements: Array<{
-    id: string;
-    title: string;
-    description: string;
-    icon: string;
-  }>;
-}
-
-const mockProfileData: ProfileData = {
-  personalInfo: {
-    fullName: 'Nguyễn Văn PT',
-    email: 'pt.nguyen@stagpower.com',
-    phone: '0123456789',
-    birthDate: '15/03/1990',
-    gender: 'Nam',
-    address: 'TP. Hồ Chí Minh'
-  },
-  professionalInfo: {
-    specialties: 'Fitness, Yoga, Boxing',
-    experience: '5 năm',
-    salary: '15.000.000 VNĐ/tháng',
-    status: 'Đang hoạt động'
-  },
-  certifications: [
-    {
-      id: '1',
-      title: 'Chứng chỉ PT Quốc tế',
-      issuer: 'ACSM - American College of Sports Medicine',
-      icon: 'medal'
-    },
-    {
-      id: '2',
-      title: 'Chứng chỉ Yoga',
-      issuer: 'RYT 200 - Yoga Alliance',
-      icon: 'certificate'
-    },
-    {
-      id: '3',
-      title: 'Chứng chỉ Boxing',
-      issuer: 'WBC - World Boxing Council',
-      icon: 'trophy'
-    }
-  ],
-  workingHours: [
-    { day: 'Thứ 2', slots: ['06:00-10:00', '14:00-18:00', '19:00-22:00'] },
-    { day: 'Thứ 3', slots: ['06:00-10:00', '14:00-18:00', '19:00-22:00'] },
-    { day: 'Thứ 4', slots: ['06:00-10:00', '14:00-18:00', '19:00-22:00'] },
-    { day: 'Thứ 5', slots: ['06:00-10:00', '14:00-18:00', '19:00-22:00'] },
-    { day: 'Thứ 6', slots: ['06:00-10:00', '14:00-18:00', '19:00-22:00'] },
-    { day: 'Thứ 7', slots: ['08:00-12:00', '14:00-18:00'] },
-    { day: 'Chủ nhật', slots: ['Nghỉ'] }
-  ],
-  achievements: [
-    {
-      id: '1',
-      title: 'PT xuất sắc',
-      description: 'Tháng 12/2024',
-      icon: 'star'
-    },
-    {
-      id: '2',
-      title: '100+ hội viên',
-      description: 'Đã đào tạo',
-      icon: 'users'
-    },
-    {
-      id: '3',
-      title: '4.8/5 sao',
-      description: 'Đánh giá trung bình',
-      icon: 'heart'
-    },
-    {
-      id: '4',
-      title: '5 năm',
-      description: 'Kinh nghiệm',
-      icon: 'calendar-check'
-    }
-  ]
-};
+import { useMyProfile, useMyStats, useUpdateProfile } from '../hooks';
+import { AddCertificateModal } from '../components';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 export function TrainerProfilePage() {
   const { user } = useAuth();
-  const [profileData, setProfileData] = useState<ProfileData>(mockProfileData);
+  
+  // Fetch profile data
+  const { data: profile, isLoading, error } = useMyProfile();
+  const { data: stats } = useMyStats();
+  const updateMutation = useUpdateProfile();
+
+  const [formData, setFormData] = useState({
+    fullName: '',
+    phone: '',
+    gender: '',
+    dateOfBirth: '',
+    cccd: '',
+    specialty: '',
+    experience_years: 0,
+  });
   const [editingSections, setEditingSections] = useState<{
     personal: boolean;
     professional: boolean;
-    schedule: boolean;
   }>({
     personal: false,
     professional: false,
-    schedule: false
   });
+  const [showAddCertModal, setShowAddCertModal] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    isOpen: boolean;
+    index: number | null;
+    certificateName: string;
+  }>({
+    isOpen: false,
+    index: null,
+    certificateName: '',
+  });
+
+  // Sync form with profile data
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        fullName: profile.fullName || '',
+        phone: profile.phone || '',
+        gender: profile.gender || '',
+        dateOfBirth: profile.dateOfBirth || '',
+        cccd: profile.cccd || '',
+        specialty: profile.trainerInfo?.specialty || '',
+        experience_years: profile.trainerInfo?.experience_years || 0,
+      });
+    }
+  }, [profile]);
 
   const toggleEdit = (section: keyof typeof editingSections) => {
     setEditingSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  const handleSave = async (section: keyof typeof editingSections) => {
+    const updateData: any = {};
+
+    if (section === 'personal') {
+      updateData.fullName = formData.fullName;
+      updateData.phone = formData.phone;
+      updateData.gender = formData.gender;
+      updateData.dateOfBirth = formData.dateOfBirth;
+      updateData.cccd = formData.cccd;
+    } else if (section === 'professional') {
+      updateData['trainerInfo.specialty'] = formData.specialty;
+      updateData['trainerInfo.experience_years'] = formData.experience_years;
+    }
+
+    try {
+      await updateMutation.mutateAsync(updateData);
+      toggleEdit(section);
+    } catch (error) {
+      console.error('Update error:', error);
+    }
+  };
+
+  const handleAddCertificate = async (certificateName: string) => {
+    const currentCerts = profile?.trainerInfo?.certificate || [];
+    const updatedCerts = [...currentCerts, certificateName];
+
+    try {
+      await updateMutation.mutateAsync({
+        'trainerInfo.certificate': updatedCerts,
+      });
+    } catch (error) {
+      console.error('Add certificate error:', error);
+    }
+  };
+
+  const handleRemoveCertificate = async () => {
+    if (confirmDelete.index === null) return;
+
+    const currentCerts = profile?.trainerInfo?.certificate || [];
+    const updatedCerts = currentCerts.filter((_, idx) => idx !== confirmDelete.index);
+
+    try {
+      await updateMutation.mutateAsync({
+        'trainerInfo.certificate': updatedCerts,
+      });
+      setConfirmDelete({ isOpen: false, index: null, certificateName: '' });
+    } catch (error) {
+      console.error('Remove certificate error:', error);
+    }
+  };
+
+  const openDeleteConfirm = (index: number, certificateName: string) => {
+    setConfirmDelete({
+      isOpen: true,
+      index,
+      certificateName,
+    });
+  };
+
+  const getGenderText = (gender: string) => {
+    switch (gender) {
+      case 'male': return 'Nam';
+      case 'female': return 'Nữ';
+      case 'other': return 'Khác';
+      default: return gender;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active': return 'Đang hoạt động';
+      case 'inactive': return 'Không hoạt động';
+      case 'pending': return 'Chờ kích hoạt';
+      case 'banned': return 'Đã khóa';
+      default: return status;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'inactive': return 'bg-red-100 text-red-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'banned': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   const getIcon = (iconName: string) => {
@@ -163,6 +189,25 @@ export function TrainerProfilePage() {
 
   const hasUnsavedChanges = Object.values(editingSections).some(Boolean);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <span className="ml-3 text-gray-600">Đang tải thông tin cá nhân...</span>
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-red-600">
+          Có lỗi xảy ra khi tải thông tin cá nhân. Vui lòng thử lại sau.
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Thông Tin Cá Nhân</h1>
@@ -172,26 +217,37 @@ export function TrainerProfilePage() {
         <CardContent className="p-8">
           <div className="flex items-center space-x-6">
             <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center cursor-pointer hover:shadow-lg transition-shadow">
-              <span className="text-white font-bold text-2xl">
-                {user?.fullName?.charAt(0) || 'P'}
-              </span>
+              {profile.photo ? (
+                <img src={profile.photo} alt={profile.fullName} className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <span className="text-white font-bold text-2xl">
+                  {profile.fullName?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'PT'}
+                </span>
+              )}
             </div>
             <div className="flex-1">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                {profileData.personalInfo.fullName}
+                {profile.fullName}
               </h2>
-              <p className="text-lg text-gray-600 mb-4">Personal Trainer - Chuyên gia Fitness</p>
-              <div className="flex space-x-8">
+              <p className="text-lg text-gray-600 mb-1">
+                Personal Trainer - {profile.trainerInfo?.specialty || 'Chuyên gia Fitness'}
+              </p>
+              <Badge className={getStatusColor(profile.status)}>
+                {getStatusText(profile.status)}
+              </Badge>
+              <div className="flex space-x-8 mt-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">24</div>
+                  <div className="text-2xl font-bold text-blue-600">{stats?.totalMembers || 0}</div>
                   <div className="text-sm text-gray-500">Hội viên</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">4.8</div>
+                  <div className="text-2xl font-bold text-yellow-600">{stats?.averageRating || 0}</div>
                   <div className="text-sm text-gray-500">Đánh giá</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">5</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {profile.trainerInfo?.experience_years || 0}
+                  </div>
                   <div className="text-sm text-gray-500">Năm kinh nghiệm</div>
                 </div>
               </div>
@@ -218,6 +274,7 @@ export function TrainerProfilePage() {
                   size="sm"
                   onClick={() => toggleEdit('personal')}
                   className={editingSections.personal ? 'bg-red-50 text-red-600 border-red-200' : ''}
+                  disabled={editingSections.professional}
                 >
                   {editingSections.personal ? (
                     <>
@@ -238,52 +295,95 @@ export function TrainerProfilePage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Họ và tên:</label>
                   {editingSections.personal ? (
-                    <Input value={profileData.personalInfo.fullName} />
+                    <Input 
+                      value={formData.fullName} 
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    />
                   ) : (
-                    <p className="text-gray-900 font-medium">{profileData.personalInfo.fullName}</p>
+                    <p className="text-gray-900 font-medium">{profile.fullName}</p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Email:</label>
-                  {editingSections.personal ? (
-                    <Input value={profileData.personalInfo.email} />
-                  ) : (
-                    <p className="text-gray-900 font-medium">{profileData.personalInfo.email}</p>
-                  )}
+                  <p className="text-gray-900 font-medium">{profile.email}</p>
+                  <p className="text-xs text-gray-500">Email không thể thay đổi</p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Số điện thoại:</label>
                   {editingSections.personal ? (
-                    <Input value={profileData.personalInfo.phone} />
+                    <Input 
+                      value={formData.phone} 
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
                   ) : (
-                    <p className="text-gray-900 font-medium">{profileData.personalInfo.phone}</p>
+                    <p className="text-gray-900 font-medium">{profile.phone}</p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Ngày sinh:</label>
                   {editingSections.personal ? (
-                    <Input value={profileData.personalInfo.birthDate} />
+                    <Input 
+                      type="date"
+                      value={formData.dateOfBirth} 
+                      onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                    />
                   ) : (
-                    <p className="text-gray-900 font-medium">{profileData.personalInfo.birthDate}</p>
+                    <p className="text-gray-900 font-medium">
+                      {profile.dateOfBirth 
+                        ? format(new Date(profile.dateOfBirth), 'dd/MM/yyyy', { locale: vi })
+                        : 'Chưa cập nhật'}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Giới tính:</label>
                   {editingSections.personal ? (
-                    <Input value={profileData.personalInfo.gender} />
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="male">Nam</option>
+                      <option value="female">Nữ</option>
+                      <option value="other">Khác</option>
+                    </select>
                   ) : (
-                    <p className="text-gray-900 font-medium">{profileData.personalInfo.gender}</p>
+                    <p className="text-gray-900 font-medium">{getGenderText(profile.gender)}</p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Địa chỉ:</label>
+                  <label className="text-sm font-medium text-gray-700">CCCD:</label>
                   {editingSections.personal ? (
-                    <Input value={profileData.personalInfo.address} />
+                    <Input 
+                      value={formData.cccd} 
+                      onChange={(e) => setFormData({ ...formData, cccd: e.target.value })}
+                      placeholder="12 chữ số"
+                    />
                   ) : (
-                    <p className="text-gray-900 font-medium">{profileData.personalInfo.address}</p>
+                    <p className="text-gray-900 font-medium">{profile.cccd || 'Chưa cập nhật'}</p>
                   )}
                 </div>
               </div>
+              {editingSections.personal && (
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => toggleEdit('personal')}>
+                    Hủy
+                  </Button>
+                  <Button onClick={() => handleSave('personal')} disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Đang lưu...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Lưu
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -302,6 +402,7 @@ export function TrainerProfilePage() {
                   size="sm"
                   onClick={() => toggleEdit('professional')}
                   className={editingSections.professional ? 'bg-red-50 text-red-600 border-red-200' : ''}
+                  disabled={editingSections.personal}
                 >
                   {editingSections.professional ? (
                     <>
@@ -322,38 +423,65 @@ export function TrainerProfilePage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Chuyên môn:</label>
                   {editingSections.professional ? (
-                    <Input value={profileData.professionalInfo.specialties} />
+                    <Input 
+                      value={formData.specialty} 
+                      onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                      placeholder="Ví dụ: Fitness, Yoga, Boxing"
+                    />
                   ) : (
-                    <p className="text-gray-900 font-medium">{profileData.professionalInfo.specialties}</p>
+                    <p className="text-gray-900 font-medium">
+                      {profile.trainerInfo?.specialty || 'Chưa cập nhật'}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Kinh nghiệm:</label>
                   {editingSections.professional ? (
-                    <Input value={profileData.professionalInfo.experience} />
+                    <Input 
+                      type="number"
+                      value={formData.experience_years} 
+                      onChange={(e) => setFormData({ ...formData, experience_years: parseInt(e.target.value) || 0 })}
+                      placeholder="Số năm"
+                    />
                   ) : (
-                    <p className="text-gray-900 font-medium">{profileData.professionalInfo.experience}</p>
+                    <p className="text-gray-900 font-medium">
+                      {profile.trainerInfo?.experience_years || 0} năm
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Mức lương:</label>
-                  {editingSections.professional ? (
-                    <Input value={profileData.professionalInfo.salary} />
-                  ) : (
-                    <p className="text-gray-900 font-medium">{profileData.professionalInfo.salary}</p>
-                  )}
+                  <label className="text-sm font-medium text-gray-700">Ngày tham gia:</label>
+                  <p className="text-gray-900 font-medium">
+                    {format(new Date(profile.joinDate), 'dd/MM/yyyy', { locale: vi })}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Trạng thái:</label>
-                  {editingSections.professional ? (
-                    <Input value={profileData.professionalInfo.status} />
-                  ) : (
-                    <Badge className="bg-green-100 text-green-800">
-                      {profileData.professionalInfo.status}
-                    </Badge>
-                  )}
+                  <Badge className={getStatusColor(profile.status)}>
+                    {getStatusText(profile.status)}
+                  </Badge>
                 </div>
               </div>
+              {editingSections.professional && (
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => toggleEdit('professional')}>
+                    Hủy
+                  </Button>
+                  <Button onClick={() => handleSave('professional')} disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Đang lưu...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Lưu
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -367,26 +495,57 @@ export function TrainerProfilePage() {
                   </div>
                   Chứng chỉ & Bằng cấp
                 </CardTitle>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowAddCertModal(true)}
+                >
                   <Plus className="w-4 h-4 mr-1" />
                   Thêm
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {profileData.certifications.map((cert) => (
-                  <div key={cert.id} className="flex items-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mr-4">
-                      {getIcon(cert.icon)}
+              {profile.trainerInfo?.certificate && profile.trainerInfo.certificate.length > 0 ? (
+                <div className="space-y-3">
+                  {profile.trainerInfo.certificate.map((cert, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 group">
+                      <div className="flex items-center flex-1">
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mr-4">
+                          <Medal className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{cert}</h4>
+                          <p className="text-sm text-gray-600">Chứng chỉ nghề nghiệp</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openDeleteConfirm(idx, cert)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Xóa chứng chỉ"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{cert.title}</h4>
-                      <p className="text-sm text-gray-600">{cert.issuer}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Chưa có chứng chỉ nào</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddCertModal(true)}
+                    className="mt-3"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm chứng chỉ đầu tiên
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -396,52 +555,30 @@ export function TrainerProfilePage() {
           {/* Working Hours */}
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center text-lg">
-                  <div className="p-2 bg-orange-100 rounded-lg mr-3">
-                    <Clock className="w-5 h-5 text-orange-600" />
-                  </div>
-                  Lịch làm việc
-                </CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toggleEdit('schedule')}
-                  className={editingSections.schedule ? 'bg-red-50 text-red-600 border-red-200' : ''}
-                >
-                  {editingSections.schedule ? (
-                    <>
-                      <X className="w-4 h-4 mr-1" />
-                      Hủy
-                    </>
-                  ) : (
-                    <>
-                      <Edit className="w-4 h-4 mr-1" />
-                      Chỉnh sửa
-                    </>
-                  )}
-                </Button>
-              </div>
+              <CardTitle className="flex items-center text-lg">
+                <div className="p-2 bg-orange-100 rounded-lg mr-3">
+                  <Clock className="w-5 h-5 text-orange-600" />
+                </div>
+                Lịch làm việc
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {profileData.workingHours.map((day, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="font-medium text-gray-900">{day.day}</div>
-                    <div className="flex flex-wrap gap-1">
-                      {day.slots.map((slot, slotIndex) => (
-                        <Badge
-                          key={slotIndex}
-                          variant={slot === 'Nghỉ' ? 'secondary' : 'default'}
-                          className={slot === 'Nghỉ' ? 'bg-gray-200 text-gray-600' : 'bg-orange-100 text-orange-800'}
-                        >
-                          {slot}
-                        </Badge>
-                      ))}
+              {profile.trainerInfo?.working_hour && profile.trainerInfo.working_hour.length > 0 ? (
+                <div className="space-y-3">
+                  {profile.trainerInfo.working_hour.map((slot, index) => (
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                      <Badge className="bg-orange-100 text-orange-800">
+                        {slot}
+                      </Badge>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Chưa thiết lập lịch làm việc</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -456,31 +593,49 @@ export function TrainerProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                {profileData.achievements.map((achievement) => (
-                  <div key={achievement.id} className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200">
-                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                      {getIcon(achievement.icon)}
+              {stats?.achievements && stats.achievements.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {stats.achievements.map((achievement) => (
+                    <div key={achievement.id} className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200">
+                      <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                        {getIcon(achievement.icon)}
+                      </div>
+                      <h4 className="font-semibold text-gray-900 text-sm">{achievement.title}</h4>
+                      <p className="text-xs text-gray-600">{achievement.description}</p>
                     </div>
-                    <h4 className="font-semibold text-gray-900 text-sm">{achievement.title}</h4>
-                    <p className="text-xs text-gray-600">{achievement.description}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Chưa có thành tích nào</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Save Button */}
-      {hasUnsavedChanges && (
-        <div className="fixed bottom-6 right-6">
-          <Button className="bg-green-600 hover:bg-green-700 text-white shadow-lg">
-            <Save className="w-4 h-4 mr-2" />
-            Lưu thay đổi
-          </Button>
-        </div>
-      )}
+      {/* Add Certificate Modal */}
+      <AddCertificateModal
+        isOpen={showAddCertModal}
+        onClose={() => setShowAddCertModal(false)}
+        onAdd={handleAddCertificate}
+        existingCertificates={profile?.trainerInfo?.certificate || []}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, index: null, certificateName: '' })}
+        onConfirm={handleRemoveCertificate}
+        title="Xác nhận gỡ chứng chỉ"
+        message={`Bạn có chắc chắn muốn gỡ chứng chỉ "${confirmDelete.certificateName}"? Hành động này không thể hoàn tác.`}
+        confirmText="Xóa chứng chỉ"
+        cancelText="Hủy"
+        variant="danger"
+        isLoading={updateMutation.isPending}
+      />
     </div>
   );
 }
