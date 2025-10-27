@@ -167,6 +167,17 @@ export const API_ENDPOINTS = {
         BULK_SEND_REMINDERS: `${API_PREFIX}/payments/bulk-reminders`,
         EXPORT_INVOICES: `${API_PREFIX}/payments/export`,
     },
+    NOTIFICATION: {
+        GET_ALL_NOTIFICATIONS: `${API_PREFIX}/notifications`,
+        GET_PAGINATED: `${API_PREFIX}/notifications/paginated`,
+        GET_USER_NOTIFICATIONS: (userId: string) => `${API_PREFIX}/notifications/user/${userId}`,
+        GET_USER_NOTIFICATIONS_PAGINATED: (userId: string) => `${API_PREFIX}/notifications/user/${userId}/paginated`,
+        GET_BY_ID: (notificationId: string) => `${API_PREFIX}/notifications/${notificationId}`,
+        MARK_AS_READ: (notificationId: string) => `${API_PREFIX}/notifications/${notificationId}/read`,
+        MARK_AS_UNREAD: (notificationId: string) => `${API_PREFIX}/notifications/${notificationId}/unread`,
+        DELETE: (notificationId: string) => `${API_PREFIX}/notifications/${notificationId}`,
+        CREATE: `${API_PREFIX}/notifications`,
+    },
 }
 
 export default API_CONFIG;
