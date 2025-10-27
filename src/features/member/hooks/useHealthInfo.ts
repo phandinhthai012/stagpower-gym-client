@@ -20,13 +20,25 @@ export const useHealthInfoByMemberId = (memberId: string | null | undefined) => 
     queryKey: ['health-info', 'member', memberId],
     queryFn: async () => {
       if (!memberId) return null;
-      const response = await axiosInstance.get(
-        API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_MEMBER_ID(memberId)
-      );
-      return response.data;
+      try {
+        const response = await axiosInstance.get(
+          API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_MEMBER_ID(memberId)
+        );
+        return response.data;
+      } catch (error: any) {
+        // 404 is expected when member doesn't have health info yet
+        if (error?.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
     },
     enabled: !!memberId, // Only run if memberId exists
     staleTime: 1000 * 60 * 5,
+    retry: false, // Don't retry on 404 errors
+    meta: {
+      errorMessage: null, // Suppress error logging
+    },
   });
 };
 

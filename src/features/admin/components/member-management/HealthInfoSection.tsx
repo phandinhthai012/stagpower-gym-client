@@ -1,18 +1,13 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Badge } from '../../../../components/ui/badge';
-import { Button } from '../../../../components/ui/button';
 import { 
   Heart,
   Activity,
-  TrendingUp,
   Target,
-  Utensils,
   Clock,
   Calendar,
-  AlertCircle,
-  CheckCircle,
-  Edit
+  AlertCircle
 } from 'lucide-react';
 
 interface HealthInfoData {
@@ -72,10 +67,6 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
           <div className="flex flex-col items-center justify-center py-8 space-y-4">
             <AlertCircle className="h-12 w-12 text-gray-400" />
             <p className="text-sm text-gray-500">Chưa có thông tin sức khỏe</p>
-            <Button variant="outline" size="sm" onClick={onEdit}>
-              <Edit className="h-4 w-4 mr-2" />
-              Thêm thông tin
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -137,18 +128,12 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
   const bmiCategory = bmi ? getBMICategory(bmi) : null;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <Heart className="h-5 w-5 text-red-600" />
-            <span>Thông tin sức khỏe</span>
-          </CardTitle>
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            <Edit className="h-4 w-4 mr-2" />
-            Chỉnh sửa
-          </Button>
-        </div>
+    <Card className="border-l-4 border-l-red-500">
+      <CardHeader className="bg-red-50/50">
+        <CardTitle className="flex items-center space-x-2 text-red-900">
+          <Heart className="h-5 w-5 text-red-600" />
+          <span>Thông tin sức khỏe</span>
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Body Metrics */}

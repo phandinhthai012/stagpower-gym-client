@@ -47,6 +47,7 @@ export const API_ENDPOINTS = {
         CREATE_HEALTH_INFO: (memberId: string) => `${API_PREFIX}/health-info/${memberId}`,
         UPDATE_HEALTH_INFO: (healthInfoId: string) => `${API_PREFIX}/health-info/${healthInfoId}`,
         DELETE_HEALTH_INFO: (healthInfoId: string) => `${API_PREFIX}/health-info/${healthInfoId}`,
+        PARSE_PREVIEW_HEALTH_FILE: `${API_PREFIX}/health-info/parse-preview`,
     },
     CHECK_IN: {
         CREATE_CHECK_IN: `${API_PREFIX}/check-ins`,

@@ -19,7 +19,8 @@ export interface ApiUser {
     qr_code?: string;
     health_info_id?: string;
     notes?: string;
-    is_hssv?: boolean;
+    is_hssv?: boolean; // Deprecated, use is_student
+    is_student?: boolean;
     total_spending?: number;
     membership_month?: number;
   };

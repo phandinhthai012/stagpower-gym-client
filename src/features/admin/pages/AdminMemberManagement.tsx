@@ -6,20 +6,19 @@ import { Badge } from '../../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { ModalCreateMember } from '../components/member-management/ModalCreateMember';
 import { ModalDetailMember } from '../components/member-management/ModalDetailMember';
+import { ModalEditMember } from '../components/member-management/ModalEditMember';
 import { 
   Users, 
   Search, 
   Filter, 
   Plus, 
   Edit, 
-  Trash2, 
   Eye, 
   Download,
   Mail,
   Phone,
   Calendar,
   Package,
-  QrCode,
   UserCheck,
   UserX,
   AlertTriangle
@@ -43,7 +42,7 @@ export function AdminMemberManagement({
   onCreateMember, 
   onViewMember, 
   onEditMember, 
-  onDeleteMember 
+  onDeleteMember
 }: AdminMemberManagementProps = {}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -65,10 +64,6 @@ export function AdminMemberManagement({
   const checkIns = checkInsResponse && 'success' in checkInsResponse && checkInsResponse.success 
     ? checkInsResponse.data || [] 
     : mockCheckIns; // Fallback to mock data if API fails
-  
-  console.log('members', members);
-  console.log('subscriptions', subscriptions);
-  console.log('checkIns', checkIns);
 
   if (isLoading || isLoadingSubscriptions || isLoadingCheckIns) {
     return <div className="flex justify-center items-center h-64">Đang tải...</div>;
@@ -372,22 +367,6 @@ export function AdminMemberManagement({
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            title="Mã QR"
-                          >
-                            <QrCode className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeleteMember(member._id)}
-                            title="Xóa thành viên"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -408,7 +387,14 @@ export function AdminMemberManagement({
 export function AdminMemberManagementWithModal() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
+  
+  const handleOpenEditModal = (member: User) => {
+    setSelectedMember(member);
+    setIsDetailModalOpen(false);
+    setIsEditModalOpen(true);
+  };
   
   return (
     <>
@@ -418,28 +404,24 @@ export function AdminMemberManagementWithModal() {
           setSelectedMember(member);
           setIsDetailModalOpen(true);
         }}
-        onEditMember={(member) => {
-          setSelectedMember(member);
-          setIsDetailModalOpen(false);
-          // TODO: Open edit modal
-        }}
+        onEditMember={handleOpenEditModal}
         onDeleteMember={(memberId) => {
           // TODO: Implement delete functionality
           console.log('Delete member:', memberId);
         }}
       />
       
-      {/* Create Member Modal - Rendered at top level */}
+      {/* Create Member Modal */}
       <ModalCreateMember
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={() => {
-          // Refresh data or show success message
+          setIsCreateModalOpen(false);
           console.log('Member created successfully');
         }}
       />
 
-      {/* Detail Member Modal - Rendered at top level */}
+      {/* Detail Member Modal */}
       <ModalDetailMember
         isOpen={isDetailModalOpen}
         onClose={() => {
@@ -447,14 +429,24 @@ export function AdminMemberManagementWithModal() {
           setSelectedMember(null);
         }}
         member={selectedMember}
-        onEdit={(member) => {
-          setIsDetailModalOpen(false);
-          setSelectedMember(null);
-          // TODO: Open edit modal
-        }}
+        onEdit={handleOpenEditModal}
         onDelete={(memberId) => {
           // TODO: Implement delete functionality
           console.log('Delete member:', memberId);
+        }}
+      />
+
+      {/* Edit Member Modal */}
+      <ModalEditMember
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedMember(null);
+        }}
+        member={selectedMember as any}
+        onSuccess={() => {
+          setIsEditModalOpen(false);
+          setSelectedMember(null);
         }}
       />
     </>

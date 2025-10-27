@@ -41,11 +41,17 @@ apiClient.interceptors.response.use(
     // nếu lỗi 401 thì refresh token
     async (error) => {
         const originalRequest = error.config;
-        console.error(`[API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
-            status: error.response?.status,
-            message: error.response?.data?.message || error.message,
-            data: error.response?.data,
-        });
+        
+        // Don't log 404 errors for health-info endpoints (expected when member has no health info)
+        const isHealthInfo404 = error.response?.status === 404 && error.config?.url?.includes('/health-info/');
+        if (!isHealthInfo404) {
+            console.error(`[API Error] ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message,
+                data: error.response?.data,
+            });
+        }
+        
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             try {
