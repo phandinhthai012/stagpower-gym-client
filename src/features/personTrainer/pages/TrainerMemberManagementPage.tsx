@@ -68,7 +68,7 @@ export function TrainerMemberManagementPage() {
     if (member.healthInfo?.goal === 'MuscleGain' && member.completedSessions >= 12) {
       achievements.push('Tăng cơ thành công');
     }
-
+    
     return {
       ...member,
       primaryPackageType: member.activeSubscriptions?.[0]?.type || 'zzz',
@@ -351,14 +351,14 @@ export function TrainerMemberManagementPage() {
                         <div className="relative">
                             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                               {member.fullName.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                            </div>
+                          </div>
                             {hasVIPPackage && (
                               <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
                                 <Crown className="w-2.5 h-2.5 text-white" />
-                              </div>
-                            )}
-                          </div>
-                          <div> 
+                            </div>
+                          )}
+                        </div>
+                        <div> 
                             <div className="font-medium text-gray-900 text-sm">{member.fullName}</div>
                             <div className="text-xs text-gray-500">
                               {member.memberInfo?.membership_level === 'vip' ? (
@@ -379,9 +379,9 @@ export function TrainerMemberManagementPage() {
                           <div className="flex items-center gap-1.5 text-xs">
                             <PhoneIcon className="w-3 h-3 text-gray-400" />
                             <span className="text-gray-700">{member.phone}</span>
-                          </div>
                         </div>
-                      </td>
+                      </div>
+                    </td>
                       <td className="p-2">
                         {primaryPackage ? (
                           <div className="space-y-0.5">
@@ -422,13 +422,13 @@ export function TrainerMemberManagementPage() {
                       <div className="flex flex-col items-center gap-1">
                           <div className="w-16 bg-gray-200 rounded-full h-1.5">
                             <div className="bg-gradient-to-r from-green-500 to-green-600 h-1.5 rounded-full" style={{ width: `${member.progress}%` }} />
-                          </div>
-                          <span className="text-xs font-semibold text-green-600">{member.progress}%</span>
                         </div>
-                      </td>
+                          <span className="text-xs font-semibold text-green-600">{member.progress}%</span>
+                      </div>
+                    </td>
                       <td className="p-2 text-gray-800 text-xs">{getGoalText(member.healthInfo?.goal)}</td>
                       <td className="p-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
+                      <div className="flex items-center justify-center gap-1">
                           <Award className="w-3.5 h-3.5 text-purple-600" />
                           <span className="font-semibold text-purple-700 text-sm">{member.achievements?.length || 0}</span>
                         </div>
@@ -488,8 +488,8 @@ export function TrainerMemberManagementPage() {
                           <PhoneIcon className="w-3 h-3 text-gray-400" />
                           <span className="text-xs text-gray-600">{member.phone}</span>
                         </div>
-                      </div>
                     </div>
+                  </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -543,14 +543,14 @@ export function TrainerMemberManagementPage() {
                       <div className="flex items-center justify-between mb-1">
                       <span className="text-gray-600">Tiến độ</span>
                       <span className="text-green-600 font-semibold">{member.progress}%</span>
-                      </div>
+                    </div>
                       <div className="w-full bg-gray-200 rounded-full h-1.5">
                         <div className="bg-gradient-to-r from-green-500 to-green-600 h-1.5 rounded-full" style={{ width: `${member.progress}%` }} />
-                      </div>
                     </div>
+                  </div>
                     
                     <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
-                      <span className="text-gray-600">Mục tiêu</span>
+                    <span className="text-gray-600">Mục tiêu</span>
                       <span className="font-medium text-gray-900">{getGoalText(member.healthInfo?.goal)}</span>
                     </div>
                     
@@ -560,7 +560,7 @@ export function TrainerMemberManagementPage() {
                         <Award className="w-3 h-3" />
                         {member.achievements?.length || 0}
                       </span>
-                    </div>
+                  </div>
                     
                     <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
                       <span className="text-gray-600">Lần tập cuối</span>
@@ -569,9 +569,9 @@ export function TrainerMemberManagementPage() {
                           ? format(new Date(member.lastSessionDate), 'dd/MM/yyyy', { locale: vi })
                           : 'Chưa có'}
                       </span>
-                    </div>
                   </div>
                 </div>
+              </div>
               );
             })}
           </div>

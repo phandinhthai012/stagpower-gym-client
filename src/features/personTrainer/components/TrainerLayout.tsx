@@ -97,119 +97,149 @@ export function TrainerLayout() {
       
       {/* Header */}
       <header className={`bg-transparent transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
-        <div className="mx-4 my-4 bg-white shadow-sm border border-gray-200 rounded-xl px-6 py-4 grid grid-cols-3 items-center">
-          {/* Left: Logo and brand */}
-          <div className="flex items-center gap-3">
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
+        <div className="mx-2 sm:mx-4 my-2 sm:my-4 bg-white shadow-sm border border-gray-200 rounded-xl px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            {/* Left: Menu + Logo */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* Mobile menu button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden text-gray-500 hover:text-gray-700 p-1.5"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              
+              {/* Desktop sidebar toggle button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="hidden lg:flex text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-2"
+                title={sidebarOpen ? "Thu gọn menu" : "Mở rộng menu"}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="2"/>
+                  <line x1="9" y1="4" x2="9" y2="20" strokeWidth="2"/>
+                </svg>
+              </Button>
+              
+              <div className="hidden lg:flex items-center gap-2">
+                <img 
+                  src={LogoStagPower} 
+                  alt="StagPower" 
+                  className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover" 
+                />
+                <div>
+                  <span className="text-xl md:text-2xl font-semibold text-blue-900 block">
+                    StagPower
+                  </span>
+                  <p className="text-xs text-gray-600">PT Dashboard</p>
+                </div>
+              </div>
+            </div>
             
-            {/* Desktop sidebar toggle button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="hidden lg:flex text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-2"
-              title={sidebarOpen ? "Thu gọn menu" : "Mở rộng menu"}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth="2"/>
-                <line x1="9" y1="4" x2="9" y2="20" strokeWidth="2"/>
-              </svg>
-            </Button>
-            
-            <img src={LogoStagPower} alt="StagPower" className="w-16 h-16 rounded-full object-cover hidden md:block" />
-            <div>
-              <span className="text-sm md:text-2xl font-semibold text-blue-900">StagPower</span>
-              <p className="text-xs md:text-sm text-gray-600">PT Dashboard</p>
+            {/* Center: Page Title (Hidden on mobile) */}
+            <div className="hidden md:block flex-1 text-center">
+              <h1 className="text-base lg:text-lg font-semibold text-gray-800 truncate px-2">
+                {getPageTitle()}
+              </h1>
+            </div>
+
+            {/* Right: Time + Notifications + Profile */}
+            <div className="flex items-center justify-end gap-1.5 sm:gap-3 flex-shrink-0">
+              {/* Location & Time (Hidden on small screens) */}
+              <span className="hidden xl:flex items-center gap-2 text-gray-600 text-xs whitespace-nowrap">
+                <MapPin className="w-3.5 h-3.5 text-gray-500" />
+                {`Gò Vấp • ${formatVNTime(now)} • ${formatVNDate(now)}`}
+              </span>
+              
+              {/* Notification */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="relative p-1.5 sm:p-2 text-gray-500 hover:text-gray-700"
+                onClick={() => navigate('/trainer/notifications')}
+              >
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 text-[10px] sm:text-xs p-0 flex items-center justify-center"
+                >
+                  3
+                </Badge>
+              </Button>
+              
+              {/* User menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 sm:h-10 w-auto px-1.5 sm:px-3"
+                  >
+                    <div className="flex items-center space-x-1 sm:space-x-2">
+                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
+                        <AvatarFallback className="text-[10px] sm:text-xs bg-orange-500 text-white">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="hidden lg:flex lg:flex-col lg:items-start lg:text-left max-w-[120px]">
+                        <span className="text-xs sm:text-sm font-medium text-blue-900 truncate w-full">
+                          {userDisplayName}
+                        </span>
+                        <span className="text-[10px] sm:text-xs text-gray-600 truncate w-full">
+                          {userRole}
+                        </span>
+                      </div>
+                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 hidden sm:block" />
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm leading-none font-medium">
+                        {userDisplayName}
+                      </p>
+                      <p className="text-xs leading-none text-gray-500">
+                        {user?.email || 'Không có email'}
+                      </p>
+                      <p className="text-xs leading-none text-gray-500">
+                        {userRole}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/trainer/profile')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Thông tin cá nhân</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           
-          {/* Center: Page Title */}
-          <div className="text-center">
-            <h1 className="text-sm md:text-lg font-semibold text-gray-800">{getPageTitle()}</h1>
-          </div>
-
-          {/* Right: Info, notifications, profile */}
-          <div className="flex items-center justify-end gap-4">
-            <span className="hidden md:flex items-center gap-2 text-gray-600 text-sm">
-              <MapPin className="w-4 h-4 text-gray-500" />
-              {`Gò Vấp • ${formatVNTime(now)} • ${formatVNDate(now)}`}
-            </span>
-            
-            {/* Notification */}
-            <Button variant="ghost" size="sm" className="relative p-2 text-gray-500 hover:text-gray-700">
-              <Bell className="w-5 h-5" />
-              <Badge variant="destructive" className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center">3</Badge>
-            </Button>
-            
-            {/* User menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-10 w-auto px-2 sm:px-3"
-                >
-                  <div className="flex items-center space-x-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs bg-orange-500 text-white">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="hidden md:flex md:flex-col md:items-start md:text-left">
-                      <span className="text-sm font-medium text-blue-900">
-                        {userDisplayName}
-                      </span>
-                      <span className="text-xs text-gray-600">
-                        {userRole}
-                      </span>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm leading-none font-medium">
-                      {userDisplayName}
-                    </p>
-                    <p className="text-xs leading-none text-gray-500">
-                      {user?.email || 'Không có email'}
-                    </p>
-                    <p className="text-xs leading-none text-gray-500">
-                      {userRole}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/trainer/profile')}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Thông tin cá nhân</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>{isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {/* Mobile: Page Title Below Header */}
+          <div className="md:hidden mt-2 pt-2 border-t border-gray-100">
+            <h1 className="text-sm font-semibold text-gray-800 text-center truncate">
+              {getPageTitle()}
+            </h1>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className={`transition-all duration-300 p-6 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
+      <main className={`transition-all duration-300 p-3 sm:p-4 md:p-6 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         <Outlet />
       </main>
     </div>
