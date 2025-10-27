@@ -33,6 +33,7 @@ export {
 export { DataTable } from './data-table';
 export { DataTablePagination } from './data-table/data-table-pagination';
 export { getCommonPinningStyles } from './data-table/lib';
+export { SortableTableHeader, NonSortableHeader } from './SortableTableHeader';
 
 // Additional UI Components
 export { Avatar, AvatarImage, AvatarFallback } from './avatar';

@@ -3,73 +3,81 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 import { 
   Users, 
-  UserCheck, 
-  Clock, 
-  Star,
   Search,
-  Plus,
   ChevronLeft,
   ChevronRight,
   Eye,
-  MessageCircle,
-  Phone,
-  Crown
+  Crown,
+  Loader2,
+  Calendar,
+  Mail,
+  Phone as PhoneIcon
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { mockUsers, mockSchedules, mockSubscriptions, mockHealthInfo, getMockDataByTrainerId } from '../../../mockdata';
+import { useTrainerMembers } from '../hooks/useTrainerMembers';
+import { MemberDetailModal } from '../components/MemberDetailModal';
+import { TrainerMember } from '../types/member.types';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { useSortableTable } from '../../../hooks/useSortableTable';
 
 export function TrainerMemberManagementPage() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [packageFilter, setPackageFilter] = useState('');
+  const [selectedMember, setSelectedMember] = useState<string | null>(null);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
-  // Get trainer's members from mockdata
-  const trainerSchedules = getMockDataByTrainerId('schedules', user?.id || '');
-  const trainerMemberIds = Array.from(new Set(trainerSchedules.map(s => s.member_id)));
-  const trainerMembers = mockUsers.filter(u => 
-    u.role === 'Member' && trainerMemberIds.includes(u.id)
-  );
+  // Fetch real data from API
+  const { data, isLoading, error } = useTrainerMembers();
+  const members = data?.members || [];
 
-  // Enhance members with additional data
-  const enhancedMembers = trainerMembers.map(member => {
-    const memberSchedules = trainerSchedules.filter(s => s.member_id === member.id);
-    const memberSubscription = mockSubscriptions.find(sub => sub.member_id === member.id);
-    const memberHealthInfo = mockHealthInfo.find(health => health.member_id === member.id);
-    const completedSessions = memberSchedules.filter(s => s.status === 'Completed').length;
-    const totalSessions = memberSchedules.length;
-    const progress = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
-    
-    return {
-      id: member.id,
-      name: member.fullName,
-      avatar: member.fullName.split(' ').map(n => n[0]).join('').substring(0, 2),
-      email: member.email,
-      phone: member.phone,
-      package: memberSubscription?.type?.toLowerCase() || 'membership',
-      status: member.status.toLowerCase(),
-      joinDate: member.join_date,
-      lastSession: memberSchedules.length > 0 
-        ? new Date(memberSchedules.sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())[0].date_time).toLocaleDateString('vi-VN')
-        : 'Chưa có buổi tập',
-      totalSessions: completedSessions,
-      rating: 4.5 + Math.random() * 0.5, // Mock rating
-      progress: progress,
-      goal: memberHealthInfo?.goal || 'Health',
-      notes: member.member_info?.notes || 'Không có ghi chú'
-    };
-  });
-
-  const filteredMembers = enhancedMembers.filter(member => {
-    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  // Apply filters
+  const filteredMembers = members.filter((member: TrainerMember) => {
+    const matchesSearch = member.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || member.status === statusFilter;
-    const matchesPackage = !packageFilter || member.package === packageFilter;
+    
+    // Filter by package type based on active subscriptions
+    const matchesPackage = !packageFilter || 
+      member.activeSubscriptions?.some(sub => sub.type.toLowerCase() === packageFilter);
     
     return matchesSearch && matchesStatus && matchesPackage;
   });
+
+  // Add computed fields for sorting
+  const membersWithComputedFields = filteredMembers.map(member => ({
+    ...member,
+    // Computed field for package sorting
+    primaryPackageType: member.activeSubscriptions?.[0]?.type || 'zzz', // 'zzz' để đẩy "no package" xuống cuối
+    // Computed field for goal sorting (optional, already have healthInfo.goal)
+  }));
+
+  // Apply sorting
+  const { sortedData, requestSort, getSortDirection } = useSortableTable({
+    data: membersWithComputedFields,
+    initialSort: { key: 'fullName', direction: 'asc' },
+  });
+
+  const handleSelectMember = (memberId: string) => {
+    setSelectedMembers(prev => 
+      prev.includes(memberId) 
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedMembers.length === filteredMembers.length) {
+      setSelectedMembers([]);
+    } else {
+      setSelectedMembers(filteredMembers.map(member => member._id));
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -107,14 +115,33 @@ export function TrainerMemberManagementPage() {
     }
   };
 
-  const getGoalText = (goal: string) => {
+  const getGoalText = (goal?: string) => {
     switch (goal) {
       case 'WeightLoss': return 'Giảm cân';
       case 'MuscleGain': return 'Tăng cơ';
       case 'Health': return 'Sức khỏe';
-      default: return goal;
+      default: return 'Chưa xác định';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <span className="ml-3 text-gray-600">Đang tải danh sách hội viên...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-red-600">
+          Có lỗi xảy ra khi tải danh sách hội viên. Vui lòng thử lại sau.
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div>
@@ -128,7 +155,7 @@ export function TrainerMemberManagementPage() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Tìm kiếm hội viên..."
+                placeholder="Tìm kiếm theo tên hoặc email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -142,7 +169,8 @@ export function TrainerMemberManagementPage() {
               <option value="">Tất cả trạng thái</option>
               <option value="active">Hoạt động</option>
               <option value="inactive">Không hoạt động</option>
-              <option value="suspended">Tạm ngưng</option>
+              <option value="pending">Chờ kích hoạt</option>
+              <option value="banned">Đã khóa</option>
             </select>
             <select
               value={packageFilter}
@@ -154,13 +182,32 @@ export function TrainerMemberManagementPage() {
               <option value="combo">Combo</option>
               <option value="membership">Membership</option>
             </select>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm hội viên
-            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Actions */}
+      {selectedMembers.length > 0 && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">
+                Đã chọn {selectedMembers.length} hội viên
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Gửi thông báo
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Tạo lịch nhóm
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Members Table */}
       <Card>
@@ -175,160 +222,366 @@ export function TrainerMemberManagementPage() {
         <CardContent>
           {/* Desktop/Table view */}
           <div className="overflow-x-auto hidden md:block">
-            <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Hội viên</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Gói</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Trạng thái</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Buổi</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Đánh giá</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Tiến độ</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Mục tiêu</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Lần cuối</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Hành động</th>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <NonSortableHeader>
+                    <input
+                      type="checkbox"
+                      checked={selectedMembers.length === filteredMembers.length && filteredMembers.length > 0}
+                      onChange={handleSelectAll}
+                      className="rounded"
+                    />
+                  </NonSortableHeader>
+                  <SortableTableHeader
+                    label="Hội viên"
+                    sortKey="fullName"
+                    currentSortKey={getSortDirection('fullName') ? 'fullName' : ''}
+                    sortDirection={getSortDirection('fullName')}
+                    onSort={requestSort}
+                  />
+                  <SortableTableHeader
+                    label="Thông tin liên hệ"
+                    sortKey="email"
+                    currentSortKey={getSortDirection('email') ? 'email' : ''}
+                    sortDirection={getSortDirection('email')}
+                    onSort={requestSort}
+                  />
+                  <SortableTableHeader
+                    label="Gói tập"
+                    sortKey="primaryPackageType"
+                    currentSortKey={getSortDirection('primaryPackageType') ? 'primaryPackageType' : ''}
+                    sortDirection={getSortDirection('primaryPackageType')}
+                    onSort={requestSort}
+                  />
+                  <SortableTableHeader
+                    label="Trạng thái"
+                    sortKey="status"
+                    currentSortKey={getSortDirection('status') ? 'status' : ''}
+                    sortDirection={getSortDirection('status')}
+                    onSort={requestSort}
+                  />
+                  <SortableTableHeader
+                    label="Buổi tập"
+                    sortKey="completedSessions"
+                    currentSortKey={getSortDirection('completedSessions') ? 'completedSessions' : ''}
+                    sortDirection={getSortDirection('completedSessions')}
+                    onSort={requestSort}
+                    align="center"
+                  />
+                  <SortableTableHeader
+                    label="Tiến độ"
+                    sortKey="progress"
+                    currentSortKey={getSortDirection('progress') ? 'progress' : ''}
+                    sortDirection={getSortDirection('progress')}
+                    onSort={requestSort}
+                    align="center"
+                  />
+                  <SortableTableHeader
+                    label="Mục tiêu"
+                    sortKey="healthInfo.goal"
+                    currentSortKey={getSortDirection('healthInfo.goal') ? 'healthInfo.goal' : ''}
+                    sortDirection={getSortDirection('healthInfo.goal')}
+                    onSort={requestSort}
+                  />
+                  <SortableTableHeader
+                    label="Lần cuối"
+                    sortKey="lastSessionDate"
+                    currentSortKey={getSortDirection('lastSessionDate') ? 'lastSessionDate' : ''}
+                    sortDirection={getSortDirection('lastSessionDate')}
+                    onSort={requestSort}
+                  />
+                  <NonSortableHeader label="Thao tác" />
                 </tr>
               </thead>
               <tbody>
-                {filteredMembers.map((member) => (
-                  <tr key={member.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+                {sortedData.map((member) => {
+                  const primaryPackage = member.activeSubscriptions?.[0];
+                  const hasVIPPackage = member.activeSubscriptions?.some(s => s.type === 'PT' || s.membershipType === 'VIP');
+                  
+                  return (
+                    <tr key={member._id} className="border-b hover:bg-gray-50">
+                      <td className="p-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedMembers.includes(member._id)}
+                          onChange={() => handleSelectMember(member._id)}
+                          className="rounded"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <div className="flex items-center gap-2">
                         <div className="relative">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                            {member.avatar}
-                          </div>
-                          {member.package === 'pt' && (
-                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
-                              <Crown className="w-3 h-3 text-white" />
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                              {member.fullName.split(' ').map(n => n[0]).join('').substring(0, 2)}
                             </div>
-                          )}
+                            {hasVIPPackage && (
+                              <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
+                                <Crown className="w-2.5 h-2.5 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          <div> 
+                            <div className="font-medium text-gray-900 text-sm">{member.fullName}</div>
+                            <div className="text-xs text-gray-500">
+                              {member.memberInfo?.membership_level === 'vip' ? (
+                                <Badge className="bg-purple-100 text-purple-800 text-xs py-0 px-1">VIP</Badge>
+                              ) : (
+                                <Badge className="bg-gray-100 text-gray-600 text-xs py-0 px-1">Basic</Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div> 
-                          <div className="font-semibold text-gray-900">{member.name}</div>
-                          <div className="text-xs text-gray-600">{member.email}</div>
+                      </td>
+                      <td className="p-2">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <Mail className="w-3 h-3 text-gray-400" />
+                            <span className="text-gray-700">{member.email}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <PhoneIcon className="w-3 h-3 text-gray-400" />
+                            <span className="text-gray-700">{member.phone}</span>
+                          </div>
                         </div>
+                      </td>
+                      <td className="p-2">
+                        {primaryPackage ? (
+                          <div className="space-y-0.5">
+                            <Badge className={`${getPackageColor(primaryPackage.type.toLowerCase())} text-xs`}>
+                              {getPackageText(primaryPackage.type.toLowerCase())}
+                            </Badge>
+                            {(primaryPackage.type === 'PT' || primaryPackage.type === 'Combo') && (
+                              <p className="text-xs text-gray-500">
+                                {primaryPackage.ptsessionsRemaining || 0} buổi
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500">
+                              {format(new Date(primaryPackage.endDate), 'dd/MM/yyyy', { locale: vi })}
+                            </p>
+                      </div>
+                        ) : (
+                          <span className="text-xs text-red-600">Không có gói</span>
+                        )}
+                    </td>
+                      <td className="p-2">
+                        <Badge className={`${getStatusColor(member.status)} text-xs`}>
+                          {getStatusText(member.status)}
+                        </Badge>
+                    </td>
+                      <td className="p-2">
+                        <div className="flex flex-col items-center gap-0.5 text-xs">
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-600">Hoàn thành:</span>
+                            <span className="text-blue-600 font-semibold">{member.completedSessions}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-600">Sắp tới:</span>
+                            <span className="text-orange-600 font-semibold">{member.upcomingSessions}</span>
+                          </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <Badge className={getPackageColor(member.package)}>{getPackageText(member.package)}</Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge className={getStatusColor(member.status)}>{getStatusText(member.status)}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-center text-blue-600 font-semibold">{member.totalSessions}</td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1 text-yellow-600">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span className="font-semibold">{member.rating.toFixed(1)}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
+                      <td className="p-2">
                       <div className="flex flex-col items-center gap-1">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full" style={{ width: `${member.progress}%` }} />
+                          <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                            <div className="bg-gradient-to-r from-green-500 to-green-600 h-1.5 rounded-full" style={{ width: `${member.progress}%` }} />
+                          </div>
+                          <span className="text-xs font-semibold text-green-600">{member.progress}%</span>
                         </div>
-                        <span className="text-sm font-semibold text-green-600">{member.progress}%</span>
-                      </div>
+                      </td>
+                      <td className="p-2 text-gray-800 text-xs">{getGoalText(member.healthInfo?.goal)}</td>
+                      <td className="p-2 text-xs text-gray-600">
+                        {member.lastSessionDate
+                          ? format(new Date(member.lastSessionDate), 'dd/MM/yyyy', { locale: vi })
+                          : 'Chưa có'}
                     </td>
-                    <td className="px-4 py-3 text-gray-800">{getGoalText(member.goal)}</td>
-                    <td className="px-4 py-3 text-gray-600">{member.lastSession}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-1">
-                        <Button variant="outline" size="sm"><Eye className="w-4 h-4" /></Button>
-                        <Button variant="outline" size="sm"><MessageCircle className="w-4 h-4" /></Button>
-                        <Button variant="outline" size="sm"><Phone className="w-4 h-4" /></Button>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedMember(member._id)}
+                            title="Xem chi tiết"
+                            className="h-7 w-7 p-0"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           {/* Mobile list view */}
           <div className="md:hidden space-y-4">
-            {filteredMembers.map((member) => (
-              <div key={member.id} className="p-4 bg-white rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+            {sortedData.map((member) => {
+              const primaryPackage = member.activeSubscriptions?.[0];
+              const hasVIPPackage = member.activeSubscriptions?.some(s => s.type === 'PT' || s.membershipType === 'VIP');
+              
+              return (
+                <div key={member._id} className="p-3 bg-white rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
                     <div className="relative">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        {member.avatar}
-                      </div>
-                      {member.package === 'pt' && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
-                          <Crown className="w-3 h-3 text-white" />
+                          {member.fullName.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                        </div>
+                        {hasVIPPackage && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
+                            <Crown className="w-2.5 h-2.5 text-white" />
                         </div>
                       )}
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">{member.name}</div>
-                      <div className="text-xs text-gray-600">{member.email}</div>
+                        <div className="font-medium text-gray-900 text-sm">{member.fullName}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Mail className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-600">{member.email}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <PhoneIcon className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-600">{member.phone}</span>
+                        </div>
+                      </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedMember(member._id)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="sm"><Eye className="w-4 h-4" /></Button>
-                    <Button variant="outline" size="sm"><MessageCircle className="w-4 h-4" /></Button>
-                    <Button variant="outline" size="sm"><Phone className="w-4 h-4" /></Button>
+
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+                      <span className="text-gray-600">Gói tập</span>
+                      <div className="text-right">
+                        {primaryPackage ? (
+                          <>
+                            <Badge className={`${getPackageColor(primaryPackage.type.toLowerCase())} text-xs`}>
+                              {getPackageText(primaryPackage.type.toLowerCase())}
+                            </Badge>
+                            {(primaryPackage.type === 'PT' || primaryPackage.type === 'Combo') && (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {primaryPackage.ptsessionsRemaining || 0} buổi
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <Badge className="bg-gray-100 text-gray-600 text-xs">Chưa có</Badge>
+                        )}
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Gói</span>
-                    <Badge className={getPackageColor(member.package)}>{getPackageText(member.package)}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
                     <span className="text-gray-600">Trạng thái</span>
-                    <Badge className={getStatusColor(member.status)}>{getStatusText(member.status)}</Badge>
+                      <Badge className={`${getStatusColor(member.status)} text-xs`}>{getStatusText(member.status)}</Badge>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Buổi</span>
-                    <span className="font-semibold text-blue-600">{member.totalSessions}</span>
+                    
+                    <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+                      <span className="text-gray-600">Hoàn thành</span>
+                      <span className="font-semibold text-blue-600">{member.completedSessions}/{member.totalSessions}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Đánh giá</span>
-                    <span className="flex items-center gap-1 text-yellow-600 font-semibold"><Star className="w-4 h-4 fill-current" />{member.rating.toFixed(1)}</span>
+                    
+                    <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+                      <span className="text-gray-600">Sắp tới</span>
+                      <span className="flex items-center gap-1 text-orange-600 font-semibold">
+                        <Calendar className="w-3 h-3" />
+                        {member.upcomingSessions}
+                      </span>
                   </div>
-                  <div className="col-span-2">
-                    <div className="flex items-center justify-between">
+                    
+                    <div className="py-1.5 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-1">
                       <span className="text-gray-600">Tiến độ</span>
                       <span className="text-green-600 font-semibold">{member.progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div className="bg-gradient-to-r from-green-500 to-green-600 h-1.5 rounded-full" style={{ width: `${member.progress}%` }} />
+                      </div>
                     </div>
-                    <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full" style={{ width: `${member.progress}%` }} />
+                    
+                    <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+                      <span className="text-gray-600">Mục tiêu</span>
+                      <span className="font-medium text-gray-900">{getGoalText(member.healthInfo?.goal)}</span>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Mục tiêu</span>
-                    <span className="font-medium text-gray-900">{getGoalText(member.goal)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Lần cuối</span>
-                    <span className="text-gray-600">{member.lastSession}</span>
+                    
+                    <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
+                      <span className="text-gray-600">Lần tập cuối</span>
+                      <span className="text-gray-600">
+                        {member.lastSessionDate
+                          ? format(new Date(member.lastSessionDate), 'dd/MM/yyyy', { locale: vi })
+                          : 'Chưa có'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
+          {/* Empty State */}
+          {sortedData.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500 mb-2">
+                {searchTerm || statusFilter || packageFilter 
+                  ? 'Không tìm thấy hội viên phù hợp'
+                  : 'Chưa có hội viên nào'}
+              </p>
+              {(searchTerm || statusFilter || packageFilter) && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStatusFilter('');
+                    setPackageFilter('');
+                  }}
+                  className="mt-2"
+                >
+                  Xóa bộ lọc
+                </Button>
+              )}
+            </div>
+          )}
+
           {/* Pagination */}
+          {sortedData.length > 0 && (
           <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
             <Button variant="outline" size="sm">
               <ChevronLeft className="w-4 h-4 mr-1" />
               Trước
             </Button>
             <div className="text-sm text-gray-600">
-              Trang 1 / 1
+                Hiển thị {sortedData.length} hội viên
             </div>
             <Button variant="outline" size="sm">
               Sau
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Member Detail Modal */}
+      {selectedMember && (
+        <MemberDetailModal
+          memberId={selectedMember}
+          onClose={() => setSelectedMember(null)}
+          onCreateSchedule={(memberId) => {
+            // Navigate to create schedule page or open modal
+            console.log('Create schedule for member:', memberId);
+            // TODO: Implement create schedule functionality
+          }}
+        />
+      )}
     </div>
   );
 }
