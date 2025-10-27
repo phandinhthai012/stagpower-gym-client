@@ -124,3 +124,46 @@ export const usePaymentStats = () => {
         queryFn: paymentApi.getPaymentStats,
     });
 };
+
+// Helper function to calculate total spending from payments
+export const calculateTotalSpending = (payments: any[]): number => {
+  if (!payments || payments.length === 0) return 0;
+  
+  return payments
+    .filter((payment: any) => payment.paymentStatus === 'Completed')
+    .reduce((total: number, payment: any) => total + (payment.amount || 0), 0);
+};
+
+// Helper function to calculate revenue by month
+export const calculateMonthlyRevenue = (payments: any[]) => {
+  if (!payments || payments.length === 0) return [];
+  
+  const monthlyData: Record<string, number> = {};
+  const currentYear = new Date().getFullYear();
+  
+  // Initialize all months
+  for (let i = 0; i < 12; i++) {
+    const monthKey = `${currentYear}-${String(i + 1).padStart(2, '0')}`;
+    monthlyData[monthKey] = 0;
+  }
+  
+  // Sum payments by month
+  payments
+    .filter((payment: any) => payment.paymentStatus === 'Completed')
+    .forEach((payment: any) => {
+      const date = new Date(payment.paymentDate || payment.createdAt);
+      if (date.getFullYear() === currentYear) {
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        monthlyData[monthKey] += payment.amount || 0;
+      }
+    });
+  
+  // Convert to array format for chart
+  return Object.entries(monthlyData)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, revenue], index) => ({
+      month: `T${index + 1}`,
+      revenue: revenue / 1000000, // Convert to millions
+      fullDate: key,
+    }));
+};

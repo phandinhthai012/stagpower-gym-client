@@ -11,3 +11,7 @@ export * from './useStaffTrainers';
 export * from './useUsers';
 export * from './useSubscriptions';
 export * from './useCheckIns';
+export * from './useReports';
+
+// Re-export payment hooks from member hooks
+export * from '../../member/hooks/usePayments';
