@@ -5,6 +5,7 @@ export { Label } from './label';
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './card';
 export { Calendar } from './calendar';
 export { ModalDaySchedules } from './modal-day-schedules';
+export { Timeline } from './timeline';
 export { Badge, badgeVariants } from './badge';
 export { 
   Table, 
