@@ -14,7 +14,6 @@ import {
   Smartphone,
   Clock,
   MapPin,
-  Package,
   Users,
   Activity,
   Eye,
@@ -254,36 +253,6 @@ export function AdminAccessControl() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5 text-purple-600" />
-            Thao tác nhanh
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex flex-col items-center gap-2">
-              <QrCode className="w-6 h-6" />
-              <span className="text-xs">Tạo QR Code</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col items-center gap-2">
-              <Users className="w-6 h-6" />
-              <span className="text-xs">Danh sách hội viên</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col items-center gap-2">
-              <Clock className="w-6 h-6" />
-              <span className="text-xs">Lịch sử check-in</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col items-center gap-2">
-              <RefreshCw className="w-6 h-6" />
-              <span className="text-xs">Làm mới dữ liệu</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Recent Check-ins */}
       <Card>
