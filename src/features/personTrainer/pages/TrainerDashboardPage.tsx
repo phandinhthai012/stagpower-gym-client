@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -12,147 +12,198 @@ import {
   Calendar as CalendarIcon,
   BarChart3,
   Bell,
-  TrendingUp,
-  Star,
-  DollarSign
+  Loader2,
+  MapPin
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
-import { mockUsers, mockSchedules, mockSubscriptions, getMockDataByTrainerId } from '../../../mockdata';
+import { useMySchedules, useMyBookingRequests } from '../hooks';
+import { ScheduleWithDetails } from '../types/schedule.types';
 
 export function TrainerDashboardPage() {
   const { user } = useAuth();
   
-  // Get trainer's data from mockdata
-  const trainerSchedules = getMockDataByTrainerId('schedules', user?.id || '');
-  const trainerMembers = mockUsers.filter(u => 
-    u.role === 'Member' && 
-    trainerSchedules.some(s => s.member_id === u.id)
-  );
-  
-  // Get today's schedule
-  const today = new Date().toISOString().split('T')[0];
-  const todaySchedule = trainerSchedules.filter(schedule => 
-    schedule.date_time.startsWith(today)
-  ).map(schedule => {
-    const member = mockUsers.find(u => u.id === schedule.member_id);
-    const subscription = mockSubscriptions.find(sub => sub.id === schedule.subscription_id);
-    const packageType = subscription?.type || 'PT';
-    
-    return {
-      id: schedule.id,
-      time: new Date(schedule.date_time).toLocaleTimeString('vi-VN', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      date: "Hôm nay",
-      member: member?.fullName || 'Unknown',
-      type: packageType === 'PT' ? 'PT cá nhân' : packageType === 'Combo' ? 'PT combo' : 'Membership',
-      duration: `${schedule.duration_minutes} phút`,
-      status: schedule.status.toLowerCase(),
-      note: schedule.note
-    };
-  });
+  // Fetch real data from API
+  const { data: schedulesData, isLoading: isLoadingSchedules } = useMySchedules();
+  const { data: bookingRequestsData, isLoading: isLoadingRequests } = useMyBookingRequests();
 
-  // Get recent members (last 5 members with recent sessions)
-  const recentMembers = trainerMembers.slice(0, 5).map(member => {
-    const memberSchedules = trainerSchedules.filter(s => s.member_id === member.id);
-    const lastSession = memberSchedules
-      .filter(s => s.status === 'Completed')
-      .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime())[0];
-    
-    const lastSessionTime = lastSession 
-      ? new Date(lastSession.date_time).toLocaleDateString('vi-VN')
-      : 'Chưa có buổi tập';
-    
-    return {
-      id: member.id,
-      name: member.fullName,
-      avatar: member.fullName.split(' ').map(n => n[0]).join('').substring(0, 2),
-      lastSession: lastSessionTime,
-      status: member.status.toLowerCase(),
-      sessions: memberSchedules.filter(s => s.status === 'Completed').length
-    };
-  });
+  const schedules = schedulesData || [];
+  const bookingRequests = bookingRequestsData || [];
 
-  // Calculate stats
-  const totalClients = trainerMembers.length;
-  const activeSessions = todaySchedule.length;
-  const upcomingSessions = trainerSchedules.filter(s => 
-    new Date(s.date_time) > new Date() && s.status === 'Confirmed'
-  ).length;
-  const completedSessions = trainerSchedules.filter(s => s.status === 'Completed').length;
-  const averageRating = 4.8; // Mock rating
-  const monthlyRevenue = 15000000; // Mock revenue
+  // Helper function to safely get member name
+  const getMemberName = (schedule: ScheduleWithDetails) => {
+    if (typeof schedule.memberId === 'object' && schedule.memberId?.fullName) {
+      return schedule.memberId.fullName;
+    }
+    return 'Unknown Member';
+  };
+
+  // Helper function to get branch name
+  const getBranchName = (schedule: ScheduleWithDetails) => {
+    if (typeof schedule.branchId === 'object' && schedule.branchId?.name) {
+      return schedule.branchId.name;
+    }
+    return 'Chi nhánh chưa xác định';
+  };
+
+  // Helper function to get member initials
+  const getMemberInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  // Calculate today's schedule
+  const todaySchedule = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return schedules
+      .filter(schedule => {
+        const scheduleDate = new Date(schedule.dateTime);
+        return scheduleDate >= today && scheduleDate < tomorrow;
+      })
+      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
+      .map(schedule => {
+        const memberName = getMemberName(schedule);
+        const branchName = getBranchName(schedule);
+        
+        return {
+          id: schedule._id,
+          time: new Date(schedule.dateTime).toLocaleTimeString('vi-VN', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          date: "Hôm nay",
+          member: memberName,
+          branch: branchName,
+          type: 'PT cá nhân',
+          duration: `${schedule.durationMinutes} phút`,
+          status: schedule.status.toLowerCase(),
+          note: schedule.notes || ''
+        };
+      });
+  }, [schedules]);
+
+  // Calculate unique members (from completed sessions)
+  const uniqueMembers = useMemo(() => {
+    const memberMap = new Map();
+    
+    schedules.forEach(schedule => {
+      const memberId = typeof schedule.memberId === 'object' 
+        ? schedule.memberId._id 
+        : schedule.memberId;
+      const memberName = getMemberName(schedule);
+      
+      if (!memberMap.has(memberId)) {
+        const memberSchedules = schedules.filter(s => {
+          const sMemId = typeof s.memberId === 'object' ? s.memberId._id : s.memberId;
+          return sMemId === memberId;
+        });
+        
+        const completedSessions = memberSchedules.filter(s => s.status === 'Completed');
+        const lastSession = completedSessions
+          .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime())[0];
+        
+        memberMap.set(memberId, {
+          id: memberId,
+          name: memberName,
+          avatar: getMemberInitials(memberName),
+          lastSession: lastSession 
+            ? new Date(lastSession.dateTime).toLocaleDateString('vi-VN')
+            : 'Chưa có buổi tập',
+          status: 'active',
+          sessions: completedSessions.length
+        });
+      }
+    });
+    
+    return Array.from(memberMap.values())
+      .sort((a, b) => b.sessions - a.sessions)
+      .slice(0, 5);
+  }, [schedules]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const totalClients = uniqueMembers.length;
+    const activeSessions = todaySchedule.length;
+    
+    const upcomingSessions = schedules.filter(s => 
+      new Date(s.dateTime) > now && s.status === 'Confirmed'
+    ).length;
+    
+    const completedSessions = schedules.filter(s => 
+      s.status === 'Completed'
+    ).length;
+
+    const monthlyCompletedSessions = schedules.filter(s => 
+      s.status === 'Completed' && new Date(s.dateTime) >= thisMonth
+    ).length;
+
+    // Mock revenue calculation (100k per session)
+    const monthlyRevenue = monthlyCompletedSessions * 100000;
+
+    // Pending booking requests
+    const pendingRequests = bookingRequests.filter(r => r.status === 'Pending').length;
+
+    return {
+      totalClients,
+      activeSessions,
+      upcomingSessions,
+      completedSessions,
+      monthlyRevenue,
+      pendingRequests,
+      averageRating: 4.8 // TODO: Implement real rating system
+    };
+  }, [schedules, bookingRequests, todaySchedule, uniqueMembers]);
+
+  // Show loading state
+  if (isLoadingSchedules || isLoadingRequests) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Tổng Hội Viên</CardTitle>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="h-4 w-4 text-blue-600" />
+      {/* Pending Booking Requests Alert */}
+      {stats.pendingRequests > 0 && (
+        <Card className="border-l-4 border-l-purple-500 bg-purple-50">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Bell className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-purple-900">
+                    Bạn có {stats.pendingRequests} yêu cầu đặt lịch đang chờ xử lý
+                  </p>
+                  <p className="text-sm text-purple-700">
+                    Xem và xác nhận các yêu cầu mới từ hội viên
+                  </p>
+                </div>
+              </div>
+              <Link to="/trainer/booking-requests">
+                <Button className="bg-purple-600 hover:bg-purple-700">
+                  Xem ngay
+                </Button>
+              </Link>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{totalClients}</div>
-            <p className="text-xs text-green-600 flex items-center mt-1">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +2 từ tháng trước
-            </p>
           </CardContent>
         </Card>
-
-        <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Buổi Tập Hôm Nay</CardTitle>
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Calendar className="h-4 w-4 text-orange-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{activeSessions}</div>
-            <p className="text-xs text-gray-500 mt-1">
-              {upcomingSessions} buổi sắp tới
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-yellow-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Đánh Giá Trung Bình</CardTitle>
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Star className="h-4 w-4 text-yellow-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-yellow-600">{averageRating}</div>
-            <p className="text-xs text-gray-500 mt-1">
-              {completedSessions} buổi đã hoàn thành
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Doanh Thu Tháng</CardTitle>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <DollarSign className="h-4 w-4 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {(monthlyRevenue / 1000000).toFixed(1)}M VNĐ
-            </div>
-            <p className="text-xs text-green-600 flex items-center mt-1">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              +12% từ tháng trước
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Today's Schedule */}
@@ -188,6 +239,10 @@ export function TrainerDashboardPage() {
                         <div>
                           <h4 className="font-semibold text-gray-900">{session.member}</h4>
                           <p className="text-sm text-gray-600">{session.type} - {session.duration}</p>
+                          <p className="text-xs text-gray-500 flex items-center mt-1">
+                            <MapPin className="w-3 h-3 mr-1" />
+                            {session.branch}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -296,7 +351,8 @@ export function TrainerDashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentMembers.map((member) => (
+            {uniqueMembers.length > 0 ? (
+              uniqueMembers.map((member) => (
               <div key={member.id} className="flex items-center p-4 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-4">
                   {member.avatar}
@@ -319,7 +375,13 @@ export function TrainerDashboardPage() {
                   </Badge>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-8 text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>Chưa có hội viên nào</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
