@@ -1,50 +1,83 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../../constants/queryKeys';
-import { healthInfoApi } from '../api/healthInfo.api';
-import { toast } from 'sonner';
+import axiosInstance from '../../../configs/AxiosConfig';
+import { API_ENDPOINTS } from '../../../configs/Api';
 
-export const useHealthInfo = () => {
-    return useQuery({
-        queryKey: queryKeys.healthInfo,
-        queryFn: healthInfoApi.getMyHealthInfo,
-        retry: (failureCount, error: any) => {
-            // Don't retry on 404 errors (health info not found)
-            if (error?.response?.status === 404) {
-                return false;
-            }
-            return failureCount < 3;
-        },
-    });
-}
+// Get my health info
+export const useMyHealthInfo = () => {
+  return useQuery({
+    queryKey: ['health-info', 'me'],
+    queryFn: async () => {
+      const response = await axiosInstance.get(API_ENDPOINTS.HEALTH_INFO.GET_MY_HEALTH_INFO);
+      return response.data;
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
+};
 
+// Get health info by member ID
+export const useHealthInfoByMemberId = (memberId: string | null | undefined) => {
+  return useQuery({
+    queryKey: ['health-info', 'member', memberId],
+    queryFn: async () => {
+      if (!memberId) return null;
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_MEMBER_ID(memberId)
+      );
+      return response.data;
+    },
+    enabled: !!memberId, // Only run if memberId exists
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+// Get health info by ID
+export const useHealthInfoById = (healthInfoId: string | null | undefined) => {
+  return useQuery({
+    queryKey: ['health-info', healthInfoId],
+    queryFn: async () => {
+      if (!healthInfoId) return null;
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_ID(healthInfoId)
+      );
+      return response.data;
+    },
+    enabled: !!healthInfoId,
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+// Create health info
 export const useCreateHealthInfo = () => {
-    const queryClient = useQueryClient();
-    
-    return useMutation({
-        mutationFn: ({ memberId, data }: { memberId: string; data: any }) => 
-            healthInfoApi.createHealthInfo(memberId, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.healthInfo });
-            toast.success('Thông tin sức khỏe đã được tạo!');
-        },
-        onError: (error: any) => {
-            toast.error(`Lỗi khi tạo thông tin sức khỏe: ${error?.response?.data?.message || error?.message || 'Có lỗi xảy ra'}`);
-        },
-    });
-}
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ memberId, data }: { memberId: string; data: any }) => {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.HEALTH_INFO.CREATE_HEALTH_INFO(memberId),
+        data
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['health-info'] });
+    },
+  });
+};
 
+// Update health info
 export const useUpdateHealthInfo = () => {
-    const queryClient = useQueryClient();
-    
-    return useMutation({
-        mutationFn: ({ healthInfoId, data }: { healthInfoId: string; data: any }) => 
-            healthInfoApi.updateHealthInfo(healthInfoId, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.healthInfo });
-            toast.success('Thông tin sức khỏe đã được cập nhật!');
-        },
-        onError: (error: any) => {
-            toast.error(`Lỗi khi cập nhật thông tin sức khỏe: ${error?.response?.data?.message || error?.message || 'Có lỗi xảy ra'}`);
-        },
-    });
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ healthInfoId, data }: { healthInfoId: string; data: any }) => {
+      const response = await axiosInstance.put(
+        API_ENDPOINTS.HEALTH_INFO.UPDATE_HEALTH_INFO(healthInfoId),
+        data
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['health-info'] });
+    },
+  });
 };

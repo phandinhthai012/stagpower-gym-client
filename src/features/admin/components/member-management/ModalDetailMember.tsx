@@ -25,19 +25,22 @@ import {
   Activity
 } from 'lucide-react';
 import { User as UserType } from '../../../../mockdata/users';
+import { useHealthInfoByMemberId } from '../../../member/hooks/useHealthInfo';
+import { HealthInfoSection } from './HealthInfoSection';
+import { UniversalUser, normalizeUser } from '../../types/user.types';
 
 interface ModalDetailMemberProps {
   isOpen: boolean;
   onClose: () => void;
-  member: UserType | null;
-  onEdit?: (member: UserType) => void;
+  member: UniversalUser | UserType | null;
+  onEdit?: (member: any) => void;
   onDelete?: (memberId: string) => void;
 }
 
 export function ModalDetailMember({ 
   isOpen, 
   onClose, 
-  member, 
+  member: rawMember, 
   onEdit, 
   onDelete 
 }: ModalDetailMemberProps) {
@@ -46,7 +49,20 @@ export function ModalDetailMember({
     preserveScrollPosition: true
   });
 
-  if (!isOpen || !member) return null;
+  // Normalize member data to ApiUser format (camelCase)
+  // Must do this before hooks to avoid conditional hook calls
+  const member = rawMember ? normalizeUser(rawMember as UniversalUser) : null;
+
+  // Fetch health info for this member
+  // Hook must be called unconditionally
+  const memberId = member?._id;
+  const { data: healthInfoResponse, isLoading: isLoadingHealthInfo } = useHealthInfoByMemberId(memberId);
+  const healthInfo = healthInfoResponse && 'success' in healthInfoResponse && healthInfoResponse.success 
+    ? healthInfoResponse.data 
+    : null;
+
+  // Early return after all hooks
+  if (!isOpen || !rawMember || !member) return null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -57,15 +73,16 @@ export function ModalDetailMember({
     }
   };
 
-  const getMembershipLevelColor = (level: string) => {
-    switch (level) {
-      case 'VIP': return 'bg-purple-100 text-purple-800';
-      case 'Basic': return 'bg-blue-100 text-blue-800';
+  const getMembershipLevelColor = (level?: string) => {
+    switch (level?.toLowerCase()) {
+      case 'vip': return 'bg-purple-100 text-purple-800';
+      case 'basic': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Chưa có';
     return new Date(dateString).toLocaleDateString('vi-VN', {
       year: 'numeric',
       month: 'long',
@@ -109,7 +126,7 @@ export function ModalDetailMember({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onEdit?.(member)}
+              onClick={() => onEdit?.(rawMember)}
               className="flex items-center space-x-1"
             >
               <Edit className="h-4 w-4" />
@@ -169,18 +186,18 @@ export function ModalDetailMember({
                       <label className="text-sm font-medium text-gray-500">Ngày sinh</label>
                       <p className="text-sm text-gray-900 flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-gray-400" />
-                        <span>{formatDate(member.date_of_birth)}</span>
+                        <span>{formatDate(member.dateOfBirth)}</span>
                       </p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">CCCD</label>
-                      <p className="text-sm text-gray-900">{member.cccd}</p>
+                      <p className="text-sm text-gray-900">{member.cccd || 'Chưa có'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500">Ngày tham gia</label>
                       <p className="text-sm text-gray-900 flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-gray-400" />
-                        <span>{formatDate(member.join_date)}</span>
+                        <span>{formatDate(member.joinDate)}</span>
                       </p>
                     </div>
                     <div>
@@ -197,7 +214,7 @@ export function ModalDetailMember({
               </Card>
 
               {/* Member Information */}
-              {member.member_info && (
+              {member.memberInfo && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
@@ -210,33 +227,33 @@ export function ModalDetailMember({
                       <div>
                         <label className="text-sm font-medium text-gray-500">Cấp độ thành viên</label>
                         <div className="mt-1">
-                          <Badge className={getMembershipLevelColor(member.member_info.membership_level)}>
-                            {member.member_info.membership_level}
+                          <Badge className={getMembershipLevelColor(member.memberInfo.membership_level)}>
+                            {member.memberInfo.membership_level}
                           </Badge>
                         </div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Tổng chi tiêu</label>
                         <p className="text-sm text-gray-900 font-medium">
-                          {formatCurrency(member.member_info.total_spending)}
+                          {formatCurrency(member.memberInfo.total_spending || 0)}
                         </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Tháng thành viên</label>
-                        <p className="text-sm text-gray-900">{member.member_info.membership_month} tháng</p>
+                        <p className="text-sm text-gray-900">{member.memberInfo.membership_month || 0} tháng</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-500">Học sinh/Sinh viên</label>
                         <div className="mt-1">
-                          <Badge className={member.member_info.is_hssv ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}>
-                            {member.member_info.is_hssv ? 'Có' : 'Không'}
+                          <Badge className={member.memberInfo.is_hssv ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}>
+                            {member.memberInfo.is_hssv ? 'Có' : 'Không'}
                           </Badge>
                         </div>
                       </div>
                       <div className="md:col-span-2">
                         <label className="text-sm font-medium text-gray-500">Ghi chú</label>
                         <p className="text-sm text-gray-900 mt-1">
-                          {member.member_info.notes || 'Không có ghi chú'}
+                          {member.memberInfo.notes || 'Không có ghi chú'}
                         </p>
                       </div>
                     </div>
@@ -245,25 +262,14 @@ export function ModalDetailMember({
               )}
 
               {/* Health Information */}
-              {member.member_info?.health_info_id && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Heart className="h-5 w-5 text-red-600" />
-                      <span>Thông tin sức khỏe</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-600">ID thông tin sức khỏe: {member.member_info.health_info_id}</p>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Xem chi tiết
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <HealthInfoSection 
+                healthInfo={healthInfo}
+                isLoading={isLoadingHealthInfo}
+                onEdit={() => {
+                  // TODO: Open edit health info modal
+                  console.log('Edit health info for member:', member._id);
+                }}
+              />
             </div>
 
             {/* Right Column - Actions & QR */}
@@ -298,7 +304,7 @@ export function ModalDetailMember({
               </Card>
 
               {/* QR Code */}
-              {member.member_info?.qr_code && (
+              {member.memberInfo?.qr_code && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
@@ -395,14 +401,14 @@ export function ModalDetailMember({
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
           <div className="text-sm text-gray-500">
-            Tạo lúc: {formatDate(member.created_at)} | 
-            Cập nhật lần cuối: {formatDate(member.updated_at)}
+            Tạo lúc: {formatDate(member.createdAt)} | 
+            Cập nhật lần cuối: {formatDate(member.updatedAt)}
           </div>
           <div className="flex space-x-2">
             <Button variant="outline" onClick={onClose}>
               Đóng
             </Button>
-            <Button onClick={() => onEdit?.(member)}>
+            <Button onClick={() => onEdit?.(rawMember)}>
               Chỉnh sửa
             </Button>
           </div>

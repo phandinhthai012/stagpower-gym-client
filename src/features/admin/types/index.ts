@@ -4,3 +4,4 @@ export * from './discount.types';
 export * from './invoice.types';
 export * from './staff-trainer.types';
 export * from './schedule.types';
+export * from './user.types';

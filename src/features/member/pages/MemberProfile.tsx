@@ -23,7 +23,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useMe, useUpdateProfile } from '../hooks/useMembers';
-import { useHealthInfo, useCreateHealthInfo, useUpdateHealthInfo } from '../hooks/useHealthInfo';
+import { useMyHealthInfo, useCreateHealthInfo, useUpdateHealthInfo } from '../hooks/useHealthInfo';
 import { formatDate } from '../../../lib/date-utils';
 import { toast } from 'sonner';
 
@@ -37,7 +37,7 @@ export function MemberProfile() {
 
   // API hooks
   const { data: userData, isLoading: userLoading, error: userError } = useMe();
-  const { data: healthInfo, isLoading: healthLoading, error: healthError } = useHealthInfo();
+  const { data: healthInfo, isLoading: healthLoading, error: healthError } = useMyHealthInfo();
   const updateProfileMutation = useUpdateProfile();
   const createHealthInfoMutation = useCreateHealthInfo();
   const updateHealthInfoMutation = useUpdateHealthInfo();
@@ -194,8 +194,8 @@ export function MemberProfile() {
     );
   }
 
-  // Error state - only show error for non-404 errors
-  if (userError || (healthError && healthError?.response?.status !== 404)) {
+  // Error state - only show error for user data (health info 404 is ok - user might not have it yet)
+  if (userError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -206,6 +206,13 @@ export function MemberProfile() {
         </div>
       </div>
     );
+  }
+  
+  // Check if health error is NOT a 404 (404 means user hasn't created health info yet, which is ok)
+  const isHealthErrorSerious = healthError && (healthError as any)?.response?.status && (healthError as any)?.response?.status !== 404;
+  if (isHealthErrorSerious) {
+    console.error('Health info error:', healthError);
+    // Continue rendering but show warning in health section
   }
 
   return (

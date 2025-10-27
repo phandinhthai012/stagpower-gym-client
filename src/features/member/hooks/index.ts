@@ -7,7 +7,9 @@ export {
 
 // Health Info hooks
 export {
-  useHealthInfo,
+  useMyHealthInfo,
+  useHealthInfoById,
+  useHealthInfoByMemberId,
   useCreateHealthInfo,
   useUpdateHealthInfo
 } from './useHealthInfo';
