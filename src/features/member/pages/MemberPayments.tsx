@@ -25,7 +25,10 @@ import {
 } from 'lucide-react';
 import { formatDate } from '../../../lib/date-utils';
 import MemberPaymentModal from '../components/ModalPayment';
+import { ModalPaymentDetail } from '../components/ModalPaymentDetail';
 import { usePaymentsByMemberId, usePackages, useSubscriptionsByMemberId } from '../hooks';
+import { useTableRowClick } from '../../../hooks/useTableRowClick';
+import { ClickableTableRow, TableActions } from '../../../components/ui';
 
 export function MemberPayments() {
   const { user } = useAuth();
@@ -35,6 +38,16 @@ export function MemberPayments() {
   const [selectedMethod, setSelectedMethod] = useState<undefined | 'momo' | 'zalopay' | 'bank'>(undefined);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const [openModal, setOpenModal] = useState(false);
+
+  // Use reusable hook for table row click
+  const {
+    isModalOpen: openDetailModal,
+    selectedId: selectedPaymentId,
+    selectedData: selectedPaymentDetail,
+    handleRowClick,
+    handleButtonClick,
+    closeModal: closeDetailModal,
+  } = useTableRowClick<any>();
 
   // Fetch data from APIs
   const { data: paymentsResponse, isLoading: isLoadingPayments } = usePaymentsByMemberId(memberId);
@@ -142,18 +155,18 @@ export function MemberPayments() {
   const getStatusColor = (status: string) => {
     const statusLower = status?.toLowerCase() || '';
     if (statusLower === 'completed' || statusLower === 'success') {
-      return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800';
     }
     if (statusLower === 'pending' || statusLower === 'waiting') {
-      return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800';
     }
     if (statusLower === 'failed' || statusLower === 'error') {
-      return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800';
     }
     if (statusLower === 'refunded') {
-      return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800';
     }
-    return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800';
   };
 
   const getStatusIcon = (status: string) => {
@@ -182,9 +195,29 @@ export function MemberPayments() {
       case 'card':
         return '💳';
       case 'banktransfer':
+      case 'bank_transfer':
         return '🏦';
       default:
         return '💰';
+    }
+  };
+
+  const getPaymentMethodName = (method: string) => {
+    const methodLower = method?.toLowerCase() || '';
+    switch (methodLower) {
+      case 'momo':
+        return 'Ví MoMo';
+      case 'zalopay':
+        return 'Ví ZaloPay';
+      case 'cash':
+        return 'Tiền mặt';
+      case 'card':
+        return 'Thẻ';
+      case 'banktransfer':
+      case 'bank_transfer':
+        return 'Chuyển khoản';
+      default:
+        return method || 'Khác';
     }
   };
 
@@ -496,7 +529,10 @@ export function MemberPayments() {
               </thead>
               <tbody>
                 {memberPayments.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50">
+                  <ClickableTableRow
+                    key={p.id}
+                    onClick={handleRowClick(p.id || p._id, p)}
+                  >
                     <td className="px-4 py-3">
                       <div className="font-semibold text-blue-900">{p.invoice_number || p.id}</div>
                       {p.transaction_id && (
@@ -520,7 +556,10 @@ export function MemberPayments() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2"><span>{getPaymentMethodIcon(p.payment_method)}</span><span className="capitalize text-sm">{p.payment_method}</span></div>
+                      <div className="flex items-center gap-2">
+                        <span>{getPaymentMethodIcon(p.payment_method)}</span>
+                        <span className="text-sm">{getPaymentMethodName(p.payment_method)}</span>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(p.payment_status)}`}>
@@ -532,11 +571,19 @@ export function MemberPayments() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline"><Download className="h-3 w-3 mr-1" /> Hóa đơn</Button>
-                      </div>
+                      <TableActions
+                        actions={[
+                          {
+                            label: 'Chi tiết',
+                            icon: <Download className="h-3 w-3 mr-1" />,
+                            onClick: handleButtonClick(p.id || p._id, p),
+                            variant: 'outline',
+                            size: 'sm',
+                          },
+                        ]}
+                      />
                     </td>
-                  </tr>
+                  </ClickableTableRow>
                 ))}
               </tbody>
             </table>
@@ -614,7 +661,7 @@ export function MemberPayments() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <span className="text-lg">{getPaymentMethodIcon(method)}</span>
-                          <span className="text-sm font-medium capitalize">{method}</span>
+                          <span className="text-sm font-medium">{getPaymentMethodName(method)}</span>
                         </div>
                         <span className="text-sm text-gray-600">{count as number} lần</span>
                       </div>
@@ -631,6 +678,14 @@ export function MemberPayments() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Payment Detail Modal */}
+      <ModalPaymentDetail
+        open={openDetailModal}
+        onClose={closeDetailModal}
+        paymentId={selectedPaymentId}
+        paymentDetail={selectedPaymentDetail}
+      />
     </div>
   );
 }

@@ -56,3 +56,7 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
 } from './dropdown-menu';
+
+// Table utility components
+export { ClickableTableRow } from './table-row';
+export { TableActions } from './table-actions';
