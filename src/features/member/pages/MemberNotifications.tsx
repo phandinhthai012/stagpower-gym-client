@@ -13,63 +13,68 @@ import {
   Package,
   Activity,
   Trash2,
-  CheckCheck
+  CheckCheck,
+  Loader2
 } from 'lucide-react';
 import { formatDate } from '../../../lib/date-utils';
-
-// Mock notifications data
-const mockNotifications = [
-  {
-    id: '1',
-    type: 'success',
-    title: 'Check-in thành công',
-    message: 'Bạn đã check-in vào phòng gym lúc 08:30 sáng hôm nay.',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    read: false,
-    icon: Activity
-  },
-  {
-    id: '2',
-    type: 'warning',
-    title: 'Gói tập sắp hết hạn',
-    message: 'Gói tập của bạn sẽ hết hạn trong 3 ngày. Hãy gia hạn sớm để tiếp tục sử dụng dịch vụ.',
-    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-    read: false,
-    icon: Package
-  },
-  {
-    id: '3',
-    type: 'info',
-    title: 'Lịch PT đã được xác nhận',
-    message: 'Buổi PT với huấn luyện viên Nguyễn Văn A vào ngày mai lúc 18:00 đã được xác nhận.',
-    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-    read: true,
-    icon: Calendar
-  },
-  {
-    id: '4',
-    type: 'success',
-    title: 'Thanh toán thành công',
-    message: 'Giao dịch thanh toán gói VIP 3 tháng đã được xử lý thành công.',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-    read: true,
-    icon: CreditCard
-  },
-  {
-    id: '5',
-    type: 'info',
-    title: 'Thông báo bảo trì hệ thống',
-    message: 'Hệ thống sẽ được bảo trì từ 02:00 - 04:00 ngày mai. Vui lòng lưu ý.',
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    read: true,
-    icon: Info
-  }
-];
+import { useMyNotifications, useMarkAsRead, useDeleteNotification, useMarkAllAsRead } from '../hooks';
 
 export function MemberNotifications() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState(mockNotifications);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+
+  // Fetch notifications from API
+  const { data: notificationsResponse, isLoading, error } = useMyNotifications();
+  const markAsReadMutation = useMarkAsRead();
+  const deleteMutation = useDeleteNotification();
+  const markAllAsReadMutation = useMarkAllAsRead();
+
+  // Process and map notifications data
+  const notifications = useMemo(() => {
+    if (!notificationsResponse?.data) return [];
+    
+    return notificationsResponse.data.map((notification) => {
+      // Map API type to component type
+      let type: 'success' | 'warning' | 'error' | 'info' = 'info';
+      let icon = Info;
+      
+      if (notification.type === 'ERROR') {
+        type = 'error';
+        icon = AlertTriangle;
+      } else if (notification.type === 'WARNING') {
+        type = 'warning';
+        icon = AlertTriangle;
+      } else if (notification.type === 'INFO') {
+        // Try to determine icon based on title/message
+        const titleLower = notification.title.toLowerCase();
+        const messageLower = notification.message.toLowerCase();
+        
+        if (titleLower.includes('thành công') || titleLower.includes('success')) {
+          type = 'success';
+          icon = CheckCircle;
+        } else if (titleLower.includes('check-in') || messageLower.includes('check-in')) {
+          icon = Activity;
+        } else if (titleLower.includes('pt') || titleLower.includes('lịch')) {
+          icon = Calendar;
+        } else if (titleLower.includes('thanh toán') || titleLower.includes('payment')) {
+          icon = CreditCard;
+          type = 'success';
+        } else if (titleLower.includes('gói') || titleLower.includes('package')) {
+          icon = Package;
+        }
+      }
+      
+      return {
+        id: notification._id,
+        type,
+        title: notification.title,
+        message: notification.message,
+        timestamp: new Date(notification.createdAt),
+        read: notification.status === 'READ',
+        icon,
+      };
+    }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }, [notificationsResponse]);
 
   // Filter notifications
   const filteredNotifications = useMemo(() => {
@@ -118,23 +123,17 @@ export function MemberNotifications() {
   };
 
   const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === id 
-          ? { ...notification, read: true }
-          : notification
-      )
-    );
+    markAsReadMutation.mutate(id);
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, read: true }))
-    );
+    markAllAsReadMutation.mutate();
   };
 
   const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+    if (confirm('Bạn có chắc muốn xóa thông báo này?')) {
+      deleteMutation.mutate(id);
+    }
   };
 
   const getTimeAgo = (timestamp: Date) => {
@@ -144,7 +143,9 @@ export function MemberNotifications() {
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (minutes < 60) {
+    if (minutes < 1) {
+      return 'Vừa xong';
+    } else if (minutes < 60) {
       return `${minutes} phút trước`;
     } else if (hours < 24) {
       return `${hours} giờ trước`;
@@ -152,6 +153,31 @@ export function MemberNotifications() {
       return `${days} ngày trước`;
     }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-96">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <span>Đang tải thông báo...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <Card>
+          <CardContent className="py-12 text-center text-red-600">
+            Có lỗi xảy ra khi tải thông báo. Vui lòng thử lại sau.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -163,9 +189,13 @@ export function MemberNotifications() {
         </div>
         <div className="flex space-x-2">
           {stats.unread > 0 && (
-            <Button variant="outline" onClick={markAllAsRead}>
+            <Button 
+              variant="outline" 
+              onClick={markAllAsRead}
+              disabled={markAllAsReadMutation.isPending}
+            >
               <CheckCheck className="h-4 w-4 mr-2" />
-              Đánh dấu tất cả đã đọc
+              {markAllAsReadMutation.isPending ? 'Đang xử lý...' : 'Đánh dấu tất cả đã đọc'}
             </Button>
           )}
         </div>
@@ -285,6 +315,7 @@ export function MemberNotifications() {
                               size="sm"
                               variant="outline"
                               onClick={() => markAsRead(notification.id)}
+                              disabled={markAsReadMutation.isPending}
                             >
                               Đánh dấu đã đọc
                             </Button>
@@ -293,6 +324,7 @@ export function MemberNotifications() {
                             size="sm"
                             variant="outline"
                             onClick={() => deleteNotification(notification.id)}
+                            disabled={deleteMutation.isPending}
                             className="text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="h-3 w-3" />

@@ -40,6 +40,15 @@ export {
   useCreatePayment
 } from './usePayments';
 
+// Notification hooks
+export {
+  useMyNotifications,
+  useMarkAsRead,
+  useDeleteNotification,
+  useMarkAllAsRead,
+  notificationQueryKeys
+} from './useNotifications';
+
 // Check-in hooks
 export {
   useCheckIns,
