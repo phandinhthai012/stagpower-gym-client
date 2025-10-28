@@ -157,10 +157,10 @@ export function MemberNotifications() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="p-6 flex items-center justify-center h-96">
+      <div className="p-4 sm:p-6 flex items-center justify-center h-96">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <span>Đang tải thông báo...</span>
+          <span className="text-base sm:text-sm">Đang tải thông báo...</span>
         </div>
       </div>
     );
@@ -169,9 +169,9 @@ export function MemberNotifications() {
   // Error state
   if (error) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         <Card>
-          <CardContent className="py-12 text-center text-red-600">
+          <CardContent className="py-8 sm:py-12 text-center text-red-600 text-base sm:text-sm">
             Có lỗi xảy ra khi tải thông báo. Vui lòng thử lại sau.
           </CardContent>
         </Card>
@@ -180,66 +180,68 @@ export function MemberNotifications() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Thông báo</h1>
-          <p className="text-gray-600 mt-1">Quản lý thông báo và cập nhật</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Thông báo</h1>
+          <p className="text-base sm:text-sm text-gray-600 mt-1">Quản lý thông báo và cập nhật</p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 w-full sm:w-auto">
           {stats.unread > 0 && (
             <Button 
               variant="outline" 
               onClick={markAllAsRead}
               disabled={markAllAsReadMutation.isPending}
+              className="flex-1 sm:flex-initial text-base sm:text-sm"
             >
               <CheckCheck className="h-4 w-4 mr-2" />
-              {markAllAsReadMutation.isPending ? 'Đang xử lý...' : 'Đánh dấu tất cả đã đọc'}
+              <span className="hidden sm:inline">{markAllAsReadMutation.isPending ? 'Đang xử lý...' : 'Đánh dấu tất cả đã đọc'}</span>
+              <span className="sm:hidden">Đánh dấu tất cả</span>
             </Button>
           )}
         </div>
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Bell className="h-6 w-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-gray-600">Tổng thông báo</p>
+                <p className="text-base sm:text-sm text-gray-600">Tổng thông báo</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Bell className="h-6 w-6 text-red-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.unread}</p>
-                <p className="text-sm text-gray-600">Chưa đọc</p>
+                <p className="text-base sm:text-sm text-gray-600">Chưa đọc</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.read}</p>
-                <p className="text-sm text-gray-600">Đã đọc</p>
+                <p className="text-base sm:text-sm text-gray-600">Đã đọc</p>
               </div>
             </div>
           </CardContent>
@@ -247,22 +249,25 @@ export function MemberNotifications() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex space-x-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           variant={filter === 'all' ? 'default' : 'outline'}
           onClick={() => setFilter('all')}
+          className="text-base sm:text-sm flex-1 sm:flex-initial"
         >
           Tất cả ({stats.total})
         </Button>
         <Button
           variant={filter === 'unread' ? 'default' : 'outline'}
           onClick={() => setFilter('unread')}
+          className="text-base sm:text-sm flex-1 sm:flex-initial"
         >
           Chưa đọc ({stats.unread})
         </Button>
         <Button
           variant={filter === 'read' ? 'default' : 'outline'}
           onClick={() => setFilter('read')}
+          className="text-base sm:text-sm flex-1 sm:flex-initial"
         >
           Đã đọc ({stats.read})
         </Button>
@@ -278,36 +283,36 @@ export function MemberNotifications() {
                 return (
                   <div
                     key={notification.id}
-                    className={`p-6 hover:bg-gray-50 transition-colors ${
+                    className={`p-4 sm:p-6 hover:bg-gray-50 transition-colors ${
                       !notification.read ? 'bg-blue-50' : ''
                     }`}
                   >
-                    <div className="flex items-start space-x-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getTypeColor(notification.type)}`}>
+                    <div className="flex items-start space-x-3 sm:space-x-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getTypeColor(notification.type)}`}>
                         <IconComponent className="h-5 w-5" />
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-lg font-medium text-gray-900">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                          <h4 className="text-base sm:text-lg font-medium text-gray-900">
                             {notification.title}
                           </h4>
                           <div className="flex items-center space-x-2">
                             {!notification.read && (
-                              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
                             )}
-                            <span className="text-sm text-gray-500">
+                            <span className="text-base sm:text-sm text-gray-500 whitespace-nowrap">
                               {getTimeAgo(notification.timestamp)}
                             </span>
                           </div>
                         </div>
                         
-                        <p className="mt-1 text-sm text-gray-600">
+                        <p className="mt-1 text-base sm:text-sm text-gray-600">
                           {notification.message}
                         </p>
                         
-                        <div className="mt-3 flex items-center space-x-2">
-                          <Badge variant="outline" className={getTypeColor(notification.type)}>
+                        <div className="mt-3 flex items-center flex-wrap gap-2">
+                          <Badge variant="outline" className={`${getTypeColor(notification.type)} text-xs sm:text-sm`}>
                             {notification.type}
                           </Badge>
                           {!notification.read && (
@@ -316,6 +321,7 @@ export function MemberNotifications() {
                               variant="outline"
                               onClick={() => markAsRead(notification.id)}
                               disabled={markAsReadMutation.isPending}
+                              className="text-base sm:text-sm"
                             >
                               Đánh dấu đã đọc
                             </Button>
@@ -325,7 +331,7 @@ export function MemberNotifications() {
                             variant="outline"
                             onClick={() => deleteNotification(notification.id)}
                             disabled={deleteMutation.isPending}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 text-base sm:text-sm"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -337,14 +343,14 @@ export function MemberNotifications() {
               })}
             </div>
           ) : (
-            <div className="text-center py-12">
+            <div className="text-center py-8 sm:py-12">
               <Bell className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                 {filter === 'unread' ? 'Không có thông báo chưa đọc' : 
                  filter === 'read' ? 'Không có thông báo đã đọc' : 
                  'Không có thông báo'}
               </h3>
-              <p className="text-gray-500">
+              <p className="text-base sm:text-sm text-gray-500">
                 {filter === 'all' ? 'Bạn sẽ nhận được thông báo mới tại đây' : 
                  'Tất cả thông báo đã được xử lý'}
               </p>

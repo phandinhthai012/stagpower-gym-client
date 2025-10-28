@@ -86,19 +86,19 @@ export function MemberCheckin() {
 
   if (isLoadingQR || isLoadingActive) {
     return (
-      <div className="p-6 flex items-center justify-center h-96">
+      <div className="p-4 sm:p-6 flex items-center justify-center h-96">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-blue-900">QR Code Check-in</h1>
-          <p className="text-gray-600 mt-1 text-sm md:text-base">Hiển thị mã QR này tại cửa để check-in tự động</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-blue-900">QR Code Check-in</h1>
+          <p className="text-base sm:text-sm text-gray-600 mt-1">Hiển thị mã QR này tại cửa để check-in tự động</p>
         </div>
       </div>
 
@@ -149,23 +149,22 @@ export function MemberCheckin() {
                 </div>
                 {/* Member Info */}
                 <div className="flex flex-col items-center gap-1">
-                  <p className="text-sm md:text-base text-gray-700">
+                  <p className="text-base sm:text-sm text-gray-700">
                     <span className="font-semibold">Mã hội viên:</span> {user?.id || 'MEM001'}
                   </p>
-                  <p className="text-sm md:text-base text-gray-700 flex items-center gap-2">
+                  <p className="text-base sm:text-sm text-gray-700 flex items-center gap-2">
                     <span className="font-semibold">Trạng thái:</span>
-                    {/* <Badge className="bg-green-100 text-green-700">Hoạt động</Badge> */}
-                    {activeCheckIn ? <Badge className="bg-green-100 text-green-700">Đang luyện tập</Badge> : <Badge className="bg-red-100 text-red-700">Chưa check-in</Badge>}
+                    {activeCheckIn ? <Badge className="bg-green-100 text-green-700 text-xs sm:text-sm">Đang luyện tập</Badge> : <Badge className="bg-red-100 text-red-700 text-xs sm:text-sm">Chưa check-in</Badge>}
                   </p>
                 </div>
                 {/* Check-in/Check-out Buttons */}
-                <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+                <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center w-full">
                   {activeCheckIn ? (
                     <>
                       <Button
                         onClick={handleCheckOut}
                         disabled={isCheckingOut}
-                        className="bg-red-600 hover:bg-red-700"
+                        className="bg-red-600 hover:bg-red-700 text-base sm:text-sm w-full sm:w-auto"
                       >
                         {isCheckingOut ? (
                           <>
@@ -174,13 +173,14 @@ export function MemberCheckin() {
                           </>
                         ) : 'Check-out'}
                       </Button>
-                      <Button variant="outline" onClick={handleExtendSession}>Tôi vẫn còn tập</Button>
+                      <Button variant="outline" onClick={handleExtendSession} className="text-base sm:text-sm w-full sm:w-auto">Tôi vẫn còn tập</Button>
                     </>
                   ) : (
                     <>
                       <Button
                         onClick={handleRefreshQR}
                         disabled={isLoadingQR}
+                        className="text-base sm:text-sm w-full sm:w-auto"
                       >
                         <RefreshCw className="w-4 h-4 mr-2" />
                         {isLoadingQR ? 'Đang tải...' : 'Làm mới QR Code'}
@@ -188,12 +188,12 @@ export function MemberCheckin() {
                     </>
                   )}
                 </div>
-                <div className="mt-4 text-xs md:text-sm text-gray-500">
+                <div className="mt-4 text-base sm:text-sm text-gray-500 text-center">
                   <p>💡 Mã QR hết hạn sau 30 phút</p>
                   <p>📱 Quét mã tại máy check-in để vào phòng tập</p>
                 </div>
                 {infoMessage && (
-                  <div className="mt-3 text-xs md:text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 inline-block">
+                  <div className="mt-3 text-base sm:text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 inline-block">
                     {infoMessage}
                   </div>
                 )}
@@ -204,28 +204,28 @@ export function MemberCheckin() {
 
         {/* Check-in History */}
         <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
               <Activity className="h-5 w-5" />
               <span>Lịch sử ra/vào</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             {isLoadingHistory ? (
-              <div className="flex justify-center py-12">
+              <div className="flex justify-center py-8 sm:py-12">
                 <LoadingSpinner />
               </div>
             ) : completedCheckIns.length > 0 ? (
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {(showAllHistory ? completedCheckIns : completedCheckIns.slice(0, 5)).map((checkIn) => (
-                  <div key={checkIn._id} className="p-3 md:p-4 bg-gray-50 rounded-lg">
+                  <div key={checkIn._id} className="p-3 sm:p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getStatusColor(checkIn.status)}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getStatusColor(checkIn.status)}`}>
                         {getStatusIcon(checkIn.status)}
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-medium">
+                          <h4 className="font-medium text-base sm:text-sm">
                             {checkIn.status === 'Active' ? 'Đang tập' : 'Đã hoàn thành'}
                           </h4>
                           <Badge className={`${getStatusColor(checkIn.status)} text-xs`}>
@@ -235,14 +235,14 @@ export function MemberCheckin() {
                             {checkIn.checkInMethod}
                           </Badge>
                         </div>
-                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-base sm:text-sm text-gray-600">
                           <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
+                            <Calendar className="h-3 w-3 flex-shrink-0" />
                             {formatDateTime(checkIn.checkInTime)}
                           </span>
                           {checkIn.duration && (
                             <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
+                              <Clock className="h-3 w-3 flex-shrink-0" />
                               {checkIn.duration} phút
                             </span>
                           )}
@@ -256,6 +256,7 @@ export function MemberCheckin() {
                     <Button
                       variant="outline"
                       onClick={() => setShowAllHistory(!showAllHistory)}
+                      className="text-base sm:text-sm"
                     >
                       {showAllHistory ? 'Thu gọn' : `Xem thêm ${completedCheckIns.length - 5} lần check-in`}
                     </Button>
@@ -263,12 +264,12 @@ export function MemberCheckin() {
                 )}
               </div>
             ) : (
-              <div className="text-center py-12">
+              <div className="text-center py-8 sm:py-12">
                 <Activity className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                   Chưa có lịch sử check-in
                 </h3>
-                <p className="text-gray-500">
+                <p className="text-base sm:text-sm text-gray-500">
                   Bắt đầu tập luyện để xem lịch sử check-in của bạn
                 </p>
               </div>

@@ -98,118 +98,118 @@ export function MemberHistory() {
 
   if (isLoading) {
     return (
-      <div className="p-6 flex items-center justify-center h-96">
+      <div className="p-4 sm:p-6 flex items-center justify-center h-96">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <span>Đang tải lịch sử...</span>
+          <span className="text-base sm:text-sm">Đang tải lịch sử...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Lịch sử tập luyện</h1>
-          <p className="text-gray-600 mt-1">Theo dõi tiến độ và lịch sử tập luyện</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Lịch sử tập luyện</h1>
+          <p className="text-base sm:text-sm text-gray-600 mt-1">Theo dõi tiến độ và lịch sử tập luyện</p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" className="w-full sm:w-auto text-base sm:text-sm">
           <Download className="h-4 w-4 mr-2" />
           Xuất báo cáo
         </Button>
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Activity className="h-6 w-6 text-blue-600" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.totalCheckIns}</p>
-                <p className="text-sm text-gray-600">Tổng lần check-in</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.totalCheckIns}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Tổng lần check-in</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <Clock className="h-6 w-6 text-green-600" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{Math.round(stats.totalWorkoutTime / 60)}h</p>
-                <p className="text-sm text-gray-600">Tổng thời gian tập</p>
+                <p className="text-xl sm:text-2xl font-bold">{Math.round(stats.totalWorkoutTime / 60)}h</p>
+                <p className="text-xs sm:text-sm text-gray-600">Tổng thời gian tập</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Target className="h-6 w-6 text-purple-600" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Target className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.completedSchedules}</p>
-                <p className="text-sm text-gray-600">Buổi PT hoàn thành</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.completedSchedules}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Buổi PT hoàn thành</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-orange-600" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.weeklyCheckIns}</p>
-                <p className="text-sm text-gray-600">Lần tập tuần này</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats.weeklyCheckIns}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Lần tập tuần này</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Check-in History */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
               <Activity className="h-5 w-5" />
               <span>Lịch sử check-in</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             {checkIns.length > 0 ? (
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-3 sm:space-y-4 max-h-96 overflow-y-auto">
                 {checkIns.slice(0, 10).map((checkIn) => (
-                  <div key={checkIn.id || checkIn._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <div key={checkIn.id || checkIn._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3 w-full sm:w-auto">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <Activity className="h-4 w-4 text-green-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-sm">Check-in</p>
-                        <p className="text-xs text-gray-600">
+                        <p className="font-medium text-base sm:text-sm">Check-in</p>
+                        <p className="text-sm text-gray-600">
                           {formatDate(checkIn.check_in_time || checkIn.checkInTime)}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
+                    <div className="text-left sm:text-right w-full sm:w-auto">
+                      <p className="text-base sm:text-sm font-medium">
                         {checkIn.duration ? `${checkIn.duration} phút` : 'Đang tập'}
                       </p>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs mt-1">
                         {checkIn.status}
                       </Badge>
                     </div>
@@ -219,8 +219,8 @@ export function MemberHistory() {
             ) : (
               <div className="text-center py-8">
                 <Activity className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có lịch sử check-in</h3>
-                <p className="text-gray-500">Bắt đầu tập luyện để xem lịch sử</p>
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Chưa có lịch sử check-in</h3>
+                <p className="text-base sm:text-sm text-gray-500">Bắt đầu tập luyện để xem lịch sử</p>
               </div>
             )}
           </CardContent>
@@ -228,33 +228,33 @@ export function MemberHistory() {
 
         {/* PT Schedule History */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
               <Target className="h-5 w-5" />
               <span>Lịch sử PT</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             {schedules.length > 0 ? (
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-3 sm:space-y-4 max-h-96 overflow-y-auto">
                 {schedules.slice(0, 10).map((schedule) => (
-                  <div key={schedule.id || schedule._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <div key={schedule.id || schedule._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3 w-full sm:w-auto">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <Target className="h-4 w-4 text-blue-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-sm">Buổi PT</p>
-                        <p className="text-xs text-gray-600">
+                        <p className="font-medium text-base sm:text-sm">Buổi PT</p>
+                        <p className="text-sm text-gray-600">
                           {formatDate(schedule.date_time || schedule.dateTime)}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
+                    <div className="text-left sm:text-right w-full sm:w-auto">
+                      <p className="text-base sm:text-sm font-medium">
                         {schedule.duration_minutes || schedule.durationMinutes} phút
                       </p>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs mt-1">
                         {schedule.status}
                       </Badge>
                     </div>
@@ -264,8 +264,8 @@ export function MemberHistory() {
             ) : (
               <div className="text-center py-8">
                 <Target className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có lịch sử PT</h3>
-                <p className="text-gray-500">Đặt lịch PT để xem lịch sử</p>
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Chưa có lịch sử PT</h3>
+                <p className="text-base sm:text-sm text-gray-500">Đặt lịch PT để xem lịch sử</p>
               </div>
             )}
           </CardContent>
@@ -274,14 +274,14 @@ export function MemberHistory() {
 
       {/* Monthly Activity */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
             <Calendar className="h-5 w-5" />
             <span>Hoạt động theo tháng</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="space-y-3 sm:space-y-4">
             {(() => {
               const monthlyActivity = checkIns.reduce((acc, checkIn) => {
                 const checkInTime = checkIn.check_in_time || checkIn.checkInTime;
@@ -303,18 +303,18 @@ export function MemberHistory() {
                 .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
                 .slice(0, 6)
                 .map(([month, data]) => (
-                  <div key={month} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div key={month} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 p-3 sm:p-4 bg-gray-50 rounded-lg">
                     <div>
-                      <h4 className="font-medium">{month}</h4>
-                      <p className="text-sm text-gray-600">
+                      <h4 className="font-medium text-base sm:text-sm">{month}</h4>
+                      <p className="text-base sm:text-sm text-gray-600">
                         {(data as { checkIns: number }).checkIns} lần check-in
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">
+                    <div className="text-left sm:text-right">
+                      <p className="text-base sm:text-lg font-semibold">
                         {Math.round((data as { totalTime: number }).totalTime / 60)}h {(data as { totalTime: number }).totalTime % 60}m
                       </p>
-                      <p className="text-sm text-gray-600">Tổng thời gian</p>
+                      <p className="text-base sm:text-sm text-gray-600">Tổng thời gian</p>
                     </div>
                   </div>
                 ));
