@@ -7,10 +7,20 @@ export const useMyHealthInfo = () => {
   return useQuery({
     queryKey: ['health-info', 'me'],
     queryFn: async () => {
-      const response = await axiosInstance.get(API_ENDPOINTS.HEALTH_INFO.GET_MY_HEALTH_INFO);
-      return response.data;
+      try {
+        const response = await axiosInstance.get(API_ENDPOINTS.HEALTH_INFO.GET_MY_HEALTH_INFO);
+        // API returns: { success, statusCode, message, data }
+        return response.data.data || null;
+      } catch (error: any) {
+        // 404 is expected when member doesn't have health info yet
+        if (error?.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    retry: false, // Don't retry on 404 errors
   });
 };
 
@@ -24,7 +34,8 @@ export const useHealthInfoByMemberId = (memberId: string | null | undefined) => 
         const response = await axiosInstance.get(
           API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_MEMBER_ID(memberId)
         );
-        return response.data;
+        // API returns: { success, statusCode, message, data }
+        return response.data.data || null;
       } catch (error: any) {
         // 404 is expected when member doesn't have health info yet
         if (error?.response?.status === 404) {
@@ -36,9 +47,6 @@ export const useHealthInfoByMemberId = (memberId: string | null | undefined) => 
     enabled: !!memberId, // Only run if memberId exists
     staleTime: 1000 * 60 * 5,
     retry: false, // Don't retry on 404 errors
-    meta: {
-      errorMessage: null, // Suppress error logging
-    },
   });
 };
 
@@ -51,7 +59,8 @@ export const useHealthInfoById = (healthInfoId: string | null | undefined) => {
       const response = await axiosInstance.get(
         API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_ID(healthInfoId)
       );
-      return response.data;
+      // API returns: { success, statusCode, message, data }
+      return response.data.data || null;
     },
     enabled: !!healthInfoId,
     staleTime: 1000 * 60 * 5,
@@ -68,7 +77,8 @@ export const useCreateHealthInfo = () => {
         API_ENDPOINTS.HEALTH_INFO.CREATE_HEALTH_INFO(memberId),
         data
       );
-      return response.data;
+      // API returns: { success, statusCode, message, data }
+      return response.data.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['health-info'] });
@@ -86,7 +96,8 @@ export const useUpdateHealthInfo = () => {
         API_ENDPOINTS.HEALTH_INFO.UPDATE_HEALTH_INFO(healthInfoId),
         data
       );
-      return response.data;
+      // API returns: { success, statusCode, message, data }
+      return response.data.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['health-info'] });

@@ -1,47 +1,26 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import {
-  QrCode,
-  Camera,
   CheckCircle,
   XCircle,
   Clock,
-  MapPin,
   Calendar,
   Activity,
   AlertTriangle,
   RefreshCw,
   Loader2
 } from 'lucide-react';
-import {
-  mockCheckIns,
-  mockBranches,
-  getMockDataByMemberId
-} from '../../../mockdata';
-import { formatDate, formatDateTime } from '../../../lib/date-utils';
-import { useCheckInMember, useCheckInByMemberId } from '../hooks';
+import { formatDateTime } from '../../../lib/date-utils';
+import { useCheckInMember } from '../hooks';
 import { LoadingSpinner } from '../../../components/common/LoadingSpinner';
-import { useBranches } from '../hooks/useBranches';
-import { decodeQRCodeFromBase64 } from '../../../utils/qrCodeDecoder';
-import { toast } from 'sonner';
 
 export function MemberCheckin() {
   const { user } = useAuth();
-  const [isScanning, setIsScanning] = useState(false);
-  const [checkinStatus, setCheckinStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
   const [showAllHistory, setShowAllHistory] = useState(false);
-  const [isCheckingOut2, setIsCheckingOut2] = useState(false);
   const [infoMessage, setInfoMessage] = useState<string>('');
-
-  // ===== USE HOOK - FETCH BRANCHES ===== to fakde checkin
-  const { data: branches } = useBranches();
-
-
-  console.log("branches", branches);
 
   // ===== USE HOOK - FETCH DATA TỪ BACKEND =====
   const {
@@ -49,129 +28,18 @@ export function MemberCheckin() {
     isLoadingQR,
     qrError,
     refetchQRCode,
-
     checkInHistory,
     isLoadingHistory,
-    historyError,
-    refetchHistory,
-
     activeCheckIn,
     isLoadingActive,
-
-    createCheckIn,
-    isCreatingCheckIn,
-
-    createCheckInByQRCode,
-    isCreatingCheckInByQRCode,
-
     checkOut,
     isCheckingOut,
-  } = useCheckInMember(user?.id || '');
-  console.log("qrCodeDataUrl", qrCodeDataUrl);
-  console.log("checkInHistory", checkInHistory);
-  console.log("activeCheckIn", activeCheckIn);
+  } = useCheckInMember(user?._id || user?.id || '');
 
   const completedCheckIns = useMemo(() => {
-    return (checkInHistory)
-      // .filter(ci => ci.status === 'Completed')
-      .sort((a, b) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime());
+    return (checkInHistory || [])
+      .sort((a: any, b: any) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime());
   }, [checkInHistory]);
-
-
-  // fake checkin
-  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
-  const [qrToken, setQrToken] = useState<string>('');
-
-  // Get member's check-in data
-  // const memberCheckIns = useMemo(() => {
-  //   if (!user?.id) return [];
-  //   return getMockDataByMemberId('checkIns', user.id);
-  // }, [user?.id]);
-
-  // Get current active check-in
-  // const activeCheckIn = useMemo(() => {
-  //   return memberCheckIns.find(checkIn => checkIn.status === 'Active');
-  // }, [memberCheckIns]);
-
-  // Get recent check-ins (last 10)
-  // const recentCheckIns = useMemo(() => {
-  //   return memberCheckIns
-  //     .filter(checkIn => checkIn.status === 'Completed')
-  //     .sort((a, b) => new Date(b.check_in_time).getTime() - new Date(a.check_in_time).getTime())
-  //     .slice(0, 10);
-  // }, [memberCheckIns]);
-
-  // Get branch info
-  // const getBranchInfo = (branchId: string) => {
-  //   return mockBranches.find(branch => branch.id === branchId);
-  // };
-
-  const handleCheckIn = async () => {
-    // setIsScanning(true);
-    // setCheckinStatus('idle');
-    // setErrorMessage('');
-
-    // // Simulate QR code scanning
-    // setTimeout(() => {
-    //   if (activeCheckIn) {
-    //     setCheckinStatus('error');
-    //     setErrorMessage('Bạn đã check-in rồi. Vui lòng check-out trước khi check-in lại.');
-    //   } else {
-    //     // Simulate successful check-in
-    //     setCheckinStatus('success');
-    //     // In a real app, this would make an API call
-    //     console.log('Check-in successful');
-    //   }
-    //   setIsScanning(false);
-    // }, 2000);
-    
-    // Validate inputs
-    if (!selectedBranchId) {
-      setErrorMessage('Vui lòng chọn chi nhánh');
-      setCheckinStatus('error');
-      toast.error('Vui lòng chọn chi nhánh');
-      return;
-    }
-    
-    if (!qrCodeDataUrl) {
-      setErrorMessage('Chưa có QR code');
-      setCheckinStatus('error');
-      return;
-    }
-
-    setIsScanning(true);
-    setErrorMessage('');
-    setCheckinStatus('idle');
-
-    try {
-      // Decode QR code to get token
-      const decodedToken = await decodeQRCodeFromBase64(qrCodeDataUrl);
-      setQrToken(decodedToken);
-      
-      console.log("qrToken", decodedToken);
-      
-      // Create check-in with decoded token
-      await createCheckInByQRCode({
-        branchId: selectedBranchId,
-        token: decodedToken,
-      });
-      
-      // Reset states and show success
-      setSelectedBranchId('');
-      setErrorMessage('Check-in thành công');
-      setCheckinStatus('success');
-      
-      // Refresh history
-      refetchHistory();
-      
-    } catch (error: any) {
-      console.error('Error checking in:', error);
-      setErrorMessage(error?.response?.data?.message || 'Lỗi khi check-in');
-      setCheckinStatus('error');
-    } finally {
-      setIsScanning(false);
-    }
-  };
 
   const handleCheckOut = () => {
     if (activeCheckIn) {
@@ -310,15 +178,12 @@ export function MemberCheckin() {
                     </>
                   ) : (
                     <>
-                      <Button onClick={handleCheckIn} disabled={isScanning}>
-                        {isScanning ? 'Đang quét...' : 'Quét QR để Check-in'}
-                      </Button>
                       <Button
                         onClick={handleRefreshQR}
                         disabled={isLoadingQR}
                       >
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Làm mới QR Code
+                        {isLoadingQR ? 'Đang tải...' : 'Làm mới QR Code'}
                       </Button>
                     </>
                   )}
@@ -335,39 +200,6 @@ export function MemberCheckin() {
               </div>
             </div>
           </CardContent>
-          {/* Fake checkin */}
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Branch Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Chọn chi nhánh: để check-in tự động (fake check-in)
-                </label>
-                <select
-                  value={selectedBranchId}
-                  onChange={(e) => setSelectedBranchId(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                // disabled={isFakeCheckIn}
-                >
-                  <option value="">-- Chọn chi nhánh --</option>
-                  {branches?.map((branch) => (
-                    <option key={branch._id} value={branch._id}>
-                      {branch.name} - {branch.address}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {/* QR Token Display */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                QR Token:
-              </label>
-              <div className="p-2 bg-gray-100 rounded-md text-xs font-mono break-all">
-                {qrCodeDataUrl ? 'QR Code Available' : 'No QR Code'}
-              </div>
-            </div>
-          </CardContent>
         </Card>
 
         {/* Check-in History */}
@@ -379,54 +211,6 @@ export function MemberCheckin() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* {recentCheckIns.length > 0 ? (
-              <div className="space-y-3 md:space-y-4">
-                {(showAllHistory ? recentCheckIns : recentCheckIns.slice(0, 5)).map((checkIn) => {
-                  const branch = getBranchInfo(checkIn.branch_id);
-                  return (
-                    <div key={checkIn.id} className="p-3 md:p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center ${getStatusColor(checkIn.status)}`}>
-                          {getStatusIcon(checkIn.status)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-medium text-sm md:text-base">{checkIn.status === 'Active' ? 'Đang tập' : 'Đã hoàn thành'}</h4>
-                            <Badge variant="outline" className={`${getStatusColor(checkIn.status)} px-2 py-0.5 text-[10px] md:text-xs`}>{checkIn.status}</Badge>
-                            {checkIn.auto_checkout && (
-                              <Badge variant="outline" className="bg-yellow-100 text-yellow-800 px-2 py-0.5 text-[10px] md:text-xs">Auto</Badge>
-                            )}
-                          </div>
-                          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-600">
-                            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(checkIn.check_in_time)}</span>
-                            {checkIn.check_out_time && (
-                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{checkIn.duration ? `${checkIn.duration} phút` : 'Đã hoàn thành'}</span>
-                            )}
-                            {branch && (
-                              <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{branch.name}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {recentCheckIns.length > 5 && (
-                  <div className="flex justify-center">
-                    <Button variant="outline" onClick={() => setShowAllHistory((v) => !v)}>
-                      {showAllHistory ? 'Thu gọn' : 'Xem tất cả'}
-                    </Button>
-                  </div>
-                )} 
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Activity className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có lịch sử check-in</h3>
-                <p className="text-gray-500">Bắt đầu tập luyện để xem lịch sử check-in của bạn</p>
-              </div>
-            )}
-              */}
             {isLoadingHistory ? (
               <div className="flex justify-center py-12">
                 <LoadingSpinner />

@@ -42,6 +42,15 @@ export function MemberProfile() {
   const createHealthInfoMutation = useCreateHealthInfo();
   const updateHealthInfoMutation = useUpdateHealthInfo();
 
+  // Debug: Log health info data
+  React.useEffect(() => {
+    if (healthInfo) {
+      console.log('Health Info loaded:', healthInfo);
+    } else if (!healthLoading && !healthError) {
+      console.log('No health info found (member needs to create it)');
+    }
+  }, [healthInfo, healthLoading, healthError]);
+
   const initEditedHealth = () => {
     if (!healthInfo) return null;
     return {
@@ -182,8 +191,8 @@ export function MemberProfile() {
     return (weight / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
-  // Loading state
-  if (userLoading || healthLoading) {
+  // Loading state - only block on user loading, not health (health can be null)
+  if (userLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex items-center space-x-2">
@@ -208,11 +217,9 @@ export function MemberProfile() {
     );
   }
   
-  // Check if health error is NOT a 404 (404 means user hasn't created health info yet, which is ok)
-  const isHealthErrorSerious = healthError && (healthError as any)?.response?.status && (healthError as any)?.response?.status !== 404;
-  if (isHealthErrorSerious) {
+  // Log health error if it's not a 404 (404 means user hasn't created health info yet, which is ok)
+  if (healthError && (healthError as any)?.response?.status !== 404) {
     console.error('Health info error:', healthError);
-    // Continue rendering but show warning in health section
   }
 
   return (
