@@ -20,35 +20,116 @@ import {
   Plus,
   Dumbbell,
   Star,
-  QrCode
+  QrCode,
+  Loader2
 } from 'lucide-react';
-import { 
-  mockPayments, 
-  mockSubscriptions,
-  mockPackages,
-  getMockDataByMemberId 
-} from '../../../mockdata';
 import { formatDate } from '../../../lib/date-utils';
 import MemberPaymentModal from '../components/ModalPayment';
+import { usePaymentsByMemberId, usePackages, useSubscriptionsByMemberId } from '../hooks';
 
 export function MemberPayments() {
   const { user } = useAuth();
+  const memberId = user?._id || user?.id || '';
   const [activeTab, setActiveTab] = useState<'renew' | 'new' | 'pt'>('pt');
   const [selectedPkg, setSelectedPkg] = useState<undefined | { id: string; name: string; amount: number }>(undefined);
   const [selectedMethod, setSelectedMethod] = useState<undefined | 'momo' | 'zalopay' | 'bank'>(undefined);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
   const [openModal, setOpenModal] = useState(false);
 
-  // Get member's payment data
+  // Fetch data from APIs
+  const { data: paymentsResponse, isLoading: isLoadingPayments } = usePaymentsByMemberId(memberId);
+  const { data: packagesData, isLoading: isLoadingPackages } = usePackages();
+  const { data: subscriptionsResponse, isLoading: isLoadingSubscriptions } = useSubscriptionsByMemberId(memberId);
+
+  // Process packages data first
+  const packages = useMemo(() => {
+    if (!packagesData || !Array.isArray(packagesData)) return [];
+    return packagesData.map((pkg: any) => ({
+      ...pkg,
+      id: pkg._id,
+      price: pkg.price || 0,
+      name: pkg.name || '',
+      type: pkg.type || '',
+      membership_type: pkg.membershipType || pkg.membership_type || '',
+      duration_months: pkg.durationMonths || pkg.duration_months || 0,
+      description: pkg.description || '',
+      pt_session_duration: pkg.ptSessionDuration || pkg.pt_session_duration || 90,
+    }));
+  }, [packagesData]);
+
+  // Process subscriptions data
+  const subscriptions = useMemo(() => {
+    if (!subscriptionsResponse?.data) return [];
+    return subscriptionsResponse.data || [];
+  }, [subscriptionsResponse]);
+
+  // Process payments data with package names
   const memberPayments = useMemo(() => {
-    if (!user?.id) return [];
-    return getMockDataByMemberId('payments', user.id)
+    if (!paymentsResponse?.data) return [];
+    
+    return (paymentsResponse.data || [])
+      .map((payment: any) => {
+        // Find subscription from payment.subscriptionId
+        const subscription = subscriptions.find((sub: any) => 
+          (sub._id === payment.subscriptionId) || (sub.id === payment.subscriptionId)
+        );
+        
+        // Find package from subscription.packageId
+        let packageName = 'Gói tập'; // Default fallback
+        if (subscription) {
+          const packageIdValue = subscription.packageId;
+          let packageId: string | undefined;
+          
+          if (packageIdValue && packageIdValue !== null) {
+            if (typeof packageIdValue === 'object') {
+              packageId = (packageIdValue as any)._id;
+              // Check if package is populated with name
+              if (packageIdValue && 'name' in packageIdValue) {
+                packageName = (packageIdValue as any).name;
+              }
+            } else if (typeof packageIdValue === 'string') {
+              packageId = packageIdValue;
+            }
+            
+            // Try to find package by ID if we haven't found the name yet
+            if ((!packageName || packageName === 'Gói tập') && packageId) {
+              const pkg = packages.find((p: any) => 
+                (p._id === packageId) || (p.id === packageId)
+              );
+              if (pkg?.name) {
+                packageName = pkg.name;
+              }
+            }
+          }
+          
+          // Final fallback: use subscription type + membership type
+          if (!packageName || packageName === 'Gói tập') {
+            const membershipType = subscription.membershipType;
+            if (subscription.type) {
+              packageName = `${subscription.type}${membershipType ? ' ' + membershipType : ''}`;
+            }
+          }
+        }
+        
+        return {
+          ...payment,
+          id: payment._id,
+          payment_date: payment.paymentDate || payment.createdAt,
+          payment_status: payment.paymentStatus || payment.status || 'pending',
+          payment_method: payment.paymentMethod || payment.payment_method || 'cash',
+          invoice_number: payment.invoiceNumber || payment.invoice_number || payment._id,
+          transaction_id: payment.transactionId || payment.transaction_id,
+          original_amount: payment.originalAmount || payment.amount,
+          amount: payment.amount || 0,
+          package_name: packageName,
+        };
+      })
       .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime());
-  }, [user?.id]);
+  }, [paymentsResponse, subscriptions, packages]);
 
   // Get subscription info
   const getSubscriptionInfo = (subscriptionId: string) => {
-    return mockSubscriptions.find(sub => sub.id === subscriptionId);
+    return subscriptions.find((sub: any) => sub._id === subscriptionId || sub.id === subscriptionId);
   };
 
   const formatPrice = (price: number) => {
@@ -59,18 +140,20 @@ export function MemberPayments() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed':
-        return 'bg-green-100 text-green-800';
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Failed':
-        return 'bg-red-100 text-red-800';
-      case 'Refunded':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    const statusLower = status?.toLowerCase() || '';
+    if (statusLower === 'completed' || statusLower === 'success') {
+      return 'bg-green-100 text-green-800';
     }
+    if (statusLower === 'pending' || statusLower === 'waiting') {
+      return 'bg-yellow-100 text-yellow-800';
+    }
+    if (statusLower === 'failed' || statusLower === 'error') {
+      return 'bg-red-100 text-red-800';
+    }
+    if (statusLower === 'refunded') {
+      return 'bg-blue-100 text-blue-800';
+    }
+    return 'bg-gray-100 text-gray-800';
   };
 
   const getStatusIcon = (status: string) => {
@@ -108,16 +191,27 @@ export function MemberPayments() {
   // Calculate statistics
   const stats = useMemo(() => {
     const totalAmount = memberPayments
-      .filter(p => p.payment_status === 'Completed')
-      .reduce((sum, p) => sum + p.amount, 0);
+      .filter(p => {
+        const status = (p.payment_status || '').toLowerCase();
+        return status === 'completed' || status === 'success';
+      })
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
     
     const totalTransactions = memberPayments.length;
-    const completedTransactions = memberPayments.filter(p => p.payment_status === 'Completed').length;
-    const pendingTransactions = memberPayments.filter(p => p.payment_status === 'Pending').length;
+    const completedTransactions = memberPayments.filter(p => {
+      const status = (p.payment_status || '').toLowerCase();
+      return status === 'completed' || status === 'success';
+    }).length;
+    const pendingTransactions = memberPayments.filter(p => {
+      const status = (p.payment_status || '').toLowerCase();
+      return status === 'pending' || status === 'waiting';
+    }).length;
     
     const methodStats = memberPayments.reduce((acc, payment) => {
-      if (payment.payment_status === 'Completed') {
-        acc[payment.payment_method] = (acc[payment.payment_method] || 0) + 1;
+      const status = (payment.payment_status || '').toLowerCase();
+      if (status === 'completed' || status === 'success') {
+        const method = payment.payment_method || 'cash';
+        acc[method] = (acc[method] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
@@ -133,30 +227,35 @@ export function MemberPayments() {
 
   // Active subscription for Renew tab
   const activeSubscription = useMemo(() => {
-    if (!user?.id) return undefined as any;
-    const subs = getMockDataByMemberId('subscriptions', user.id) as any[];
-    return subs.find((s) => (s.status || s.subscription_status) === 'Active') || subs[0];
-  }, [user?.id]);
+    if (!subscriptions || subscriptions.length === 0) return undefined as any;
+    return subscriptions.find((s: any) => {
+      const status = (s.status || s.subscription_status || '').toLowerCase();
+      return status === 'active' || status === 'activated';
+    }) || subscriptions[0];
+  }, [subscriptions]);
 
-  // Data from mockdata for tabs
+  // Data from API for tabs
   const ptPackages = useMemo(() => {
-    return mockPackages.filter((p) => p.type === 'PT');
-  }, []);
+    return packages.filter((p) => p.type === 'PT' || p.type === 'Personal Training');
+  }, [packages]);
 
   const renewCandidates = useMemo(() => {
-    const basic1 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'Basic' && p.duration_months === 1);
-    const vip1 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'VIP' && p.duration_months === 1);
-    const basic3 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'Basic' && p.duration_months === 3);
-    const vip3 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'VIP' && p.duration_months === 3);
-    return [basic1, vip1, basic3, vip3].filter(Boolean) as typeof mockPackages;
-  }, []);
+    const basic1 = packages.find((p) => p.type === 'Membership' && p.membership_type === 'Basic' && p.duration_months === 1);
+    const vip1 = packages.find((p) => p.type === 'Membership' && p.membership_type === 'VIP' && p.duration_months === 1);
+    const basic3 = packages.find((p) => p.type === 'Membership' && p.membership_type === 'Basic' && p.duration_months === 3);
+    const vip3 = packages.find((p) => p.type === 'Membership' && p.membership_type === 'VIP' && p.duration_months === 3);
+    return [basic1, vip1, basic3, vip3].filter(Boolean);
+  }, [packages]);
 
   const newPackages = useMemo(() => {
-    const basic1 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'Basic' && p.duration_months === 1);
-    const vip1 = mockPackages.find((p) => p.type === 'Membership' && p.membership_type === 'VIP' && p.duration_months === 1);
-    const comboAny = mockPackages.find((p) => p.type === 'Combo');
-    return [basic1, vip1, comboAny].filter(Boolean) as typeof mockPackages;
-  }, []);
+    const basic1 = packages.find((p) => p.type === 'Membership' && p.membership_type === 'Basic' && p.duration_months === 1);
+    const vip1 = packages.find((p) => p.type === 'Membership' && p.membership_type === 'VIP' && p.duration_months === 1);
+    const comboAny = packages.find((p) => p.type === 'Combo');
+    return [basic1, vip1, comboAny].filter(Boolean);
+  }, [packages]);
+
+  // Loading state
+  const isLoading = isLoadingPayments || isLoadingPackages || isLoadingSubscriptions;
 
   const handleSelectPackage = (id: string, name: string, amount: number) => {
     setSelectedPkg({ id, name, amount });
@@ -194,6 +293,18 @@ export function MemberPayments() {
       steps: ['Mở ứng dụng ngân hàng', 'Chọn Chuyển khoản/QR', 'Quét mã QR trên màn hình', 'Xác nhận thông tin', 'Nhập OTP để hoàn tất']
     };
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-96">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <span>Đang tải thông tin thanh toán...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -290,7 +401,7 @@ export function MemberPayments() {
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg flex items-center gap-2">
                   <span className="text-gray-600">Hết hạn: </span>
-                  <span className="font-semibold text-blue-900">{activeSubscription?.end_date ? new Date(activeSubscription.end_date).toLocaleDateString('vi-VN') : '—'}</span>
+                  <span className="font-semibold text-blue-900">{activeSubscription?.endDate || activeSubscription?.end_date ? new Date(activeSubscription.endDate || activeSubscription.end_date).toLocaleDateString('vi-VN') : '—'}</span>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg flex items-center gap-2">
                   <span className="text-gray-600">Trạng thái: </span>
@@ -388,7 +499,9 @@ export function MemberPayments() {
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div className="font-semibold text-blue-900">{p.invoice_number || p.id}</div>
-                      <div className="text-xs text-gray-500">{p.transaction_id || 'N/A'}</div>
+                      {p.transaction_id && (
+                        <div className="text-xs text-gray-500">{p.transaction_id}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium">{new Date(p.payment_date).toLocaleDateString('vi-VN')}</div>
@@ -410,7 +523,13 @@ export function MemberPayments() {
                       <div className="flex items-center gap-2"><span>{getPaymentMethodIcon(p.payment_method)}</span><span className="capitalize text-sm">{p.payment_method}</span></div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(p.payment_status)}`}>{p.payment_status}</span>
+                      <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(p.payment_status)}`}>
+                        {p.payment_status === 'completed' ? 'Hoàn thành' :
+                         p.payment_status === 'pending' ? 'Đang chờ' :
+                         p.payment_status === 'failed' ? 'Thất bại' :
+                         p.payment_status === 'refunded' ? 'Đã hoàn tiền' :
+                         p.payment_status || 'N/A'}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -446,13 +565,19 @@ export function MemberPayments() {
             <div className="space-y-4">
               {(() => {
                 const monthlySpending = memberPayments
-                  .filter(p => p.payment_status === 'Completed')
+                  .filter(p => {
+                    const status = (p.payment_status || '').toLowerCase();
+                    return status === 'completed' || status === 'success';
+                  })
                   .reduce((acc, payment) => {
-                    const month = new Date(payment.payment_date).toLocaleDateString('vi-VN', { 
+                    const paymentDate = payment.payment_date || payment.createdAt;
+                    if (!paymentDate) return acc;
+                    
+                    const month = new Date(paymentDate).toLocaleDateString('vi-VN', { 
                       year: 'numeric', 
                       month: 'long' 
                     });
-                    acc[month] = (acc[month] || 0) + payment.amount;
+                    acc[month] = (acc[month] || 0) + (payment.amount || 0);
                     return acc;
                   }, {} as Record<string, number>);
 

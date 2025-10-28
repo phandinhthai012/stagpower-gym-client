@@ -32,6 +32,14 @@ export {
   useUnsuspendSubscription
 } from './useSubscriptions';
 
+// Payment hooks
+export {
+  usePayments,
+  usePaymentById,
+  usePaymentsByMemberId,
+  useCreatePayment
+} from './usePayments';
+
 // Check-in hooks
 export {
   useCheckIns,
