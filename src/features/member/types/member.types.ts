@@ -95,6 +95,7 @@ export interface Payment {
   paymentMethod: 'cash' | 'card' | 'momo' | 'bank_transfer';
   paymentDate: string;
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
+  paymentType?: 'NEW_SUBSCRIPTION' | 'RENEWAL' | 'PT_PURCHASE';
   invoiceNumber: string;
   transactionId?: string;
   notes?: string;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
@@ -13,13 +13,16 @@ import {
   XCircle,
   AlertTriangle,
   Receipt,
-  Package
+  Package,
+  QrCode,
+  RefreshCw
 } from 'lucide-react';
 import { formatDate } from '../../../lib/date-utils';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { paymentApi } from '../api/payment.api';
+import QRCode from 'qrcode';
 
 interface PaymentDetail {
   id: string;
@@ -42,15 +45,65 @@ interface ModalPaymentDetailProps {
 }
 
 export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: ModalPaymentDetailProps) {
+  const queryClient = useQueryClient();
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+
   // Fetch full payment details from API
   const { data: paymentResponse, isLoading } = useQuery({
     queryKey: ['payment', paymentId],
     queryFn: () => paymentApi.getPaymentById(paymentId || ''),
     enabled: open && !!paymentId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // 30 seconds - refresh more often for QR
   });
 
   const payment: any = paymentResponse?.data || paymentDetail;
+  
+  // Check if payment is pending and MoMo payment
+  const isPendingPayment = (payment?.payment_status || payment?.paymentStatus || '').toLowerCase() === 'pending';
+  const isMomoPayment = (payment?.payment_method || payment?.paymentMethod || '').toLowerCase() === 'momo';
+  const qrCodeUrl = payment?.paymentQrCode || payment?.payment_qr_code;
+  const shouldShowQR = isPendingPayment && isMomoPayment && !!qrCodeUrl;
+
+  // Generate QR code from URL
+  useEffect(() => {
+    if (qrCodeUrl && shouldShowQR) {
+      QRCode.toDataURL(qrCodeUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff',
+        },
+      })
+        .then(setQrCodeDataUrl)
+        .catch((error) => {
+          console.error('Error generating QR code:', error);
+          toast.error('Không thể tạo QR code');
+        });
+    } else {
+      setQrCodeDataUrl('');
+    }
+  }, [qrCodeUrl, shouldShowQR]);
+
+  // Regenerate QR mutation
+  const regenerateQRMutation = useMutation({
+    mutationFn: () => paymentApi.regeneratePaymentQR(paymentId || ''),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['payment', paymentId] });
+      toast.success('QR code đã được tạo lại thành công');
+      setIsRegenerating(false);
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Có lỗi xảy ra khi tạo lại QR code');
+      setIsRegenerating(false);
+    },
+  });
+
+  const handleRegenerateQR = () => {
+    setIsRegenerating(true);
+    regenerateQRMutation.mutate();
+  };
 
   const getStatusColor = (status: string) => {
     const statusLower = status?.toLowerCase() || '';
@@ -108,6 +161,19 @@ export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: 
         return 'Chuyển khoản';
       default:
         return method || 'Khác';
+    }
+  };
+
+  const getPaymentTypeLabel = (type?: string) => {
+    switch (type) {
+      case 'NEW_SUBSCRIPTION':
+        return 'Đăng ký gói mới';
+      case 'RENEWAL':
+        return 'Gia hạn gói tập';
+      case 'PT_PURCHASE':
+        return 'Mua buổi tập';
+      default:
+        return 'Thanh toán';
     }
   };
 
@@ -207,6 +273,94 @@ export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: 
                       )}
                     >
                       <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Type */}
+              {(payment.paymentType || (payment as any).payment_type) && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-600 mb-1">Loại thanh toán</p>
+                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                    {getPaymentTypeLabel(payment.paymentType || (payment as any).payment_type)}
+                  </Badge>
+                </div>
+              )}
+
+              {/* QR Code for Pending Payment */}
+              {shouldShowQR && (
+                <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <QrCode className="h-5 w-5 text-purple-600" />
+                    <h4 className="font-semibold text-purple-900">Quét mã QR để thanh toán</h4>
+                  </div>
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                      {qrCodeDataUrl ? (
+                        <img 
+                          src={qrCodeDataUrl} 
+                          alt="QR Code thanh toán" 
+                          className="w-64 h-64 object-contain"
+                        />
+                      ) : (
+                        <div className="w-64 h-64 flex items-center justify-center bg-gray-100">
+                          <Loader2 className="w-16 h-16 text-gray-400 animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-2">Số tiền: <span className="font-bold text-blue-900">{formatPrice(payment.amount || 0)}</span></p>
+                      <p className="text-xs text-gray-500">QR code có hiệu lực trong 5 phút</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRegenerateQR}
+                      disabled={isRegenerating || !qrCodeDataUrl}
+                      className="w-full"
+                    >
+                      {isRegenerating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Đang tạo lại...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Tạo lại QR code
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Show regenerate button if QR expired or missing */}
+              {isPendingPayment && isMomoPayment && !qrCodeUrl && (
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-yellow-900 mb-1">QR code đã hết hạn hoặc chưa có</p>
+                      <p className="text-xs text-yellow-700">Vui lòng tạo lại QR code để thanh toán</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRegenerateQR}
+                      disabled={isRegenerating}
+                    >
+                      {isRegenerating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Đang tạo...
+                        </>
+                      ) : (
+                        <>
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Tạo QR code
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

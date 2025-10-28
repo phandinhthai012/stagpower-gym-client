@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
@@ -24,7 +25,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { formatDate } from '../../../lib/date-utils';
-import MemberPaymentModal from '../components/ModalPayment';
+import { ModalCreatePayment } from '../components/ModalCreatePayment';
 import { ModalPaymentDetail } from '../components/ModalPaymentDetail';
 import { usePaymentsByMemberId, usePackages, useSubscriptionsByMemberId } from '../hooks';
 import { useTableRowClick } from '../../../hooks/useTableRowClick';
@@ -32,11 +33,18 @@ import { ClickableTableRow, TableActions } from '../../../components/ui';
 
 export function MemberPayments() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const memberId = user?._id || user?.id || '';
   const [activeTab, setActiveTab] = useState<'renew' | 'new' | 'pt'>('pt');
-  const [selectedPkg, setSelectedPkg] = useState<undefined | { id: string; name: string; amount: number }>(undefined);
-  const [selectedMethod, setSelectedMethod] = useState<undefined | 'momo' | 'zalopay' | 'bank'>(undefined);
-  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+  const [selectedPkg, setSelectedPkg] = useState<undefined | { 
+    id: string; 
+    name: string; 
+    amount: number;
+    type?: string;
+    membershipType?: string;
+    durationMonths?: number;
+    ptSessions?: number;
+  }>(undefined);
   const [openModal, setOpenModal] = useState(false);
 
   // Use reusable hook for table row click
@@ -130,6 +138,7 @@ export function MemberPayments() {
           payment_date: payment.paymentDate || payment.createdAt,
           payment_status: payment.paymentStatus || payment.status || 'pending',
           payment_method: payment.paymentMethod || payment.payment_method || 'cash',
+          payment_type: payment.paymentType || payment.payment_type,
           invoice_number: payment.invoiceNumber || payment.invoice_number || payment._id,
           transaction_id: payment.transactionId || payment.transaction_id,
           original_amount: payment.originalAmount || payment.amount,
@@ -221,6 +230,32 @@ export function MemberPayments() {
     }
   };
 
+  const getPaymentTypeLabel = (type?: string) => {
+    switch (type) {
+      case 'NEW_SUBSCRIPTION':
+        return 'Đăng ký gói mới';
+      case 'RENEWAL':
+        return 'Gia hạn gói tập';
+      case 'PT_PURCHASE':
+        return 'Mua buổi tập';
+      default:
+        return 'Thanh toán';
+    }
+  };
+
+  const getPaymentTypeBadge = (type?: string) => {
+    switch (type) {
+      case 'NEW_SUBSCRIPTION':
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Đăng ký mới</Badge>;
+      case 'RENEWAL':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Gia hạn</Badge>;
+      case 'PT_PURCHASE':
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">Mua PT</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">Khác</Badge>;
+    }
+  };
+
   // Calculate statistics
   const stats = useMemo(() => {
     const totalAmount = memberPayments
@@ -290,41 +325,17 @@ export function MemberPayments() {
   // Loading state
   const isLoading = isLoadingPayments || isLoadingPackages || isLoadingSubscriptions;
 
-  const handleSelectPackage = (id: string, name: string, amount: number) => {
-    setSelectedPkg({ id, name, amount });
-    setSelectedMethod('bank');
-    setShowPaymentMethods(false);
-    setOpenModal(true);
-  };
-
   // Select a renew option but do not open modal yet
-  const handleSelectRenewPackage = (id: string, name: string, amount: number) => {
-    setSelectedPkg({ id, name, amount });
-    setSelectedMethod('bank');
-  };
-
-  const proceedToPayment = () => {
-    if (!selectedPkg || !selectedMethod) return;
-    setOpenModal(true);
-  };
-
-  const paymentConfig = (method: 'momo' | 'zalopay' | 'bank' | undefined) => {
-    if (method === 'momo') {
-      return {
-        title: 'Thanh toán Momo',
-        steps: ['Mở ứng dụng Momo', 'Chọn Quét mã QR', 'Quét mã QR trên màn hình', 'Xác nhận thanh toán', 'Nhập mật khẩu để hoàn tất']
-      };
-    }
-    if (method === 'zalopay') {
-      return {
-        title: 'Thanh toán ZaloPay',
-        steps: ['Mở ứng dụng ZaloPay', 'Chọn Quét mã QR', 'Quét mã QR trên màn hình', 'Xác nhận thanh toán', 'Nhập mật khẩu để hoàn tất']
-      };
-    }
-    return {
-      title: 'Chuyển khoản ngân hàng',
-      steps: ['Mở ứng dụng ngân hàng', 'Chọn Chuyển khoản/QR', 'Quét mã QR trên màn hình', 'Xác nhận thông tin', 'Nhập OTP để hoàn tất']
-    };
+  const handleSelectRenewPackage = (id: string, name: string, amount: number, pkg?: any) => {
+    setSelectedPkg({ 
+      id, 
+      name, 
+      amount,
+      type: pkg?.type || 'Membership',
+      membershipType: pkg?.membership_type || pkg?.membershipType || 'Basic',
+      durationMonths: pkg?.duration_months || pkg?.durationMonths || 1,
+      ptSessions: pkg?.ptSessions || 0
+    });
   };
 
   // Loading state
@@ -394,7 +405,7 @@ export function MemberPayments() {
             <Card
               key={opt.id}
               className={`border-2 cursor-pointer select-none ${selectedPkg?.id === opt.id ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}`}
-              onClick={() => handleSelectRenewPackage(opt.id, opt.name, opt.price)}
+              onClick={() => handleSelectRenewPackage(opt.id, opt.name, opt.price, opt)}
             >
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">{opt.name}
@@ -449,7 +460,7 @@ export function MemberPayments() {
                   <div
                     key={pkg.id}
                     className={`p-4 rounded-lg border-2 bg-gray-50 cursor-pointer select-none ${selectedPkg?.id === pkg.id ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}`}
-                    onClick={() => handleSelectRenewPackage(pkg.id, pkg.name, pkg.price)}
+                    onClick={() => handleSelectRenewPackage(pkg.id, pkg.name, pkg.price, pkg)}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <h4 className="font-semibold text-blue-900 text-sm md:text-base">{pkg.name}</h4>
@@ -478,7 +489,7 @@ export function MemberPayments() {
               <Card
                 key={pkg.id}
                 className={`border-2 cursor-pointer select-none ${selectedPkg?.id === pkg.id ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}`}
-                onClick={() => handleSelectRenewPackage(pkg.id, pkg.name, pkg.price)}
+                onClick={() => handleSelectRenewPackage(pkg.id, pkg.name, pkg.price, pkg)}
               >
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold text-blue-900 mb-2">{pkg.name}</h3>
@@ -496,13 +507,26 @@ export function MemberPayments() {
 
       {/* Payment methods stats section removed as requested */}
 
-      <MemberPaymentModal
+      <ModalCreatePayment
         open={openModal}
-        onClose={() => setOpenModal(false)}
-        method={selectedMethod}
+        onClose={() => {
+          setOpenModal(false);
+          setSelectedPkg(undefined);
+        }}
+        packageId={selectedPkg?.id || ''}
         packageName={selectedPkg?.name || ''}
         amount={selectedPkg?.amount || 0}
-        getConfig={paymentConfig}
+        packageType={selectedPkg?.type as 'Membership' | 'Combo' | 'PT' || 'Membership'}
+        membershipType={selectedPkg?.membershipType as 'Basic' | 'VIP' || 'Basic'}
+        durationMonths={selectedPkg?.durationMonths || 1}
+        ptSessions={selectedPkg?.ptSessions || 0}
+        isRenewal={activeTab === 'renew'} // Set true nếu đang ở tab gia hạn
+        currentSubscriptionId={activeSubscription?._id || activeSubscription?.id}
+        onSuccess={() => {
+          // Refresh payments list và subscriptions
+          queryClient.invalidateQueries({ queryKey: ['payments'] });
+          queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+        }}
       />
 
       {/* Invoice History table */}
@@ -520,6 +544,7 @@ export function MemberPayments() {
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Mã hóa đơn</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Ngày thanh toán</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Loại</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Gói tập</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Số tiền</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-blue-900 border-b">Phương thức</th>
@@ -542,6 +567,9 @@ export function MemberPayments() {
                     <td className="px-4 py-3">
                       <div className="font-medium">{new Date(p.payment_date).toLocaleDateString('vi-VN')}</div>
                       <div className="text-xs text-gray-500">{new Date(p.payment_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {getPaymentTypeBadge(p.paymentType || (p as any).payment_type)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-blue-900">{(p as any).package_name || 'Gói tập'}</div>

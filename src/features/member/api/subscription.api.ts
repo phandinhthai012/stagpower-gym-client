@@ -50,4 +50,17 @@ export const subscriptionApi = {
     const response = await apiClient.post(API_ENDPOINTS.SUBSCRIPTION.UNSUSPEND_SUBSCRIPTION(subscriptionId));
     return response.data;
   },
+
+  // Renew subscription
+  renewSubscription: async (subscriptionId: string, data: {
+    newPackageId: string;
+    branchId?: string;
+    paymentDetails?: any;
+    bonusDays?: number;
+    isPaid?: boolean;
+    paymentDate?: string;
+  }): Promise<ApiResponse<any>> => {
+    const response = await apiClient.put(API_ENDPOINTS.SUBSCRIPTION.RENEW_SUBSCRIPTION(subscriptionId), data);
+    return response.data;
+  },
 };

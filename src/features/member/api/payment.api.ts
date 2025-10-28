@@ -56,4 +56,10 @@ export const paymentApi = {
     const response = await apiClient.get(`${API_ENDPOINTS.PAYMENT.GET_ALL_PAYMENTS}/stats`);
     return response.data;
   },
+
+  // Regenerate QR code for pending payment
+  regeneratePaymentQR: async (paymentId: string): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post(`${API_ENDPOINTS.PAYMENT.GET_PAYMENT_BY_ID(paymentId)}/regenerate-qr`);
+    return response.data;
+  },
 };
