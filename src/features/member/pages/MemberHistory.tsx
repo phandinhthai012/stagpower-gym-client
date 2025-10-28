@@ -11,43 +11,74 @@ import {
   TrendingUp,
   Target,
   Award,
-  Download
+  Download,
+  Loader2
 } from 'lucide-react';
-import { 
-  mockCheckIns, 
-  mockSchedules,
-  getMockDataByMemberId 
-} from '../../../mockdata';
 import { formatDate } from '../../../lib/date-utils';
+import { useCheckInMember, useMySchedules } from '../hooks';
 
 export function MemberHistory() {
   const { user } = useAuth();
+  const memberId = user?._id || user?.id || '';
 
-  // Get member's data
+  // Fetch data from APIs
+  const { checkInHistory, isLoadingHistory } = useCheckInMember(memberId);
+  const { data: schedulesData, isLoading: isLoadingSchedules } = useMySchedules();
+
+  // Process check-ins data
   const checkIns = useMemo(() => {
-    if (!user?.id) return [];
-    return getMockDataByMemberId('checkIns', user.id)
+    if (!checkInHistory) return [];
+    return checkInHistory
+      .map((checkIn: any) => {
+        // Calculate duration in minutes
+        let duration = 0;
+        if (checkIn.checkInTime && checkIn.checkOutTime) {
+          const checkInTime = new Date(checkIn.checkInTime).getTime();
+          const checkOutTime = new Date(checkIn.checkOutTime).getTime();
+          duration = Math.round((checkOutTime - checkInTime) / (1000 * 60));
+        }
+        return {
+          ...checkIn,
+          id: checkIn._id,
+          check_in_time: checkIn.checkInTime,
+          duration,
+          status: checkIn.status === 'checked_in' ? 'Đang tập' : checkIn.status === 'checked_out' ? 'Đã check-out' : checkIn.status,
+        };
+      })
       .sort((a, b) => new Date(b.check_in_time).getTime() - new Date(a.check_in_time).getTime());
-  }, [user?.id]);
+  }, [checkInHistory]);
 
+  // Process schedules data
   const schedules = useMemo(() => {
-    if (!user?.id) return [];
-    return getMockDataByMemberId('schedules', user.id)
+    if (!schedulesData) return [];
+    return (schedulesData || [])
+      .map((schedule: any) => ({
+        ...schedule,
+        id: schedule._id,
+        date_time: schedule.dateTime,
+        duration_minutes: schedule.durationMinutes,
+        status: schedule.status === 'Confirmed' ? 'Đã xác nhận' : 
+                schedule.status === 'Pending' ? 'Chờ xác nhận' :
+                schedule.status === 'Completed' ? 'Hoàn thành' :
+                schedule.status === 'Cancelled' ? 'Đã hủy' : schedule.status,
+      }))
       .sort((a, b) => new Date(b.date_time).getTime() - new Date(a.date_time).getTime());
-  }, [user?.id]);
+  }, [schedulesData]);
 
   // Calculate statistics
   const stats = useMemo(() => {
     const totalCheckIns = checkIns.length;
     const totalSchedules = schedules.length;
-    const completedSchedules = schedules.filter(s => s.status === 'Completed').length;
+    const completedSchedules = schedules.filter(s => s.status === 'Hoàn thành').length;
     const totalWorkoutTime = checkIns
       .filter(c => c.duration)
       .reduce((sum, c) => sum + (c.duration || 0), 0);
     
     // Weekly stats
     const weeklyCheckIns = checkIns.filter(c => {
-      const checkInDate = new Date(c.check_in_time);
+      const checkInTime = c.check_in_time || c.checkInTime;
+      if (!checkInTime) return false;
+      const checkInDate = new Date(checkInTime);
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
       return checkInDate >= weekAgo;
@@ -61,6 +92,20 @@ export function MemberHistory() {
       weeklyCheckIns
     };
   }, [checkIns, schedules]);
+
+  // Loading state
+  const isLoading = isLoadingHistory || isLoadingSchedules;
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-96">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <span>Đang tải lịch sử...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -148,7 +193,7 @@ export function MemberHistory() {
             {checkIns.length > 0 ? (
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {checkIns.slice(0, 10).map((checkIn) => (
-                  <div key={checkIn.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={checkIn.id || checkIn._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                         <Activity className="h-4 w-4 text-green-600" />
@@ -156,7 +201,7 @@ export function MemberHistory() {
                       <div>
                         <p className="font-medium text-sm">Check-in</p>
                         <p className="text-xs text-gray-600">
-                          {formatDate(checkIn.check_in_time)}
+                          {formatDate(checkIn.check_in_time || checkIn.checkInTime)}
                         </p>
                       </div>
                     </div>
@@ -193,7 +238,7 @@ export function MemberHistory() {
             {schedules.length > 0 ? (
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {schedules.slice(0, 10).map((schedule) => (
-                  <div key={schedule.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={schedule.id || schedule._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                         <Target className="h-4 w-4 text-blue-600" />
@@ -201,13 +246,13 @@ export function MemberHistory() {
                       <div>
                         <p className="font-medium text-sm">Buổi PT</p>
                         <p className="text-xs text-gray-600">
-                          {formatDate(schedule.date_time)}
+                          {formatDate(schedule.date_time || schedule.dateTime)}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">
-                        {schedule.duration_minutes} phút
+                        {schedule.duration_minutes || schedule.durationMinutes} phút
                       </p>
                       <Badge variant="outline" className="text-xs">
                         {schedule.status}
@@ -239,7 +284,10 @@ export function MemberHistory() {
           <div className="space-y-4">
             {(() => {
               const monthlyActivity = checkIns.reduce((acc, checkIn) => {
-                const month = new Date(checkIn.check_in_time).toLocaleDateString('vi-VN', { 
+                const checkInTime = checkIn.check_in_time || checkIn.checkInTime;
+                if (!checkInTime) return acc;
+                
+                const month = new Date(checkInTime).toLocaleDateString('vi-VN', { 
                   year: 'numeric', 
                   month: 'long' 
                 });
