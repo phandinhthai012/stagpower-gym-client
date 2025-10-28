@@ -108,11 +108,48 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
       onSuccess?.();
     } catch (error: any) {
       console.error('❌ Error creating schedule:', error?.response?.data || error);
-      const errorMessage = error?.response?.data?.message || 'Có lỗi xảy ra khi đặt lịch!';
+      let errorMessage = error?.response?.data?.message || 'Có lỗi xảy ra khi đặt lịch!';
       const errorDetails = error?.response?.data?.data?.errors || [];
       
+      // Translate common error messages from English to Vietnamese
+      const errorTranslations: { [key: string]: string } = {
+        'No active PT subscription with available sessions found. Please purchase a PT package first.': 
+          'Không tìm thấy gói PT đang hoạt động với buổi tập còn lại. Vui lòng mua gói PT trước.',
+        'No active PT subscription': 
+          'Không có gói PT đang hoạt động',
+        'No available sessions found': 
+          'Không còn buổi tập nào khả dụng',
+        'Please purchase a PT package first': 
+          'Vui lòng mua gói PT trước',
+        'PT sessions remaining is 0': 
+          'Số buổi PT còn lại là 0',
+        'Subscription has expired': 
+          'Gói đăng ký đã hết hạn',
+        'Subscription is not active': 
+          'Gói đăng ký không hoạt động',
+      };
+
+      // Check if the error message matches any translation
+      for (const [english, vietnamese] of Object.entries(errorTranslations)) {
+        if (errorMessage.includes(english)) {
+          errorMessage = vietnamese;
+          break;
+        }
+      }
+      
       if (errorDetails.length > 0) {
-        toast.error(`${errorMessage}: ${errorDetails.map((e: any) => e.message).join(', ')}`);
+        // Translate error details as well
+        const translatedDetails = errorDetails.map((e: any) => {
+          let detailMsg = e.message || '';
+          for (const [english, vietnamese] of Object.entries(errorTranslations)) {
+            if (detailMsg.includes(english)) {
+              detailMsg = vietnamese;
+              break;
+            }
+          }
+          return detailMsg;
+        });
+        toast.error(`${errorMessage}: ${translatedDetails.join(', ')}`);
       } else {
         toast.error(errorMessage);
       }
