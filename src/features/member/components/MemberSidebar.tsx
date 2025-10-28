@@ -11,7 +11,6 @@ import {
   Lightbulb, 
   CreditCard, 
   Bell, 
-  LogOut, 
   X
 } from 'lucide-react';
 
@@ -23,13 +22,6 @@ interface MemberSidebarProps {
 export function MemberSidebar({ sidebarOpen, setSidebarOpen }: MemberSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
 
   const menuItems = [
     { id: 'dashboard', label: 'Trang chủ', icon: LayoutDashboard, path: '/member/dashboard' },
@@ -51,79 +43,105 @@ export function MemberSidebar({ sidebarOpen, setSidebarOpen }: MemberSidebarProp
     <>
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+        fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-blue-900 to-blue-800 text-white transform transition-all duration-300 ease-in-out shadow-xl
+        ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-0'} 
         lg:fixed lg:translate-x-0 lg:flex-shrink-0
+        ${sidebarOpen ? 'lg:w-64' : 'lg:w-16'}
       `}>
         {/* Sidebar Header */}
-        <div className="px-5 py-5 border-b border-blue-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div className={`border-b border-blue-700 transition-all duration-300 ${sidebarOpen ? 'px-4 py-4 sm:px-5 sm:py-5' : 'lg:px-2 lg:py-4 px-0 py-0'}`}>
+          <div className="flex items-center justify-center lg:justify-start">
+            {/* Logo - Hidden on mobile when sidebar closed via CSS, always visible on desktop */}
+            <div className={`flex items-center gap-2 sm:gap-3 relative group ${!sidebarOpen ? 'hidden lg:flex' : 'flex'}`}>
               <img 
                 src="/Logo_StagPower_4x.png" 
                 alt="StagPower Logo" 
-                className="w-24 h-24 object-contain"
+                className={`object-contain transition-all duration-300 ${
+                  !sidebarOpen 
+                    ? 'w-10 h-10' 
+                    : 'w-16 h-16 sm:w-20 sm:h-20 lg:w-20 lg:h-20'
+                }`}
               />
-              <div>
-                <h2 className="text-lg font-semibold text-white">StagPower</h2>
-                <p className="text-xs text-blue-200">Bảng Điều Hướng Hội Viên </p>
+              <div className={`transition-all duration-300 ${
+                !sidebarOpen 
+                  ? 'opacity-0 w-0 overflow-hidden' 
+                  : 'opacity-100 w-auto'
+              }`}>
+                <h2 className="text-base sm:text-lg font-semibold text-white">StagPower</h2>
+                <p className="text-xs text-blue-200">Bảng Điều Hướng Hội Viên</p>
               </div>
             </div>
+          </div>
+          {/* Mobile close button */}
+          {sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-white hover:text-gray-300 p-1"
+              className="lg:hidden absolute top-4 right-4 text-white hover:text-gray-300 p-1"
             >
               <X className="w-5 h-5" />
             </button>
-          </div>
+          )}
         </div>
 
-
         {/* Navigation Menu */}
-        <div className="px-0 py-6">
+        <div className="px-0 py-4 sm:py-6 overflow-y-auto max-h-[calc(100vh-80px)] scrollbar-hide transition-all duration-300">
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
+              const active = isActive(item.path);
               return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    navigate(item.path);
-                    setSidebarOpen(false);
-                  }}
-                  className={`
-                    w-full flex items-center px-5 py-3 text-sm font-medium transition-all duration-300 ease-in-out
-                    border-l-3 border-transparent
-                    ${isActive(item.path)
-                      ? 'bg-blue-700 text-white border-l-green-500'
-                      : 'text-blue-200 hover:bg-blue-700 hover:text-white hover:border-l-green-500'
-                    }
-                  `}
-                >
-                  <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                </button>
+                <div key={item.id} className="relative group">
+                  <button
+                    onClick={() => {
+                      if (item.path) {
+                        navigate(item.path);
+                        // Close sidebar on mobile after navigation
+                        if (window.innerWidth < 1024) {
+                          setSidebarOpen(false);
+                        }
+                      }
+                    }}
+                    className={`
+                      w-full flex items-center transition-all duration-300 ease-in-out
+                      border-l-4 border-transparent relative
+                      ${sidebarOpen ? 'justify-start px-4 sm:px-5 py-3' : 'lg:justify-center lg:px-2 lg:py-3 justify-start px-4 py-3'}
+                      ${active
+                        ? 'bg-blue-700 text-white border-l-green-500'
+                        : 'text-blue-200 hover:bg-blue-700 hover:text-white hover:border-l-green-500'
+                      }
+                    `}
+                    title={!sidebarOpen ? item.label : ''}
+                  >
+                    <Icon className={`flex-shrink-0 ${sidebarOpen ? 'w-5 h-5' : 'lg:w-6 lg:h-6 w-5 h-5'}`} />
+                    <span className={`
+                      text-sm font-medium truncate transition-all duration-300
+                      ${!sidebarOpen 
+                        ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden lg:ml-0 opacity-100 w-auto ml-3' 
+                        : 'opacity-100 w-auto ml-3'
+                      }
+                    `}>
+                      {item.label}
+                    </span>
+                    
+                    {/* Tooltip for collapsed desktop sidebar */}
+                    {!sidebarOpen && (
+                      <div className="hidden lg:group-hover:block absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-md whitespace-nowrap z-50 shadow-lg">
+                        {item.label}
+                        <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                      </div>
+                    )}
+                  </button>
+                </div>
               );
             })}
           </nav>
-        </div>
-
-        {/* Logout Button */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-700">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center px-4 py-3 text-sm font-medium text-blue-200 hover:bg-blue-700 hover:text-white transition-all duration-300 ease-in-out border-l-3 border-transparent hover:border-l-red-500"
-          >
-            <LogOut className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span>Đăng Xuất</span>
-          </button>
         </div>
       </div>
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden animate-in fade-in duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
