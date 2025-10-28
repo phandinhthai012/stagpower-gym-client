@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
@@ -23,32 +23,67 @@ import {
   Settings,
   RefreshCcw,
   CheckCircle,
-  CreditCard as CreditCardIcon
+  CreditCard as CreditCardIcon,
+  Loader2
 } from 'lucide-react';
 import { 
-  mockCheckIns, 
-  mockSchedules, 
-  mockPayments,
-  mockBranches 
-} from '../../../mockdata';
-import { 
-  mockSubscriptions,
-  mockAISuggestions
-} from '../../../mockdata';
+  useCheckInMember,
+  useMySchedules,
+  useSubscriptionsByMemberId,
+  useBranches
+} from '../hooks';
+import { usePaymentsByMemberId } from '../hooks/usePayments';
 
 export function MemberDashboard() {
   const { user } = useAuth();
+  const memberId = user?._id || user?.id;
 
-  // Get member-specific data
-  const memberData = {
-    activeSubscription: mockSubscriptions.find(sub => sub.status === 'Active'),
-    recentCheckIns: mockCheckIns.slice(0, 5),
-    upcomingSchedules: mockSchedules.filter(schedule => 
-      new Date(schedule.date_time) > new Date() && schedule.status === 'Confirmed'
-    ),
-    recentPayments: mockPayments.slice(0, 3),
-    latestAISuggestion: mockAISuggestions[0]
-  };
+  // Fetch data from APIs
+  const {
+    qrCodeDataUrl,
+    isLoadingQR,
+    checkInHistory,
+    isLoadingHistory
+  } = useCheckInMember(memberId || '');
+
+  const { data: schedulesData, isLoading: isLoadingSchedules } = useMySchedules();
+  const schedules = schedulesData || [];
+
+  const { data: subscriptionsResponse, isLoading: isLoadingSubscriptions } = useSubscriptionsByMemberId(memberId || '');
+  const subscriptions = subscriptionsResponse?.data || [];
+
+  const { data: paymentsResponse, isLoading: isLoadingPayments } = usePaymentsByMemberId(memberId || '');
+  const payments = paymentsResponse?.data || [];
+
+  const { data: branches, isLoading: isLoadingBranches } = useBranches();
+  const branchesList = branches || [];
+
+  // Derived data
+  const activeSubscription = useMemo(() => {
+    return subscriptions.find((sub: any) => sub.status === 'Active');
+  }, [subscriptions]);
+
+  const recentCheckIns = useMemo(() => {
+    return (checkInHistory || [])
+      .sort((a: any, b: any) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime())
+      .slice(0, 5);
+  }, [checkInHistory]);
+
+  const upcomingSchedules = useMemo(() => {
+    return schedules.filter((schedule: any) => {
+      const scheduleDate = new Date(schedule.dateTime);
+      const now = new Date();
+      return scheduleDate > now && schedule.status === 'Confirmed';
+    }).slice(0, 5);
+  }, [schedules]);
+
+  const recentPayments = useMemo(() => {
+    return (payments || [])
+      .sort((a: any, b: any) => new Date(b.paymentDate || b.createdAt).getTime() - new Date(a.paymentDate || a.createdAt).getTime())
+      .slice(0, 3);
+  }, [payments]);
+
+  const isLoading = isLoadingQR || isLoadingHistory || isLoadingSchedules || isLoadingSubscriptions || isLoadingPayments || isLoadingBranches;
 
   type ActivityItem = {
     id: string;
@@ -61,8 +96,13 @@ export function MemberDashboard() {
   const formatCurrencyVND = (amount: number) =>
     amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 });
 
-  const getBranchName = (branchId?: string) =>
-    mockBranches.find(b => b.id === branchId)?.name || 'Chi nhánh';
+  const getBranchName = useMemo(() => {
+    return (branchId?: string) => {
+      if (!branchId) return 'Chi nhánh';
+      const branch = branchesList.find((b: any) => b._id === branchId || b.id === branchId);
+      return branch?.name || 'Chi nhánh';
+    };
+  }, [branchesList]);
 
   const formatRelative = (iso: string) => {
     const now = new Date();
@@ -78,42 +118,49 @@ export function MemberDashboard() {
   };
 
   const recentActivities: ActivityItem[] = useMemo(() => {
-    if (!user) return [];
-    const uid = user.id;
-    const checkins: ActivityItem[] = mockCheckIns
-      .filter(c => c.member_id === uid)
-      .map(c => ({
-        id: `ci_${c.id}`,
-        type: 'checkin',
+    const checkins: ActivityItem[] = (checkInHistory || [])
+      .map((c: any) => ({
+        id: `ci_${c._id}`,
+        type: 'checkin' as const,
         title: 'Check-in thành công',
-        subtitle: getBranchName(c.branch_id),
-        at: c.created_at || c.check_in_time,
+        subtitle: getBranchName(c.branchId),
+        at: c.checkInTime || c.createdAt,
       }));
 
-    const schedules: ActivityItem[] = mockSchedules
-      .filter(s => s.member_id === uid && (s.status === 'Completed' || s.status === 'Confirmed'))
-      .map(s => ({
-        id: `sc_${s.id}`,
-        type: 'schedule',
+    const scheduleItems: ActivityItem[] = schedules
+      .filter((s: any) => s.status === 'Completed' || s.status === 'Confirmed')
+      .map((s: any) => ({
+        id: `sc_${s._id}`,
+        type: 'schedule' as const,
         title: 'Buổi PT với huấn luyện viên',
-        subtitle: s.note,
-        at: s.updated_at || s.date_time,
+        subtitle: s.notes || 'Buổi tập cá nhân',
+        at: s.updatedAt || s.dateTime,
       }));
 
-    const payments: ActivityItem[] = mockPayments
-      .filter(p => p.member_id === uid)
-      .map(p => ({
-        id: `pm_${p.id}`,
-        type: 'payment',
+    const paymentItems: ActivityItem[] = (payments || [])
+      .map((p: any) => ({
+        id: `pm_${p._id}`,
+        type: 'payment' as const,
         title: 'Thanh toán gói tập',
-        subtitle: formatCurrencyVND(p.amount),
-        at: p.payment_date,
+        subtitle: formatCurrencyVND(p.amount || 0),
+        at: p.paymentDate || p.createdAt,
       }));
 
-    return [...checkins, ...schedules, ...payments]
+    return [...checkins, ...scheduleItems, ...paymentItems]
       .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
       .slice(0, 5);
-  }, [user]);
+  }, [checkInHistory, schedules, payments, getBranchName]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-900 mb-4" />
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,12 +174,24 @@ export function MemberDashboard() {
             <h3 className="text-lg font-semibold text-blue-900 text-center mb-6">QR Code Check-in</h3>
             <div className="flex items-center justify-center">
               <div className="w-full max-w-3xl h-72 sm:h-80 md:h-96 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center">
-                <div className="w-48 h-48 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <QrCode className="w-16 h-16 text-gray-400" />
-                </div>
+                {isLoadingQR ? (
+                  <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                ) : qrCodeDataUrl ? (
+                  <img 
+                    src={qrCodeDataUrl} 
+                    alt="QR Code Check-in" 
+                    className="w-64 h-64 object-contain"
+                  />
+                ) : (
+                  <div className="w-48 h-48 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                    <QrCode className="w-16 h-16 text-gray-400" />
+                  </div>
+                )}
               </div>
             </div>
-            <p className="text-center text-sm text-gray-600 mt-4">Hiển thị mã QR này tại cửa để check-in</p>
+            <p className="text-center text-sm text-gray-600 mt-4">
+              {qrCodeDataUrl ? 'Hiển thị mã QR này tại cửa để check-in' : 'Không thể tạo QR code. Vui lòng thử lại.'}
+            </p>
             </div>
 
           {/* Quick Actions (moved below QR) */}
@@ -173,28 +232,35 @@ export function MemberDashboard() {
               </div>
             </div>
 
-          {/* Recent Activities (from mockdata) */}
+          {/* Recent Activities */}
           <div className="bg-white p-6 rounded-2xl shadow-sm">
             <h3 className="text-lg font-semibold text-blue-900 mb-4">Hoạt Động Gần Đây</h3>
-            <ul className="divide-y divide-gray-200">
-              {recentActivities.map((item) => (
-                <li key={item.id} className="py-4 flex items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
-                    item.type === 'checkin' ? 'bg-green-100' : item.type === 'payment' ? 'bg-orange-100' : 'bg-blue-100'
-                  }`}>
-                    {item.type === 'checkin' && <CheckCircle className="w-5 h-5 text-green-600" />}
-                    {item.type === 'schedule' && <Calendar className="w-5 h-5 text-blue-600" />}
-                    {item.type === 'payment' && <CreditCardIcon className="w-5 h-5 text-orange-600" />}
+            {recentActivities.length > 0 ? (
+              <ul className="divide-y divide-gray-200">
+                {recentActivities.map((item) => (
+                  <li key={item.id} className="py-4 flex items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
+                      item.type === 'checkin' ? 'bg-green-100' : item.type === 'payment' ? 'bg-orange-100' : 'bg-blue-100'
+                    }`}>
+                      {item.type === 'checkin' && <CheckCircle className="w-5 h-5 text-green-600" />}
+                      {item.type === 'schedule' && <Calendar className="w-5 h-5 text-blue-600" />}
+                      {item.type === 'payment' && <CreditCardIcon className="w-5 h-5 text-orange-600" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{item.title}</div>
+                      <div className="text-sm text-gray-600">{item.subtitle}</div>
+                    </div>
+                    <div className="text-sm text-gray-500">{formatRelative(item.at)}</div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Activity className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                <p>Chưa có hoạt động nào</p>
               </div>
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">{item.title}</div>
-                    <div className="text-sm text-gray-600">{item.subtitle}</div>
-                </div>
-                  <div className="text-sm text-gray-500">{formatRelative(item.at)}</div>
-                </li>
-              ))}
-            </ul>
-              </div>
+            )}
+          </div>
 
           </div>
     </div>

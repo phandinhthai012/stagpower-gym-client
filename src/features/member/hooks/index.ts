@@ -53,3 +53,9 @@ export {
   useTrainers,
   trainerQueryKeys
 } from './useTrainers';
+
+// Branch hooks
+export {
+  useBranches,
+  useBranchById
+} from './useBranches';
