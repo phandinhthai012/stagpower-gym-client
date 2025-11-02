@@ -23,44 +23,64 @@ export const healthInfoUtils = {
     return 'text-red-600';
   },
 
-  // Get goal text
-  getGoalText: (goal: string): string => {
+  // Get goal text (handle both PascalCase and lowercase)
+  getGoalText: (goal?: string): string => {
+    if (!goal) return 'Chưa xác định';
     const goalMap: Record<string, string> = {
       WeightLoss: 'Giảm cân',
       MuscleGain: 'Tăng cơ',
-      Health: 'Sức khỏe'
+      Health: 'Sức khỏe',
+      weightloss: 'Giảm cân',
+      musclegain: 'Tăng cơ',
+      health: 'Sức khỏe'
     };
-    return goalMap[goal] || 'Chưa xác định';
+    const lower = goal.toLowerCase();
+    return goalMap[goal] || goalMap[lower] || goal;
   },
 
-  // Get experience text
-  getExperienceText: (experience: string): string => {
+  // Get experience text (handle both PascalCase and lowercase)
+  getExperienceText: (experience?: string): string => {
+    if (!experience) return 'Chưa xác định';
     const experienceMap: Record<string, string> = {
       Beginner: 'Người mới',
       Intermediate: 'Trung bình',
-      Advanced: 'Nâng cao'
+      Advanced: 'Nâng cao',
+      beginner: 'Người mới',
+      intermediate: 'Trung bình',
+      advanced: 'Nâng cao'
     };
-    return experienceMap[experience] || 'Chưa xác định';
+    const lower = experience.toLowerCase();
+    return experienceMap[experience] || experienceMap[lower] || experience;
   },
 
-  // Get fitness level text
-  getFitnessLevelText: (fitnessLevel: string): string => {
+  // Get fitness level text (handle both PascalCase and lowercase)
+  getFitnessLevelText: (fitnessLevel?: string): string => {
+    if (!fitnessLevel) return 'Chưa xác định';
     const fitnessMap: Record<string, string> = {
       Low: 'Thấp',
       Medium: 'Trung bình',
-      High: 'Cao'
+      High: 'Cao',
+      low: 'Thấp',
+      medium: 'Trung bình',
+      high: 'Cao'
     };
-    return fitnessMap[fitnessLevel] || 'Chưa xác định';
+    const lower = fitnessLevel.toLowerCase();
+    return fitnessMap[fitnessLevel] || fitnessMap[lower] || fitnessLevel;
   },
 
-  // Get preferred time text
-  getPreferredTimeText: (preferredTime: string): string => {
+  // Get preferred time text (handle both PascalCase and lowercase)
+  getPreferredTimeText: (preferredTime?: string): string => {
+    if (!preferredTime) return 'Chưa xác định';
     const timeMap: Record<string, string> = {
       Morning: 'Sáng',
       Afternoon: 'Chiều',
-      Evening: 'Tối'
+      Evening: 'Tối',
+      morning: 'Sáng',
+      afternoon: 'Chiều',
+      evening: 'Tối'
     };
-    return timeMap[preferredTime] || 'Chưa xác định';
+    const lower = preferredTime.toLowerCase();
+    return timeMap[preferredTime] || timeMap[lower] || preferredTime;
   },
 
   // Get weekly sessions text
@@ -100,20 +120,71 @@ export const healthInfoUtils = {
     return errors;
   },
 
+  // Get health status text
+  getHealthStatusText: (healthStatus?: string): string => {
+    if (!healthStatus) return 'Chưa đánh giá';
+    const statusMap: Record<string, string> = {
+      excellent: 'Xuất sắc',
+      good: 'Tốt',
+      fair: 'Trung bình',
+      poor: 'Yếu',
+      critical: 'Nghiêm trọng'
+    };
+    return statusMap[healthStatus.toLowerCase()] || healthStatus;
+  },
+
+  // Get diet type text
+  getDietTypeText: (dietType?: string): string => {
+    if (!dietType) return 'Chưa xác định';
+    const dietMap: Record<string, string> = {
+      balanced: 'Cân bằng',
+      high_protein: 'Nhiều đạm',
+      low_carb: 'Ít tinh bột',
+      vegetarian: 'Ăn chay',
+      vegan: 'Thuần chay',
+      other: 'Khác'
+    };
+    return dietMap[dietType.toLowerCase()] || dietType;
+  },
+
+  // Get stress level text
+  getStressLevelText: (stressLevel?: string): string => {
+    if (!stressLevel) return 'Chưa xác định';
+    const stressMap: Record<string, string> = {
+      low: 'Thấp',
+      medium: 'Trung bình',
+      high: 'Cao'
+    };
+    return stressMap[stressLevel.toLowerCase()] || stressLevel;
+  },
+
+  // Get alcohol text
+  getAlcoholText: (alcohol?: string): string => {
+    if (!alcohol) return 'Chưa xác định';
+    const alcoholMap: Record<string, string> = {
+      none: 'Không',
+      occasional: 'Thỉnh thoảng',
+      frequent: 'Thường xuyên'
+    };
+    return alcoholMap[alcohol.toLowerCase()] || alcohol;
+  },
+
   // Get health info summary
   getHealthInfoSummary: (healthInfo: HealthInfo) => {
-    const bmi = healthInfoUtils.calculateBMI(healthInfo.height, healthInfo.weight);
-    const bmiCategory = healthInfoUtils.getBMICategory(bmi);
+    const bmi = healthInfo.bmi || healthInfoUtils.calculateBMI(healthInfo.height || 0, healthInfo.weight || 0);
+    const bmiCategory = bmi ? healthInfoUtils.getBMICategory(bmi) : 'Chưa xác định';
     
     return {
       bmi,
       bmiCategory,
-      bmiColor: healthInfoUtils.getBMIColor(bmi),
+      bmiColor: bmi ? healthInfoUtils.getBMIColor(bmi) : 'text-gray-600',
       goalText: healthInfoUtils.getGoalText(healthInfo.goal),
       experienceText: healthInfoUtils.getExperienceText(healthInfo.experience),
       fitnessLevelText: healthInfoUtils.getFitnessLevelText(healthInfo.fitnessLevel),
-      preferredTimeText: healthInfoUtils.getPreferredTimeText(healthInfo.preferredTime || 'Morning'),
+      preferredTimeText: healthInfoUtils.getPreferredTimeText(healthInfo.preferredTime),
       weeklySessionsText: healthInfoUtils.getWeeklySessionsText(healthInfo.weeklySessions || '1-2'),
+      healthStatusText: healthInfoUtils.getHealthStatusText(healthInfo.healthStatus),
+      healthScore: healthInfo.healthScore,
     };
   },
 };

@@ -162,27 +162,10 @@ export interface User {
   updatedAt: string;
 }
 
-// Health Info Types
-export interface HealthInfo {
-  _id: string;
-  memberId: string;
-  height: number;
-  weight: number;
-  bodyFat: number;
-  muscleMass: number;
-  bloodPressure: {
-    systolic: number;
-    diastolic: number;
-  };
-  heartRate: number;
-  allergies: string[];
-  medicalConditions: string[];
-  medications: string[];
-  fitnessGoals: string[];
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// Health Info Types - Import from healthInfo.api.ts instead
+// This old definition was incorrect and has been removed
+// Please import HealthInfo from '../api/healthInfo.api'
+export type { HealthInfo } from '../api/healthInfo.api';
 
 // Old Schedule Types (deprecated - use schedule.types.ts instead)
 export interface OldSchedule {

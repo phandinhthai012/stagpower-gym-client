@@ -26,6 +26,7 @@ import { useMe, useUpdateProfile } from '../hooks/useMembers';
 import { useMyHealthInfo, useCreateHealthInfo, useUpdateHealthInfo } from '../hooks/useHealthInfo';
 import { formatDate } from '../../../lib/date-utils';
 import { toast } from 'sonner';
+import { healthInfoUtils } from '../utils/healthInfo.utils';
 
 export function MemberProfile() {
   const { user } = useAuth();
@@ -56,17 +57,31 @@ export function MemberProfile() {
     return {
       height: healthInfo?.height ?? '',
       weight: healthInfo?.weight ?? '',
-      goal: healthInfo?.goal ?? 'WeightLoss',
-      experience: healthInfo?.experience ?? 'Beginner',
-      fitnessLevel: healthInfo?.fitnessLevel ?? 'Low',
-      preferredTime: healthInfo?.preferredTime ?? 'Morning',
+      gender: healthInfo?.gender ?? userData?.gender ?? 'male',
+      age: healthInfo?.age ?? '',
+      bodyFatPercent: healthInfo?.bodyFatPercent ?? '',
+      muscleMass: healthInfo?.muscleMass ?? '',
+      visceralFatLevel: healthInfo?.visceralFatLevel ?? '',
+      waterPercent: healthInfo?.waterPercent ?? '',
+      boneMass: healthInfo?.boneMass ?? '',
+      goal: healthInfo?.goal ?? '',
+      experience: healthInfo?.experience ?? '',
+      fitnessLevel: healthInfo?.fitnessLevel ?? '',
+      preferredTime: healthInfo?.preferredTime ?? '',
       weeklySessions: healthInfo?.weeklySessions ?? '1-2',
+      dietType: healthInfo?.dietType ?? 'balanced',
+      dailyCalories: healthInfo?.dailyCalories ?? '',
+      sleepHours: healthInfo?.sleepHours ?? '',
+      stressLevel: healthInfo?.stressLevel ?? 'medium',
+      alcohol: healthInfo?.alcohol ?? 'none',
+      smoking: healthInfo?.smoking ?? false,
       medicalHistory: healthInfo?.medicalHistory ?? '',
       allergies: healthInfo?.allergies ?? ''
     };
   };
 
   const bmiValue = useMemo(() => {
+    if (healthInfo?.bmi) return healthInfo.bmi.toFixed(1);
     if (!healthInfo?.height || !healthInfo?.weight) return null;
     const h = healthInfo?.height / 100;
     return (healthInfo?.weight / (h * h)).toFixed(1);
@@ -123,18 +138,30 @@ export function MemberProfile() {
     setIsEditingHealth(false);
   };
 
-  const handleHealthChange = (field: string, value: string | number) => {
+  const handleHealthChange = (field: string, value: string | number | boolean) => {
     if (!editedHealth) {
       // Initialize editedHealth if it doesn't exist
       const initialHealth = {
         height: healthInfo?.height ?? '',
         weight: healthInfo?.weight ?? '',
         gender: healthInfo?.gender ?? userData?.gender ?? 'male',
-        goal: healthInfo?.goal ?? 'weightLoss',
-        experience: healthInfo?.experience ?? 'beginner',
-        fitnessLevel: healthInfo?.fitnessLevel ?? 'low',
-        preferredTime: healthInfo?.preferredTime ?? 'morning',
+        age: healthInfo?.age ?? '',
+        bodyFatPercent: healthInfo?.bodyFatPercent ?? '',
+        muscleMass: healthInfo?.muscleMass ?? '',
+        visceralFatLevel: healthInfo?.visceralFatLevel ?? '',
+        waterPercent: healthInfo?.waterPercent ?? '',
+        boneMass: healthInfo?.boneMass ?? '',
+        goal: healthInfo?.goal ?? '',
+        experience: healthInfo?.experience ?? '',
+        fitnessLevel: healthInfo?.fitnessLevel ?? '',
+        preferredTime: healthInfo?.preferredTime ?? '',
         weeklySessions: healthInfo?.weeklySessions ?? '1-2',
+        dietType: healthInfo?.dietType ?? 'balanced',
+        dailyCalories: healthInfo?.dailyCalories ?? '',
+        sleepHours: healthInfo?.sleepHours ?? '',
+        stressLevel: healthInfo?.stressLevel ?? 'medium',
+        alcohol: healthInfo?.alcohol ?? 'none',
+        smoking: healthInfo?.smoking ?? false,
         medicalHistory: healthInfo?.medicalHistory ?? '',
         allergies: healthInfo?.allergies ?? ''
       };
@@ -264,19 +291,25 @@ export function MemberProfile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
                   <span className="text-blue-900 text-base sm:text-sm font-semibold">BMI</span>
-                  <span className="text-gray-700 text-base sm:text-sm truncate">{bmiValue ? `${bmiValue} (Bình thường)` : 'Chưa cập nhật'}</span>
+                  <span className="text-gray-700 text-base sm:text-sm truncate">
+                    {bmiValue ? `${bmiValue} (${healthInfoUtils.getBMICategory(Number(bmiValue))})` : 'Chưa cập nhật'}
+                  </span>
                 </div>
                 <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
                   <span className="text-blue-900 text-base sm:text-sm font-semibold">Mục tiêu</span>
-                  <span className="text-gray-700 text-base sm:text-sm truncate">{healthInfo?.goal === 'WeightLoss' ? 'Giảm cân' : healthInfo?.goal === 'MuscleGain' ? 'Tăng cơ' : 'Sức khỏe'}</span>
+                  <span className="text-gray-700 text-base sm:text-sm truncate">{healthInfoUtils.getGoalText(healthInfo?.goal)}</span>
                 </div>
                 <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
                   <span className="text-blue-900 text-base sm:text-sm font-semibold">Trình độ</span>
-                  <span className="text-gray-700 text-base sm:text-sm truncate">{healthInfo?.experience === 'Beginner' ? 'Người mới' : healthInfo?.experience === 'Intermediate' ? 'Trung bình' : 'Nâng cao'}</span>
+                  <span className="text-gray-700 text-base sm:text-sm truncate">{healthInfoUtils.getExperienceText(healthInfo?.experience)}</span>
                 </div>
                 <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
-                  <span className="text-blue-900 text-base sm:text-sm font-semibold">Thể lực</span>
-                  <span className="text-gray-700 text-base sm:text-sm truncate">{healthInfo?.fitnessLevel === 'low' ? 'Thấp' : healthInfo?.fitnessLevel === 'medium' ? 'Trung bình' : 'Cao'}</span>
+                  <span className="text-blue-900 text-base sm:text-sm font-semibold">Điểm sức khỏe</span>
+                  <span className="text-gray-700 text-base sm:text-sm truncate">
+                    {healthInfo?.healthScore !== undefined 
+                      ? `${healthInfo.healthScore}/100 (${healthInfoUtils.getHealthStatusText(healthInfo.healthStatus)})`
+                      : 'Chưa đánh giá'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -519,6 +552,17 @@ export function MemberProfile() {
             </div>
 
             <div className="space-y-2">
+              <Label className="text-base sm:text-sm">Tuổi</Label>
+              <Input
+                type="number"
+                value={(isEditingHealth ? editedHealth?.age : healthInfo?.age) ?? ''}
+                onChange={(e) => handleHealthChange('age', Number(e.target.value))}
+                readOnly={!isEditingHealth}
+                className="text-base sm:text-sm"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label className="text-base sm:text-sm">Mục tiêu tập luyện</Label>
               <select
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-base sm:text-sm"
@@ -536,7 +580,7 @@ export function MemberProfile() {
               <Label className="text-base sm:text-sm">Trình độ tập luyện</Label>
               <select
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-base sm:text-sm"
-                value={(isEditingHealth ? editedHealth?.experience : healthInfo?.experience) as string}
+                value={(isEditingHealth ? editedHealth?.experience : healthInfo?.experience)?.toLowerCase() || 'beginner'}
                 onChange={(e) => handleHealthChange('experience', e.target.value)}
                 disabled={!isEditingHealth}
               >
@@ -550,7 +594,7 @@ export function MemberProfile() {
               <Label className="text-base sm:text-sm">Mức độ thể lực</Label>
               <select
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-base sm:text-sm"
-                value={(isEditingHealth ? editedHealth?.fitnessLevel : healthInfo?.fitnessLevel) as string}
+                value={(isEditingHealth ? editedHealth?.fitnessLevel : healthInfo?.fitnessLevel)?.toLowerCase() || 'low'}
                 onChange={(e) => handleHealthChange('fitnessLevel', e.target.value)}
                 disabled={!isEditingHealth}
               >
@@ -564,7 +608,7 @@ export function MemberProfile() {
               <Label className="text-base sm:text-sm">Thời gian tập ưa thích</Label>
               <select
                 className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-base sm:text-sm"
-                value={(isEditingHealth ? editedHealth?.preferredTime : healthInfo?.preferredTime) as string}
+                value={(isEditingHealth ? editedHealth?.preferredTime : healthInfo?.preferredTime)?.toLowerCase() || 'morning'}
                 onChange={(e) => handleHealthChange('preferredTime', e.target.value)}
                 disabled={!isEditingHealth}
               >
@@ -586,6 +630,160 @@ export function MemberProfile() {
                 <option value="3-4">3-4 buổi</option>
                 <option value="5+">5+ buổi</option>
               </select>
+            </div>
+
+            {/* Body Composition Section */}
+            <div className="md:col-span-2">
+              <h4 className="text-base sm:text-sm font-semibold text-gray-700 mb-3 mt-4">Thành phần cơ thể</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">% Mỡ cơ thể</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={(isEditingHealth ? editedHealth?.bodyFatPercent : healthInfo?.bodyFatPercent) ?? ''}
+                    onChange={(e) => handleHealthChange('bodyFatPercent', Number(e.target.value))}
+                    readOnly={!isEditingHealth}
+                    className="text-base sm:text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">Khối lượng cơ (kg)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={(isEditingHealth ? editedHealth?.muscleMass : healthInfo?.muscleMass) ?? ''}
+                    onChange={(e) => handleHealthChange('muscleMass', Number(e.target.value))}
+                    readOnly={!isEditingHealth}
+                    className="text-base sm:text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">Mỡ nội tạng (cấp độ)</Label>
+                  <Input
+                    type="number"
+                    value={(isEditingHealth ? editedHealth?.visceralFatLevel : healthInfo?.visceralFatLevel) ?? ''}
+                    onChange={(e) => handleHealthChange('visceralFatLevel', Number(e.target.value))}
+                    readOnly={!isEditingHealth}
+                    className="text-base sm:text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">% Nước</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={(isEditingHealth ? editedHealth?.waterPercent : healthInfo?.waterPercent) ?? ''}
+                    onChange={(e) => handleHealthChange('waterPercent', Number(e.target.value))}
+                    readOnly={!isEditingHealth}
+                    className="text-base sm:text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">Khối lượng xương (kg)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={(isEditingHealth ? editedHealth?.boneMass : healthInfo?.boneMass) ?? ''}
+                    onChange={(e) => handleHealthChange('boneMass', Number(e.target.value))}
+                    readOnly={!isEditingHealth}
+                    className="text-base sm:text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Lifestyle Section */}
+            <div className="md:col-span-2">
+              <h4 className="text-base sm:text-sm font-semibold text-gray-700 mb-3 mt-4">Lối sống & Dinh dưỡng</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">Chế độ dinh dưỡng</Label>
+                  <select
+                    className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-base sm:text-sm"
+                    value={(isEditingHealth ? editedHealth?.dietType : healthInfo?.dietType) as string || 'balanced'}
+                    onChange={(e) => handleHealthChange('dietType', e.target.value)}
+                    disabled={!isEditingHealth}
+                  >
+                    <option value="balanced">Cân bằng</option>
+                    <option value="high_protein">Nhiều đạm</option>
+                    <option value="low_carb">Ít tinh bột</option>
+                    <option value="vegetarian">Ăn chay</option>
+                    <option value="vegan">Thuần chay</option>
+                    <option value="other">Khác</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">Calo/ngày</Label>
+                  <Input
+                    type="number"
+                    value={(isEditingHealth ? editedHealth?.dailyCalories : healthInfo?.dailyCalories) ?? ''}
+                    onChange={(e) => handleHealthChange('dailyCalories', Number(e.target.value))}
+                    readOnly={!isEditingHealth}
+                    className="text-base sm:text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">Số giờ ngủ/ngày</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="24"
+                    value={(isEditingHealth ? editedHealth?.sleepHours : healthInfo?.sleepHours) ?? ''}
+                    onChange={(e) => handleHealthChange('sleepHours', Number(e.target.value))}
+                    readOnly={!isEditingHealth}
+                    className="text-base sm:text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">Mức độ stress</Label>
+                  <select
+                    className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-base sm:text-sm"
+                    value={(isEditingHealth ? editedHealth?.stressLevel : healthInfo?.stressLevel) as string || 'medium'}
+                    onChange={(e) => handleHealthChange('stressLevel', e.target.value)}
+                    disabled={!isEditingHealth}
+                  >
+                    <option value="low">Thấp</option>
+                    <option value="medium">Trung bình</option>
+                    <option value="high">Cao</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">Uống rượu</Label>
+                  <select
+                    className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-base sm:text-sm"
+                    value={(isEditingHealth ? editedHealth?.alcohol : healthInfo?.alcohol) as string || 'none'}
+                    onChange={(e) => handleHealthChange('alcohol', e.target.value)}
+                    disabled={!isEditingHealth}
+                  >
+                    <option value="none">Không</option>
+                    <option value="occasional">Thỉnh thoảng</option>
+                    <option value="frequent">Thường xuyên</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">Hút thuốc lá</Label>
+                  <select
+                    className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-base sm:text-sm"
+                    value={(isEditingHealth ? (editedHealth?.smoking ? 'yes' : 'no') : (healthInfo?.smoking ? 'yes' : 'no'))}
+                    onChange={(e) => handleHealthChange('smoking', e.target.value === 'yes')}
+                    disabled={!isEditingHealth}
+                  >
+                    <option value="no">Không</option>
+                    <option value="yes">Có</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2 md:col-span-2">
