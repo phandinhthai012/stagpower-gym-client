@@ -2,6 +2,7 @@ import apiClient from '../../../configs/AxiosConfig';
 import { API_ENDPOINTS } from '../../../configs/Api';
 import { TrainerMember } from '../types/member.types';
 import { ScheduleWithDetails } from '../types/schedule.types';
+import { healthInfoApi } from '../../member/api/healthInfo.api';
 
 export interface TrainerMembersResponse {
   members: TrainerMember[];
@@ -85,15 +86,15 @@ export const memberApi = {
           console.warn('Could not fetch subscriptions for member:', memberId);
         }
 
-        // Get health info
+        // Get health info - use healthInfoApi to get transformed data
         let healthInfo = undefined;
         try {
-          const healthResponse = await apiClient.get(
-            API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_MEMBER_ID(memberId)
-          );
-          healthInfo = healthResponse.data.data;
-        } catch (error) {
-          console.warn('Could not fetch health info for member:', memberId);
+          healthInfo = await healthInfoApi.getHealthInfoByMemberId(memberId);
+        } catch (error: any) {
+          // 404 is expected when member doesn't have health info yet
+          if (error?.response?.status !== 404) {
+            console.warn('Could not fetch health info for member:', memberId);
+          }
         }
 
         return {
@@ -159,15 +160,15 @@ export const memberApi = {
         console.warn('Could not fetch subscriptions');
       }
 
-      // Get health info
+      // Get health info - use healthInfoApi to get transformed data
       let healthInfo = undefined;
       try {
-        const healthResponse = await apiClient.get(
-          API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_MEMBER_ID(memberId)
-        );
-        healthInfo = healthResponse.data.data;
-      } catch (error) {
-        console.warn('Could not fetch health info');
+        healthInfo = await healthInfoApi.getHealthInfoByMemberId(memberId);
+      } catch (error: any) {
+        // 404 is expected when member doesn't have health info yet
+        if (error?.response?.status !== 404) {
+          console.warn('Could not fetch health info');
+        }
       }
 
       return {

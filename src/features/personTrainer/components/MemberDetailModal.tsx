@@ -23,6 +23,7 @@ import {
 import { useMemberDetail } from '../hooks/useTrainerMembers';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { HealthInfoSection } from '../../../features/admin/components/member-management/HealthInfoSection';
 
 interface MemberDetailModalProps {
   memberId: string;
@@ -115,26 +116,6 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
     }
   };
 
-  const getGoalText = (goal?: string) => {
-    switch (goal) {
-      case 'weightLoss':
-      case 'WeightLoss': return 'Giảm cân';
-      case 'muscleGain':
-      case 'MuscleGain': return 'Tăng cơ';
-      case 'health':
-      case 'Health': return 'Sức khỏe';
-      default: return 'Chưa xác định';
-    }
-  };
-
-  const getFitnessLevelText = (level?: string) => {
-    switch (level) {
-      case 'High': return 'Cao';
-      case 'Medium': return 'Trung bình';
-      case 'Low': return 'Thấp';
-      default: return 'Chưa xác định';
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 bg">
@@ -336,49 +317,10 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
           {/* Health Tab */}
           {activeTab === 'health' && (
             <div className="space-y-6">
-              {data.healthInfo ? (
-                <>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {data.healthInfo.height && (
-                      <div className="p-4 bg-blue-50 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-blue-600">{data.healthInfo.height}</div>
-                        <div className="text-sm text-gray-600">Chiều cao (cm)</div>
-                      </div>
-                    )}
-                    {data.healthInfo.weight && (
-                      <div className="p-4 bg-green-50 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-green-600">{data.healthInfo.weight}</div>
-                        <div className="text-sm text-gray-600">Cân nặng (kg)</div>
-                      </div>
-                    )}
-                    {data.healthInfo.bmi && (
-                      <div className="p-4 bg-purple-50 rounded-lg text-center">
-                        <div className="text-2xl font-bold text-purple-600">{data.healthInfo.bmi.toFixed(1)}</div>
-                        <div className="text-sm text-gray-600">BMI</div>
-                      </div>
-                    )}
-                    <div className="p-4 bg-orange-50 rounded-lg text-center">
-                      <div className="text-lg font-bold text-orange-600">
-                        {getFitnessLevelText(data.healthInfo.fitnessLevel)}
-                      </div>
-                      <div className="text-sm text-gray-600">Thể lực</div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Target className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-semibold text-lg">Mục tiêu</h3>
-                    </div>
-                    <p className="text-gray-700">{getGoalText(data.healthInfo.goal)}</p>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Chưa có thông tin sức khỏe</p>
-                </div>
-              )}
+              <HealthInfoSection 
+                healthInfo={data.healthInfo || null}
+                isLoading={false}
+              />
             </div>
           )}
 
