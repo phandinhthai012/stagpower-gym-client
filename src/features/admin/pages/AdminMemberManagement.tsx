@@ -29,6 +29,8 @@ import { mockCheckIns } from '../../../mockdata/checkIns';
 import { useMembers } from '../../member/hooks/useMembers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSubscriptions, useCheckIns } from '../hooks';
+import { useSortableTable } from '../../../hooks/useSortableTable';
+import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 
 
 interface AdminMemberManagementProps {
@@ -65,6 +67,30 @@ export function AdminMemberManagement({
     ? checkInsResponse.data || [] 
     : mockCheckIns; // Fallback to mock data if API fails
   
+  // Filter members
+  const filteredMembers = React.useMemo(() => {
+    return members.filter((member: any) => {
+      const matchesSearch = member.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           member.phone.includes(searchTerm);
+      const matchesStatus = statusFilter === 'all' || member.status.toLowerCase() === statusFilter.toLowerCase();
+      
+      // Support both snake_case (mock) and camelCase (API)
+      const membershipLevel = member.memberInfo?.membership_level || member.member_info?.membership_level || 'basic';
+      const matchesMembership = membershipFilter === 'all' || 
+                               (membershipFilter === 'basic' && membershipLevel.toLowerCase() === 'basic') ||
+                               (membershipFilter === 'vip' && membershipLevel.toLowerCase() === 'vip');
+
+      return matchesSearch && matchesStatus && matchesMembership;
+    });
+  }, [members, searchTerm, statusFilter, membershipFilter]);
+
+  // Sort members - Hook must be called before early returns
+  const { sortedData, requestSort, getSortDirection } = useSortableTable({
+    data: filteredMembers,
+    initialSort: { key: 'fullName', direction: 'asc' }
+  });
+
   // Debug: Check subscription data
   React.useEffect(() => {
     if (subscriptions.length > 0) {
@@ -83,20 +109,6 @@ export function AdminMemberManagement({
       {response && 'message' in response ? response.message : 'Có lỗi xảy ra khi tải danh sách thành viên'}
     </div>;
   }
-  const filteredMembers = members.filter((member: any) => {
-    const matchesSearch = member.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.phone.includes(searchTerm);
-    const matchesStatus = statusFilter === 'all' || member.status.toLowerCase() === statusFilter.toLowerCase();
-    
-    // Support both snake_case (mock) and camelCase (API)
-    const membershipLevel = member.memberInfo?.membership_level || member.member_info?.membership_level || 'basic';
-    const matchesMembership = membershipFilter === 'all' || 
-                             (membershipFilter === 'basic' && membershipLevel.toLowerCase() === 'basic') ||
-                             (membershipFilter === 'vip' && membershipLevel.toLowerCase() === 'vip');
-
-    return matchesSearch && matchesStatus && matchesMembership;
-  });
 
   // Calculate statistics
   const totalMembers = members.length;
@@ -119,10 +131,10 @@ export function AdminMemberManagement({
   };
 
   const handleSelectAll = () => {
-    if (selectedMembers.length === filteredMembers.length) {
+    if (selectedMembers.length === sortedData.length) {
       setSelectedMembers([]);
     } else {
-      setSelectedMembers(filteredMembers.map((member: any) => member._id));
+      setSelectedMembers(sortedData.map((member: any) => member._id));
     }
   };
 
@@ -276,24 +288,46 @@ export function AdminMemberManagement({
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3">
+                  <NonSortableHeader className="p-3">
                     <input
                       type="checkbox"
-                      checked={selectedMembers.length === filteredMembers.length && filteredMembers.length > 0}
+                      checked={selectedMembers.length === sortedData.length && sortedData.length > 0}
                       onChange={handleSelectAll}
                       className="rounded"
                     />
-                  </th>
-                  <th className="text-left p-3 font-medium text-gray-600">Hội viên</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Thông tin liên hệ</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Gói tập</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Trạng thái</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Lần check-in cuối</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Thao tác</th>
+                  </NonSortableHeader>
+                  <SortableTableHeader
+                    label="Hội viên"
+                    sortKey="fullName"
+                    currentSortKey={getSortDirection('fullName') ? 'fullName' : ''}
+                    sortDirection={getSortDirection('fullName')}
+                    onSort={requestSort}
+                    align="left"
+                  />
+                  <SortableTableHeader
+                    label="Thông tin liên hệ"
+                    sortKey="email"
+                    currentSortKey={getSortDirection('email') ? 'email' : ''}
+                    sortDirection={getSortDirection('email')}
+                    onSort={requestSort}
+                    align="left"
+                  />
+                  <NonSortableHeader label="Gói tập" align="left" className="p-3" />
+                  <SortableTableHeader
+                    label="Trạng thái"
+                    sortKey="status"
+                    currentSortKey={getSortDirection('status') ? 'status' : ''}
+                    sortDirection={getSortDirection('status')}
+                    onSort={requestSort}
+                    align="left"
+                    className="p-3"
+                  />
+                  <NonSortableHeader label="Lần check-in cuối" align="left" className="p-3" />
+                  <NonSortableHeader label="Thao tác" align="left" className="p-3" />
                 </tr>
               </thead>
               <tbody>
-                {filteredMembers.map((member: any) => {
+                {sortedData.map((member: any) => {
                   const memberStatus = getMemberStatus(member);
                   const activeSub = subscriptions.find((sub: any) => {
                     const subMemberId = sub.memberId?._id || sub.memberId;
