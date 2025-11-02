@@ -31,6 +31,8 @@ import {
 import { useDiscounts, useDeleteDiscount, useChangeDiscountStatus } from '../hooks/useDiscounts';
 import { Discount } from '../types/discount.types';
 import { ModalCreateDiscount, ModalEditDiscount, ModalViewDiscount } from '../components/discounts-management';
+import { useSortableTable } from '../../../hooks/useSortableTable';
+import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 
 export function AdminDiscountManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -132,6 +134,35 @@ export function AdminDiscountManagement() {
     }
   };
 
+  // Filter discounts based on search and filters
+  const filteredDiscounts = React.useMemo(() => {
+    return discounts.filter(discount => {
+      const matchesSearch = discount.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           discount.conditions.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = typeFilter === 'all' || discount.type === typeFilter;
+      const matchesStatus = statusFilter === 'all' || discount.status === statusFilter;
+      
+      return matchesSearch && matchesType && matchesStatus;
+    });
+  }, [discounts, searchTerm, typeFilter, statusFilter]);
+
+  // Sort discounts - Hook must be called before early returns
+  const { sortedData, requestSort, getSortDirection } = useSortableTable({
+    data: filteredDiscounts,
+    initialSort: { key: 'name', direction: 'asc' }
+  });
+
+  // Reset selected discounts when filters or sort changes
+  React.useEffect(() => {
+    setSelectedDiscounts([]);
+  }, [searchTerm, typeFilter, statusFilter]);
+
+  // Reset selected discounts when sort changes
+  const handleSort = (key: string) => {
+    setSelectedDiscounts([]);
+    requestSort(key);
+  };
+
   const handleSelectDiscount = (discountId: string) => {
     setSelectedDiscounts(prev => 
       prev.includes(discountId) 
@@ -141,22 +172,12 @@ export function AdminDiscountManagement() {
   };
 
   const handleSelectAll = () => {
-    if (selectedDiscounts.length === filteredDiscounts.length) {
+    if (selectedDiscounts.length === sortedData.length) {
       setSelectedDiscounts([]);
     } else {
-      setSelectedDiscounts(filteredDiscounts.map((discount: Discount) => discount._id));
+      setSelectedDiscounts(sortedData.map((discount: Discount) => discount._id));
     }
   };
-
-  // Filter discounts based on search and filters
-  const filteredDiscounts = discounts.filter(discount => {
-    const matchesSearch = discount.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         discount.conditions.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || discount.type === typeFilter;
-    const matchesStatus = statusFilter === 'all' || discount.status === statusFilter;
-    
-    return matchesSearch && matchesType && matchesStatus;
-  });
 
   if (isLoading) {
     return (
@@ -276,25 +297,57 @@ export function AdminDiscountManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3">
+                  <NonSortableHeader className="p-3">
                     <input
                       type="checkbox"
-                      checked={selectedDiscounts.length === filteredDiscounts.length && filteredDiscounts.length > 0}
+                      checked={selectedDiscounts.length === sortedData.length && sortedData.length > 0}
                       onChange={handleSelectAll}
                       className="rounded"
                     />
-                  </th>
-                  <th className="text-left p-3 font-medium text-gray-600">Tên ưu đãi</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Loại</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Giá trị</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Điều kiện</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Thời gian</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Trạng thái</th>
-                  <th className="text-left p-3 font-medium text-gray-600">Thao tác</th>
+                  </NonSortableHeader>
+                  <SortableTableHeader
+                    label="Tên ưu đãi"
+                    sortKey="name"
+                    currentSortKey={getSortDirection('name') ? 'name' : ''}
+                    sortDirection={getSortDirection('name')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-3"
+                  />
+                  <SortableTableHeader
+                    label="Loại"
+                    sortKey="type"
+                    currentSortKey={getSortDirection('type') ? 'type' : ''}
+                    sortDirection={getSortDirection('type')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-3"
+                  />
+                  <NonSortableHeader label="Giá trị" align="left" className="p-3" />
+                  <NonSortableHeader label="Điều kiện" align="left" className="p-3" />
+                  <SortableTableHeader
+                    label="Thời gian"
+                    sortKey="startDate"
+                    currentSortKey={getSortDirection('startDate') ? 'startDate' : ''}
+                    sortDirection={getSortDirection('startDate')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-3"
+                  />
+                  <SortableTableHeader
+                    label="Trạng thái"
+                    sortKey="status"
+                    currentSortKey={getSortDirection('status') ? 'status' : ''}
+                    sortDirection={getSortDirection('status')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-3"
+                  />
+                  <NonSortableHeader label="Thao tác" align="left" className="p-3" />
                 </tr>
               </thead>
               <tbody>
-                {filteredDiscounts.map((discount) => (
+                {sortedData.map((discount) => (
                   <tr key={discount._id} className="border-b hover:bg-gray-50">
                     <td className="p-3">
                       <input
