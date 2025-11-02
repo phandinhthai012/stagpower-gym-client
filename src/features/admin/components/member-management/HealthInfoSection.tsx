@@ -7,30 +7,14 @@ import {
   Target,
   Clock,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  TrendingUp
 } from 'lucide-react';
-
-interface HealthInfoData {
-  _id?: string;
-  height?: number;
-  weight?: number;
-  gender?: string;
-  age?: number;
-  bodyFatPercent?: number;
-  medicalHistory?: string;
-  allergies?: string;
-  goal?: string;
-  experience?: string;
-  fitnessLevel?: string;
-  preferredTime?: string;
-  weeklySessions?: string;
-  bmi?: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { HealthInfo } from '../../../member/api/healthInfo.api';
+import { healthInfoUtils } from '../../../member/utils/healthInfo.utils';
 
 interface HealthInfoSectionProps {
-  healthInfo: HealthInfoData | null;
+  healthInfo: HealthInfo | null;
   isLoading?: boolean;
   onEdit?: () => void;
 }
@@ -73,59 +57,17 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
     );
   }
 
-  const calculateBMI = (height?: number, weight?: number) => {
-    if (!height || !weight) return null;
-    const heightInMeters = height / 100;
-    return (weight / (heightInMeters * heightInMeters)).toFixed(1);
-  };
-
-  const getBMICategory = (bmi: number) => {
+  const bmi = healthInfo.bmi || (healthInfo.height && healthInfo.weight 
+    ? parseFloat(healthInfoUtils.calculateBMI(healthInfo.height, healthInfo.weight).toFixed(1))
+    : null);
+  const getBMICategoryBadge = (bmi: number | null) => {
+    if (!bmi) return null;
     if (bmi < 18.5) return { label: 'Thiếu cân', color: 'bg-yellow-100 text-yellow-800' };
     if (bmi < 25) return { label: 'Bình thường', color: 'bg-green-100 text-green-800' };
     if (bmi < 30) return { label: 'Thừa cân', color: 'bg-orange-100 text-orange-800' };
     return { label: 'Béo phì', color: 'bg-red-100 text-red-800' };
   };
-
-  const getGoalLabel = (goal?: string) => {
-    const goalMap: Record<string, string> = {
-      'weightLoss': 'Giảm cân',
-      'muscleGain': 'Tăng cơ',
-      'maintenance': 'Duy trì',
-      'endurance': 'Tăng sức bền',
-      'flexibility': 'Tăng độ dẻo'
-    };
-    return goal ? goalMap[goal] || goal : 'Chưa xác định';
-  };
-
-  const getExperienceLabel = (experience?: string) => {
-    const expMap: Record<string, string> = {
-      'beginner': 'Mới bắt đầu',
-      'intermediate': 'Trung bình',
-      'advanced': 'Nâng cao'
-    };
-    return experience ? expMap[experience] || experience : 'Chưa xác định';
-  };
-
-  const getFitnessLevelLabel = (level?: string) => {
-    const levelMap: Record<string, string> = {
-      'low': 'Thấp',
-      'medium': 'Trung bình',
-      'high': 'Cao'
-    };
-    return level ? levelMap[level] || level : 'Chưa xác định';
-  };
-
-  const getPreferredTimeLabel = (time?: string) => {
-    const timeMap: Record<string, string> = {
-      'morning': 'Sáng sớm',
-      'afternoon': 'Chiều',
-      'evening': 'Tối'
-    };
-    return time ? timeMap[time] || time : 'Chưa xác định';
-  };
-
-  const bmi = healthInfo.bmi || (healthInfo.height && healthInfo.weight ? parseFloat(calculateBMI(healthInfo.height, healthInfo.weight) || '0') : null);
-  const bmiCategory = bmi ? getBMICategory(bmi) : null;
+  const bmiCategory = bmi ? getBMICategoryBadge(bmi) : null;
 
   return (
     <Card className="border-l-4 border-l-red-500">
@@ -142,7 +84,7 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
             <Activity className="h-4 w-4" />
             <span>Chỉ số cơ thể</span>
           </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <div className="bg-blue-50 p-3 rounded-lg">
               <label className="text-xs text-gray-600">Chiều cao</label>
               <p className="text-lg font-semibold text-blue-600">
@@ -172,7 +114,41 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
                 {healthInfo.bodyFatPercent || '-'} <span className="text-sm">%</span>
               </p>
             </div>
+            <div className="bg-pink-50 p-3 rounded-lg">
+              <label className="text-xs text-gray-600">Khối lượng cơ</label>
+              <p className="text-lg font-semibold text-pink-600">
+                {healthInfo.muscleMass || '-'} <span className="text-sm">kg</span>
+              </p>
+            </div>
+            <div className="bg-indigo-50 p-3 rounded-lg">
+              <label className="text-xs text-gray-600">% Nước</label>
+              <p className="text-lg font-semibold text-indigo-600">
+                {healthInfo.waterPercent || '-'} <span className="text-sm">%</span>
+              </p>
+            </div>
           </div>
+          
+          {/* Additional Body Composition */}
+          {(healthInfo.visceralFatLevel !== undefined || healthInfo.boneMass !== undefined) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              {healthInfo.visceralFatLevel !== undefined && (
+                <div className="bg-yellow-50 p-3 rounded-lg">
+                  <label className="text-xs text-gray-600">Mỡ nội tạng</label>
+                  <p className="text-lg font-semibold text-yellow-600">
+                    {healthInfo.visceralFatLevel} <span className="text-sm">cấp độ</span>
+                  </p>
+                </div>
+              )}
+              {healthInfo.boneMass !== undefined && (
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <label className="text-xs text-gray-600">Khối lượng xương</label>
+                  <p className="text-lg font-semibold text-gray-600">
+                    {healthInfo.boneMass} <span className="text-sm">kg</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Fitness Goals */}
@@ -186,7 +162,7 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
               <label className="text-xs text-gray-600">Mục tiêu chính</label>
               <div className="mt-1">
                 <Badge className="bg-blue-100 text-blue-800">
-                  {getGoalLabel(healthInfo.goal)}
+                  {healthInfoUtils.getGoalText(healthInfo.goal)}
                 </Badge>
               </div>
             </div>
@@ -194,7 +170,7 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
               <label className="text-xs text-gray-600">Trình độ</label>
               <div className="mt-1">
                 <Badge className="bg-purple-100 text-purple-800">
-                  {getExperienceLabel(healthInfo.experience)}
+                  {healthInfoUtils.getExperienceText(healthInfo.experience)}
                 </Badge>
               </div>
             </div>
@@ -202,7 +178,7 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
               <label className="text-xs text-gray-600">Thể lực hiện tại</label>
               <div className="mt-1">
                 <Badge className="bg-green-100 text-green-800">
-                  {getFitnessLevelLabel(healthInfo.fitnessLevel)}
+                  {healthInfoUtils.getFitnessLevelText(healthInfo.fitnessLevel)}
                 </Badge>
               </div>
             </div>
@@ -223,10 +199,109 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
           </h4>
           <div className="bg-gray-50 p-3 rounded-lg">
             <Badge className="bg-indigo-100 text-indigo-800">
-              {getPreferredTimeLabel(healthInfo.preferredTime)}
+              {healthInfoUtils.getPreferredTimeText(healthInfo.preferredTime)}
             </Badge>
           </div>
         </div>
+
+        {/* Health Score & Status */}
+        {(healthInfo.healthScore !== undefined || healthInfo.healthStatus) && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
+              <TrendingUp className="h-4 w-4" />
+              <span>Đánh giá sức khỏe</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {healthInfo.healthScore !== undefined && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                  <label className="text-xs text-gray-600 mb-1 block">Điểm sức khỏe</label>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold text-blue-700">
+                      {healthInfo.healthScore}
+                    </p>
+                    <span className="text-sm text-gray-600">/100</span>
+                  </div>
+                  {healthInfo.healthStatus && (
+                    <Badge className={`mt-2 ${healthInfo.healthStatus === 'excellent' ? 'bg-green-100 text-green-800' :
+                      healthInfo.healthStatus === 'good' ? 'bg-blue-100 text-blue-800' :
+                      healthInfo.healthStatus === 'fair' ? 'bg-yellow-100 text-yellow-800' :
+                      healthInfo.healthStatus === 'poor' ? 'bg-orange-100 text-orange-800' :
+                      'bg-red-100 text-red-800'}`}>
+                      {healthInfoUtils.getHealthStatusText(healthInfo.healthStatus)}
+                    </Badge>
+                  )}
+                </div>
+              )}
+              {healthInfo.healthScoreDescription && (
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <label className="text-xs text-gray-600 mb-1 block">Nhận xét</label>
+                  <p className="text-sm text-gray-700">{healthInfo.healthScoreDescription}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Lifestyle & Nutrition */}
+        {(healthInfo.dietType || healthInfo.dailyCalories !== undefined || healthInfo.sleepHours !== undefined || 
+          healthInfo.stressLevel || healthInfo.alcohol || healthInfo.smoking !== undefined) && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
+              <Clock className="h-4 w-4" />
+              <span>Lối sống & Dinh dưỡng</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {healthInfo.dietType && (
+                <div>
+                  <label className="text-xs text-gray-600">Chế độ dinh dưỡng</label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {healthInfoUtils.getDietTypeText(healthInfo.dietType)}
+                  </p>
+                </div>
+              )}
+              {healthInfo.dailyCalories !== undefined && (
+                <div>
+                  <label className="text-xs text-gray-600">Calo/ngày</label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {healthInfo.dailyCalories} kcal
+                  </p>
+                </div>
+              )}
+              {healthInfo.sleepHours !== undefined && (
+                <div>
+                  <label className="text-xs text-gray-600">Số giờ ngủ/ngày</label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {healthInfo.sleepHours} giờ
+                  </p>
+                </div>
+              )}
+              {healthInfo.stressLevel && (
+                <div>
+                  <label className="text-xs text-gray-600">Mức độ stress</label>
+                  <Badge className="bg-gray-100 text-gray-800 mt-1">
+                    {healthInfoUtils.getStressLevelText(healthInfo.stressLevel)}
+                  </Badge>
+                </div>
+              )}
+              {healthInfo.alcohol && (
+                <div>
+                  <label className="text-xs text-gray-600">Uống rượu</label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {healthInfoUtils.getAlcoholText(healthInfo.alcohol)}
+                  </p>
+                </div>
+              )}
+              {healthInfo.smoking !== undefined && (
+                <div>
+                  <label className="text-xs text-gray-600">Hút thuốc lá</label>
+                  <Badge className={healthInfo.smoking ? 'bg-red-100 text-red-800 mt-1' : 'bg-green-100 text-green-800 mt-1'}>
+                    {healthInfo.smoking ? 'Có' : 'Không'}
+                  </Badge>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Medical History */}
         {(healthInfo.medicalHistory || healthInfo.allergies) && (

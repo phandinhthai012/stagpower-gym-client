@@ -487,23 +487,9 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
           notes: formData.notes.trim(),
           total_spending: 0,
           membership_month: 0
-        },
-        
-        // Health info
-        health_info: {
-          height: formData.height ? Number(formData.height) : null,
-          weight: formData.weight ? Number(formData.weight) : null,
-          bmi: bmi,
-          gender: formData.gender,
-          age: age,
-          medical_history: formData.medical_history.trim(),
-          allergies: formData.allergies.trim(),
-          goal: formData.goal || null,
-          experience: formData.experience || null,
-          fitness_level: formData.fitness_level || null,
-          preferred_time: formData.preferred_time || null,
-          weekly_sessions: formData.weekly_sessions || null
         }
+        // Health info (optional - will be created separately via health info API)
+        // Note: Health info should be created after member is created via dedicated API
       };
 
       // TODO: Call API to create member

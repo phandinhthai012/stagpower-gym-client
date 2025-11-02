@@ -47,11 +47,7 @@ export function ModalDetailMember({
   // Fetch health info for this member
   // Hook must be called unconditionally
   const memberId = member?._id;
-  const { data: healthInfoResponse, isLoading: isLoadingHealthInfo } = useHealthInfoByMemberId(memberId);
-  
-  // Extract health info from response
-  // Response will be { success: true, data: {...} } or null (if 404)
-  const healthInfo = healthInfoResponse?.data ?? null;
+  const { data: healthInfo, isLoading: isLoadingHealthInfo } = useHealthInfoByMemberId(memberId);
 
   // Fetch subscription for this member
   const { data: subscriptionResponse, isLoading: isLoadingSubscription } = useSubscriptionByMemberId(memberId);

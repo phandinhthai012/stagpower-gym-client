@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../../configs/AxiosConfig';
 import { API_ENDPOINTS } from '../../../configs/Api';
+import { healthInfoApi } from '../api/healthInfo.api';
 
 // Get my health info
 export const useMyHealthInfo = () => {
@@ -8,9 +9,8 @@ export const useMyHealthInfo = () => {
     queryKey: ['health-info', 'me'],
     queryFn: async () => {
       try {
-        const response = await axiosInstance.get(API_ENDPOINTS.HEALTH_INFO.GET_MY_HEALTH_INFO);
-        // API returns: { success, statusCode, message, data }
-        return response.data.data || null;
+        // Use healthInfoApi to get transformed data (lowercase enums -> PascalCase)
+        return await healthInfoApi.getMyHealthInfo();
       } catch (error: any) {
         // 404 is expected when member doesn't have health info yet
         if (error?.response?.status === 404) {
@@ -31,11 +31,8 @@ export const useHealthInfoByMemberId = (memberId: string | null | undefined) => 
     queryFn: async () => {
       if (!memberId) return null;
       try {
-        const response = await axiosInstance.get(
-          API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_MEMBER_ID(memberId)
-        );
-        // API returns: { success, statusCode, message, data }
-        return response.data.data || null;
+        // Use healthInfoApi to get transformed data (lowercase enums -> PascalCase)
+        return await healthInfoApi.getHealthInfoByMemberId(memberId);
       } catch (error: any) {
         // 404 is expected when member doesn't have health info yet
         if (error?.response?.status === 404) {
@@ -56,14 +53,20 @@ export const useHealthInfoById = (healthInfoId: string | null | undefined) => {
     queryKey: ['health-info', healthInfoId],
     queryFn: async () => {
       if (!healthInfoId) return null;
-      const response = await axiosInstance.get(
-        API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_ID(healthInfoId)
-      );
-      // API returns: { success, statusCode, message, data }
-      return response.data.data || null;
+      try {
+        // Use healthInfoApi to get transformed data (lowercase enums -> PascalCase)
+        return await healthInfoApi.getHealthInfoById(healthInfoId);
+      } catch (error: any) {
+        // 404 is expected when health info doesn't exist
+        if (error?.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
     },
     enabled: !!healthInfoId,
     staleTime: 1000 * 60 * 5,
+    retry: false, // Don't retry on 404 errors
   });
 };
 

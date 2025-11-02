@@ -61,14 +61,26 @@ const editMemberSchema = z.object({
   // Health Info - All optional, allow null/undefined/empty
   height: z.number().min(100, 'Tối thiểu 100cm').max(250, 'Tối đa 250cm').nullable().optional(),
   weight: z.number().min(30, 'Tối thiểu 30kg').max(300, 'Tối đa 300kg').nullable().optional(),
+  age: z.number().min(1, 'Tối thiểu 1 tuổi').max(100, 'Tối đa 100 tuổi').nullable().optional(),
   bodyFatPercent: z.number().min(0, 'Tối thiểu 0%').max(100, 'Tối đa 100%').nullable().optional(),
-  medicalHistory: z.string().max(500, 'Tối đa 500 ký tự').nullable().optional(),
+  muscleMass: z.number().min(0, 'Không được âm').nullable().optional(),
+  visceralFatLevel: z.number().min(0, 'Không được âm').nullable().optional(),
+  waterPercent: z.number().min(0, 'Tối thiểu 0%').max(100, 'Tối đa 100%').nullable().optional(),
+  boneMass: z.number().min(0, 'Không được âm').nullable().optional(),
+  medicalHistory: z.string().max(1000, 'Tối đa 1000 ký tự').nullable().optional(),
   allergies: z.string().max(500, 'Tối đa 500 ký tự').nullable().optional(),
-  goal: z.enum(['weightLoss', 'muscleGain', 'maintenance', 'endurance', 'flexibility']).nullable().optional(),
-  experience: z.enum(['beginner', 'intermediate', 'advanced']).nullable().optional(),
-  fitnessLevel: z.enum(['low', 'medium', 'high']).nullable().optional(),
-  preferredTime: z.enum(['morning', 'afternoon', 'evening']).nullable().optional(),
-  weeklySessions: z.enum(['1-2', '3-4', '5-6', '7+']).nullable().optional(),
+  goal: z.string().nullable().optional(), // Allow any string value for goal
+  experience: z.enum(['beginner', 'intermediate', 'advanced', 'Beginner', 'Intermediate', 'Advanced']).nullable().optional(),
+  fitnessLevel: z.enum(['low', 'medium', 'high', 'Low', 'Medium', 'High']).nullable().optional(),
+  preferredTime: z.enum(['morning', 'afternoon', 'evening', 'Morning', 'Afternoon', 'Evening']).nullable().optional(),
+  weeklySessions: z.enum(['1-2', '3-4', '5+']).nullable().optional(),
+  // Lifestyle fields
+  dietType: z.enum(['balanced', 'high_protein', 'low_carb', 'vegetarian', 'vegan', 'other']).nullable().optional(),
+  dailyCalories: z.number().min(800, 'Tối thiểu 800').max(5000, 'Tối đa 5000').nullable().optional(),
+  sleepHours: z.number().min(0, 'Tối thiểu 0').max(24, 'Tối đa 24').nullable().optional(),
+  stressLevel: z.enum(['low', 'medium', 'high']).nullable().optional(),
+  alcohol: z.enum(['none', 'occasional', 'frequent']).nullable().optional(),
+  smoking: z.boolean().nullable().optional(),
 });
 
 type EditMemberFormData = z.infer<typeof editMemberSchema>;
@@ -104,11 +116,7 @@ export function ModalEditMember({
 
   // Fetch health info for this member
   const memberId = member?._id;
-  const { data: healthInfoResponse, isLoading: isLoadingHealthInfo } = useHealthInfoByMemberId(memberId);
-  
-  // Extract health info from response
-  // Response will be { success: true, data: {...} } or null (if 404)
-  const healthInfo = healthInfoResponse?.data ?? null;
+  const { data: healthInfo, isLoading: isLoadingHealthInfo } = useHealthInfoByMemberId(memberId);
 
   const {
     register,
@@ -134,14 +142,31 @@ export function ModalEditMember({
         // Health Info - ensure values are valid or undefined (not null)
         height: healthInfo?.height || undefined,
         weight: healthInfo?.weight || undefined,
+        age: healthInfo?.age || undefined,
         bodyFatPercent: healthInfo?.bodyFatPercent || undefined,
+        muscleMass: healthInfo?.muscleMass || undefined,
+        visceralFatLevel: healthInfo?.visceralFatLevel || undefined,
+        waterPercent: healthInfo?.waterPercent || undefined,
+        boneMass: healthInfo?.boneMass || undefined,
         medicalHistory: healthInfo?.medicalHistory || '',
         allergies: healthInfo?.allergies || '',
         goal: healthInfo?.goal || undefined,
-        experience: healthInfo?.experience || undefined,
-        fitnessLevel: healthInfo?.fitnessLevel || undefined,
-        preferredTime: healthInfo?.preferredTime || undefined,
+        experience: healthInfo?.experience 
+          ? (healthInfo.experience.toLowerCase() as 'beginner' | 'intermediate' | 'advanced' | 'Beginner' | 'Intermediate' | 'Advanced')
+          : undefined,
+        fitnessLevel: healthInfo?.fitnessLevel
+          ? (healthInfo.fitnessLevel.toLowerCase() as 'low' | 'medium' | 'high' | 'Low' | 'Medium' | 'High')
+          : undefined,
+        preferredTime: healthInfo?.preferredTime
+          ? (healthInfo.preferredTime.toLowerCase() as 'morning' | 'afternoon' | 'evening' | 'Morning' | 'Afternoon' | 'Evening')
+          : undefined,
         weeklySessions: healthInfo?.weeklySessions || undefined,
+        dietType: healthInfo?.dietType || undefined,
+        dailyCalories: healthInfo?.dailyCalories || undefined,
+        sleepHours: healthInfo?.sleepHours || undefined,
+        stressLevel: healthInfo?.stressLevel || undefined,
+        alcohol: healthInfo?.alcohol || undefined,
+        smoking: healthInfo?.smoking ?? undefined,
       };
       
       reset(formData);
@@ -203,15 +228,25 @@ export function ModalEditMember({
         height: data.height,
         weight: data.weight,
         gender: data.gender,
-        age: age,
+        age: age || data.age,
         bodyFatPercent: data.bodyFatPercent,
+        muscleMass: data.muscleMass,
+        visceralFatLevel: data.visceralFatLevel,
+        waterPercent: data.waterPercent,
+        boneMass: data.boneMass,
         medicalHistory: data.medicalHistory,
         allergies: data.allergies,
         goal: data.goal,
-        experience: data.experience,
-        fitnessLevel: data.fitnessLevel,
-        preferredTime: data.preferredTime,
+        experience: data.experience ? (typeof data.experience === 'string' ? data.experience.toLowerCase() : data.experience) : undefined,
+        fitnessLevel: data.fitnessLevel ? (typeof data.fitnessLevel === 'string' ? data.fitnessLevel.toLowerCase() : data.fitnessLevel) : undefined,
+        preferredTime: data.preferredTime ? (typeof data.preferredTime === 'string' ? data.preferredTime.toLowerCase() : data.preferredTime) : undefined,
         weeklySessions: data.weeklySessions,
+        dietType: data.dietType,
+        dailyCalories: data.dailyCalories,
+        sleepHours: data.sleepHours,
+        stressLevel: data.stressLevel,
+        alcohol: data.alcohol,
+        smoking: data.smoking,
       };
 
       // Remove undefined, null, and empty string fields
@@ -668,6 +703,26 @@ export function ModalEditMember({
                       />
                     </div>
 
+                    {/* Age */}
+                    <div>
+                      <Label htmlFor="age" className="text-sm font-medium text-gray-700">
+                        Tuổi {errors.age && (
+                          <span className="text-red-500 text-xs">- {errors.age.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="age"
+                        type="number"
+                        min="1"
+                        max="100"
+                        {...register('age', { 
+                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                        })}
+                        placeholder="VD: 25"
+                        className={errors.age ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+
                     {/* Body Fat % */}
                     <div>
                       <Label htmlFor="bodyFatPercent" className="text-sm font-medium text-gray-700">
@@ -686,6 +741,89 @@ export function ModalEditMember({
                         })}
                         placeholder="VD: 15.5"
                         className={errors.bodyFatPercent ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+
+                    {/* Muscle Mass */}
+                    <div>
+                      <Label htmlFor="muscleMass" className="text-sm font-medium text-gray-700">
+                        Khối lượng cơ (kg) {errors.muscleMass && (
+                          <span className="text-red-500 text-xs">- {errors.muscleMass.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="muscleMass"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        {...register('muscleMass', { 
+                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                        })}
+                        placeholder="VD: 45.5"
+                        className={errors.muscleMass ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+
+                    {/* Water Percent */}
+                    <div>
+                      <Label htmlFor="waterPercent" className="text-sm font-medium text-gray-700">
+                        % Nước {errors.waterPercent && (
+                          <span className="text-red-500 text-xs">- {errors.waterPercent.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="waterPercent"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        {...register('waterPercent', { 
+                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                        })}
+                        placeholder="VD: 60.5"
+                        className={errors.waterPercent ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Additional Body Composition */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    {/* Visceral Fat Level */}
+                    <div>
+                      <Label htmlFor="visceralFatLevel" className="text-sm font-medium text-gray-700">
+                        Mỡ nội tạng (cấp độ) {errors.visceralFatLevel && (
+                          <span className="text-red-500 text-xs">- {errors.visceralFatLevel.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="visceralFatLevel"
+                        type="number"
+                        min="0"
+                        {...register('visceralFatLevel', { 
+                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                        })}
+                        placeholder="VD: 8"
+                        className={errors.visceralFatLevel ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+
+                    {/* Bone Mass */}
+                    <div>
+                      <Label htmlFor="boneMass" className="text-sm font-medium text-gray-700">
+                        Khối lượng xương (kg) {errors.boneMass && (
+                          <span className="text-red-500 text-xs">- {errors.boneMass.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="boneMass"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        {...register('boneMass', { 
+                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                        })}
+                        placeholder="VD: 3.2"
+                        className={errors.boneMass ? 'border-red-500 focus:ring-red-500' : ''}
                       />
                     </div>
                   </div>
@@ -709,11 +847,9 @@ export function ModalEditMember({
                           <SelectValue placeholder="Chọn mục tiêu (tùy chọn)" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="weightLoss">Giảm cân</SelectItem>
-                          <SelectItem value="muscleGain">Tăng cơ</SelectItem>
-                          <SelectItem value="maintenance">Duy trì</SelectItem>
-                          <SelectItem value="endurance">Tăng sức bền</SelectItem>
-                          <SelectItem value="flexibility">Tăng độ dẻo</SelectItem>
+                          <SelectItem value="WeightLoss">Giảm cân</SelectItem>
+                          <SelectItem value="MuscleGain">Tăng cơ</SelectItem>
+                          <SelectItem value="Health">Sức khỏe</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -767,8 +903,7 @@ export function ModalEditMember({
                         <SelectContent>
                           <SelectItem value="1-2">1-2 buổi</SelectItem>
                           <SelectItem value="3-4">3-4 buổi</SelectItem>
-                          <SelectItem value="5-6">5-6 buổi</SelectItem>
-                          <SelectItem value="7+">7+ buổi</SelectItem>
+                          <SelectItem value="5+">5+ buổi</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -810,7 +945,7 @@ export function ModalEditMember({
                       {...register('medicalHistory')}
                       placeholder="Nhập tiền sử bệnh (nếu có)..."
                       rows={2}
-                      maxLength={500}
+                      maxLength={1000}
                       className={errors.medicalHistory ? 'border-red-500 focus:ring-red-500' : ''}
                     />
                   </div>
@@ -830,6 +965,130 @@ export function ModalEditMember({
                       maxLength={500}
                       className={errors.allergies ? 'border-red-500 focus:ring-red-500' : ''}
                     />
+                  </div>
+                </div>
+
+                {/* Lifestyle & Nutrition */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Lối sống & Dinh dưỡng
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Diet Type */}
+                    <div>
+                      <Label htmlFor="dietType" className="text-sm font-medium text-gray-700">Chế độ dinh dưỡng</Label>
+                      <Select
+                        value={watch('dietType') ?? ''}
+                        onValueChange={(value) => setValue('dietType', value || undefined as any, { shouldValidate: true })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn chế độ (tùy chọn)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="balanced">Cân bằng</SelectItem>
+                          <SelectItem value="high_protein">Nhiều đạm</SelectItem>
+                          <SelectItem value="low_carb">Ít tinh bột</SelectItem>
+                          <SelectItem value="vegetarian">Ăn chay</SelectItem>
+                          <SelectItem value="vegan">Thuần chay</SelectItem>
+                          <SelectItem value="other">Khác</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Daily Calories */}
+                    <div>
+                      <Label htmlFor="dailyCalories" className="text-sm font-medium text-gray-700">
+                        Calo/ngày {errors.dailyCalories && (
+                          <span className="text-red-500 text-xs">- {errors.dailyCalories.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="dailyCalories"
+                        type="number"
+                        min="800"
+                        max="5000"
+                        {...register('dailyCalories', { 
+                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                        })}
+                        placeholder="VD: 2000"
+                        className={errors.dailyCalories ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+
+                    {/* Sleep Hours */}
+                    <div>
+                      <Label htmlFor="sleepHours" className="text-sm font-medium text-gray-700">
+                        Số giờ ngủ/ngày {errors.sleepHours && (
+                          <span className="text-red-500 text-xs">- {errors.sleepHours.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="sleepHours"
+                        type="number"
+                        min="0"
+                        max="24"
+                        step="0.5"
+                        {...register('sleepHours', { 
+                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                        })}
+                        placeholder="VD: 7.5"
+                        className={errors.sleepHours ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+
+                    {/* Stress Level */}
+                    <div>
+                      <Label htmlFor="stressLevel" className="text-sm font-medium text-gray-700">Mức độ stress</Label>
+                      <Select
+                        value={watch('stressLevel') ?? ''}
+                        onValueChange={(value) => setValue('stressLevel', value || undefined as any, { shouldValidate: true })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn mức độ (tùy chọn)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Thấp</SelectItem>
+                          <SelectItem value="medium">Trung bình</SelectItem>
+                          <SelectItem value="high">Cao</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Alcohol */}
+                    <div>
+                      <Label htmlFor="alcohol" className="text-sm font-medium text-gray-700">Uống rượu</Label>
+                      <Select
+                        value={watch('alcohol') ?? ''}
+                        onValueChange={(value) => setValue('alcohol', value || undefined as any, { shouldValidate: true })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn tần suất (tùy chọn)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Không</SelectItem>
+                          <SelectItem value="occasional">Thỉnh thoảng</SelectItem>
+                          <SelectItem value="frequent">Thường xuyên</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Smoking */}
+                    <div>
+                      <Label htmlFor="smoking" className="text-sm font-medium text-gray-700">Hút thuốc lá</Label>
+                      <Select
+                        value={watch('smoking') === true ? 'yes' : watch('smoking') === false ? 'no' : ''}
+                        onValueChange={(value) => setValue('smoking', value === 'yes' ? true : value === 'no' ? false : undefined, { shouldValidate: true })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn (tùy chọn)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">Không</SelectItem>
+                          <SelectItem value="yes">Có</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </CardContent>
