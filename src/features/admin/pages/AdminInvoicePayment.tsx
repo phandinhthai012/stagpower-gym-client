@@ -33,6 +33,8 @@ import { usePayments, usePaymentStats, useUpdatePayment } from '../../member/hoo
 import { Invoice } from '../types/invoice.types';
 import { Payment } from '../../member/types';
 import { ModalCreateInvoice, ModalViewInvoice } from '../components/invoices-management';
+import { useSortableTable } from '../../../hooks/useSortableTable';
+import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 
 export function AdminInvoicePayment() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,41 +60,60 @@ export function AdminInvoicePayment() {
 
 
   // Filter payments based on search and filters
-  const filteredPayments = payments.filter((payment: any) => {
-    const matchesSearch = (payment.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.memberId?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.memberId?.email?.toLowerCase().includes(searchTerm.toLowerCase())) || false;
-    const matchesStatus = statusFilter === 'all' || (payment.paymentStatus || payment.status) === statusFilter;
-    const matchesPackage = packageFilter === 'all' || payment.subscriptionId?.packageId?.type === packageFilter;
-    
-    let matchesDate = true;
-    if (startDate && endDate && payment.createdAt) {
-      const paymentDate = new Date(payment.createdAt);
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      matchesDate = paymentDate >= start && paymentDate <= end;
-    }
-    
-    let matchesPrice = true;
-    if (priceFilter !== 'all' && payment.amount) {
-      switch (priceFilter) {
-        case '0-500k':
-          matchesPrice = payment.amount < 500000;
-          break;
-        case '500k-1M':
-          matchesPrice = payment.amount >= 500000 && payment.amount < 1000000;
-          break;
-        case '1M-2M':
-          matchesPrice = payment.amount >= 1000000 && payment.amount < 2000000;
-          break;
-        case '2M+':
-          matchesPrice = payment.amount >= 2000000;
-          break;
+  const filteredPayments = React.useMemo(() => {
+    return payments.filter((payment: any) => {
+      const matchesSearch = (payment.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           payment.memberId?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           payment.memberId?.email?.toLowerCase().includes(searchTerm.toLowerCase())) || false;
+      const matchesStatus = statusFilter === 'all' || (payment.paymentStatus || payment.status) === statusFilter;
+      const matchesPackage = packageFilter === 'all' || payment.subscriptionId?.packageId?.type === packageFilter;
+      
+      let matchesDate = true;
+      if (startDate && endDate && payment.createdAt) {
+        const paymentDate = new Date(payment.createdAt);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        matchesDate = paymentDate >= start && paymentDate <= end;
       }
-    }
+      
+      let matchesPrice = true;
+      if (priceFilter !== 'all' && payment.amount) {
+        switch (priceFilter) {
+          case '0-500k':
+            matchesPrice = payment.amount < 500000;
+            break;
+          case '500k-1M':
+            matchesPrice = payment.amount >= 500000 && payment.amount < 1000000;
+            break;
+          case '1M-2M':
+            matchesPrice = payment.amount >= 1000000 && payment.amount < 2000000;
+            break;
+          case '2M+':
+            matchesPrice = payment.amount >= 2000000;
+            break;
+        }
+      }
 
-    return matchesSearch && matchesStatus && matchesPackage && matchesDate && matchesPrice;
+      return matchesSearch && matchesStatus && matchesPackage && matchesDate && matchesPrice;
+    });
+  }, [payments, searchTerm, statusFilter, packageFilter, startDate, endDate, priceFilter]);
+
+  // Sort payments - Hook must be called before early returns
+  const { sortedData, requestSort, getSortDirection } = useSortableTable({
+    data: filteredPayments,
+    initialSort: { key: 'createdAt', direction: 'desc' }
   });
+
+  // Reset selected invoices when filters or sort changes
+  React.useEffect(() => {
+    setSelectedInvoices([]);
+  }, [searchTerm, statusFilter, packageFilter, startDate, endDate, priceFilter]);
+
+  // Reset selected invoices when sort changes
+  const handleSort = (key: string) => {
+    setSelectedInvoices([]);
+    requestSort(key);
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -137,10 +158,10 @@ export function AdminInvoicePayment() {
   };
 
   const handleSelectAll = () => {
-    if (selectedInvoices.length === filteredPayments.length) {
+    if (selectedInvoices.length === sortedData.length) {
       setSelectedInvoices([]);
     } else {
-      setSelectedInvoices(filteredPayments.map((payment: any) => payment._id));
+      setSelectedInvoices(sortedData.map((payment: any) => payment._id));
     }
   };
 
@@ -441,27 +462,83 @@ export function AdminInvoicePayment() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3">
+                  <NonSortableHeader className="p-3">
                     <input
                       type="checkbox"
-                      checked={selectedInvoices.length === filteredPayments.length && filteredPayments.length > 0}
+                      checked={selectedInvoices.length === sortedData.length && sortedData.length > 0}
                       onChange={handleSelectAll}
                       className="rounded"
                     />
-                  </th>
-                  <th className="text-left p-2 font-medium text-gray-600 text-xs">Mã HĐ</th>
-                  <th className="text-left p-2 font-medium text-gray-600 text-xs">Hội Viên</th>
-                  <th className="text-left p-2 font-medium text-gray-600 text-xs">Gói Dịch Vụ</th>
-                  <th className="text-left p-2 font-medium text-gray-600 text-xs">Số Tiền</th>
-                  <th className="text-left p-2 font-medium text-gray-600 text-xs">Ngày Tạo</th>
-                  <th className="text-left p-2 font-medium text-gray-600 text-xs">Ngày Thanh Toán</th>
-                  <th className="text-left p-2 font-medium text-gray-600 text-xs">Phương Thức</th>
-                  <th className="text-left p-2 font-medium text-gray-600 text-xs">Trạng Thái</th>
-                  <th className="text-left p-2 font-medium text-gray-600 text-xs">Thao Tác</th>
+                  </NonSortableHeader>
+                  <SortableTableHeader
+                    label="Mã HĐ"
+                    sortKey="invoiceNumber"
+                    currentSortKey={getSortDirection('invoiceNumber') ? 'invoiceNumber' : ''}
+                    sortDirection={getSortDirection('invoiceNumber')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-2 text-xs"
+                  />
+                  <SortableTableHeader
+                    label="Hội Viên"
+                    sortKey="memberId.fullName"
+                    currentSortKey={getSortDirection('memberId.fullName') ? 'memberId.fullName' : ''}
+                    sortDirection={getSortDirection('memberId.fullName')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-2 text-xs"
+                  />
+                  <NonSortableHeader label="Gói Dịch Vụ" align="left" className="p-2 text-xs" />
+                  <SortableTableHeader
+                    label="Số Tiền"
+                    sortKey="amount"
+                    currentSortKey={getSortDirection('amount') ? 'amount' : ''}
+                    sortDirection={getSortDirection('amount')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-2 text-xs"
+                  />
+                  <SortableTableHeader
+                    label="Ngày Tạo"
+                    sortKey="createdAt"
+                    currentSortKey={getSortDirection('createdAt') ? 'createdAt' : ''}
+                    sortDirection={getSortDirection('createdAt')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-2 text-xs"
+                  />
+                  <SortableTableHeader
+                    label="Ngày Thanh Toán"
+                    sortKey="paymentDate"
+                    currentSortKey={getSortDirection('paymentDate') ? 'paymentDate' : ''}
+                    sortDirection={getSortDirection('paymentDate')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-2 text-xs"
+                  />
+                  <SortableTableHeader
+                    label="Phương Thức"
+                    sortKey="paymentMethod"
+                    currentSortKey={getSortDirection('paymentMethod') ? 'paymentMethod' : ''}
+                    sortDirection={getSortDirection('paymentMethod')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-2 text-xs"
+                  />
+                  <SortableTableHeader
+                    label="Trạng Thái"
+                    sortKey="paymentStatus"
+                    currentSortKey={getSortDirection('paymentStatus') ? 'paymentStatus' : ''}
+                    sortDirection={getSortDirection('paymentStatus')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-2 text-xs"
+                  />
+                  <NonSortableHeader label="Thao Tác" align="left" className="p-2 text-xs" />
                 </tr>
               </thead>
               <tbody>
-                {filteredPayments.map((payment: any) => (
+                {sortedData.map((payment: any) => (
                   <tr key={payment._id} className="border-b hover:bg-gray-50">
                     <td className="p-2">
                       <input
