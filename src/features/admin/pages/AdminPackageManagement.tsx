@@ -28,6 +28,8 @@ import { ModalDetailPackage } from '../components/package-management/ModalDetail
 import { ModalEditPackage } from '../components/package-management/ModalEditPackage';
 import { usePackages, useDeletePackage } from '../hooks/usePackages';
 import { useToast } from '../../../hooks/useToast';
+import { useSortableTable } from '../../../hooks/useSortableTable';
+import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 
 interface AdminPackageManagementProps {
   onCreatePackage?: () => void;
@@ -74,19 +76,40 @@ export function AdminPackageManagement({
     }
   }, [response?.data]);
   console.log(packages);
-  const filteredPackages = packages.filter(pkg => {
-    const matchesSearch = pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pkg.description.toLowerCase().includes(searchTerm.toLowerCase());
+  
+  // Filter packages with useMemo for optimization
+  const filteredPackages = React.useMemo(() => {
+    return packages.filter(pkg => {
+      const matchesSearch = pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pkg.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesType = typeFilter === 'all' || pkg.type === typeFilter;
-    const matchesStatus = statusFilter === 'all' || pkg.status === statusFilter;
-    const matchesCategory = categoryFilter === 'all' || pkg.packageCategory === categoryFilter;
-    const matchesMembershipType = membershipTypeFilter === 'all' ||
-      (pkg.membershipType && pkg.membershipType === membershipTypeFilter) ||
-      (!pkg.membershipType && membershipTypeFilter === 'none');
+      const matchesType = typeFilter === 'all' || pkg.type === typeFilter;
+      const matchesStatus = statusFilter === 'all' || pkg.status === statusFilter;
+      const matchesCategory = categoryFilter === 'all' || pkg.packageCategory === categoryFilter;
+      const matchesMembershipType = membershipTypeFilter === 'all' ||
+        (pkg.membershipType && pkg.membershipType === membershipTypeFilter) ||
+        (!pkg.membershipType && membershipTypeFilter === 'none');
 
-    return matchesSearch && matchesType && matchesStatus && matchesCategory && matchesMembershipType;
+      return matchesSearch && matchesType && matchesStatus && matchesCategory && matchesMembershipType;
+    });
+  }, [packages, searchTerm, typeFilter, statusFilter, categoryFilter, membershipTypeFilter]);
+
+  // Sort packages - Hook must be called before early returns
+  const { sortedData, requestSort, getSortDirection } = useSortableTable({
+    data: filteredPackages,
+    initialSort: { key: 'name', direction: 'asc' }
   });
+
+  // Reset selected packages when filters or sort changes
+  useEffect(() => {
+    setSelectedPackages([]);
+  }, [searchTerm, typeFilter, statusFilter, categoryFilter, membershipTypeFilter]);
+
+  // Reset selected packages when sort changes
+  const handleSort = (key: string) => {
+    setSelectedPackages([]);
+    requestSort(key);
+  };
 
   // Calculate statistics
   const activePackages = packages.filter(pkg => pkg.status === 'Active').length;
@@ -111,10 +134,10 @@ export function AdminPackageManagement({
   };
 
   const handleSelectAll = () => {
-    if (selectedPackages.length === filteredPackages.length) {
+    if (selectedPackages.length === sortedData.length) {
       setSelectedPackages([]);
     } else {
-      setSelectedPackages(filteredPackages.map(pkg => pkg._id || pkg.id));
+      setSelectedPackages(sortedData.map((pkg: any) => pkg._id || pkg.id));
     }
   };
 
@@ -373,24 +396,64 @@ export function AdminPackageManagement({
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-3">
+                    <NonSortableHeader className="p-3">
                       <input
                         type="checkbox"
-                        checked={selectedPackages.length === filteredPackages.length && filteredPackages.length > 0}
+                        checked={selectedPackages.length === sortedData.length && sortedData.length > 0}
                         onChange={handleSelectAll}
                         className="rounded"
                       />
-                    </th>
-                    <th className="text-left p-3 font-medium text-gray-600">Tên gói</th>
-                    <th className="text-left p-3 font-medium text-gray-600">Loại</th>
-                    <th className="text-left p-3 font-medium text-gray-600">Thời hạn</th>
-                    <th className="text-left p-3 font-medium text-gray-600">Giá</th>
-                    <th className="text-left p-3 font-medium text-gray-600">Trạng thái</th>
-                    <th className="text-left p-3 font-medium text-gray-600">Thao tác</th>
+                    </NonSortableHeader>
+                    <SortableTableHeader
+                      label="Tên gói"
+                      sortKey="name"
+                      currentSortKey={getSortDirection('name') ? 'name' : ''}
+                      sortDirection={getSortDirection('name')}
+                      onSort={handleSort}
+                      align="left"
+                      className="p-3"
+                    />
+                    <SortableTableHeader
+                      label="Loại"
+                      sortKey="type"
+                      currentSortKey={getSortDirection('type') ? 'type' : ''}
+                      sortDirection={getSortDirection('type')}
+                      onSort={handleSort}
+                      align="left"
+                      className="p-3"
+                    />
+                    <SortableTableHeader
+                      label="Thời hạn"
+                      sortKey="durationMonths"
+                      currentSortKey={getSortDirection('durationMonths') ? 'durationMonths' : ''}
+                      sortDirection={getSortDirection('durationMonths')}
+                      onSort={handleSort}
+                      align="left"
+                      className="p-3"
+                    />
+                    <SortableTableHeader
+                      label="Giá"
+                      sortKey="price"
+                      currentSortKey={getSortDirection('price') ? 'price' : ''}
+                      sortDirection={getSortDirection('price')}
+                      onSort={handleSort}
+                      align="left"
+                      className="p-3"
+                    />
+                    <SortableTableHeader
+                      label="Trạng thái"
+                      sortKey="status"
+                      currentSortKey={getSortDirection('status') ? 'status' : ''}
+                      sortDirection={getSortDirection('status')}
+                      onSort={handleSort}
+                      align="left"
+                      className="p-3"
+                    />
+                    <NonSortableHeader label="Thao tác" align="left" className="p-3" />
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPackages.map((pkg) => (
+                  {sortedData.map((pkg: any) => (
                     <tr key={pkg._id || pkg.id} className="border-b hover:bg-gray-50">
                       <td className="p-3">
                         <input
