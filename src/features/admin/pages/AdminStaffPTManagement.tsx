@@ -28,6 +28,8 @@ import {
 import { 
   StaffTrainerUser
 } from '../types/staff-trainer.types';
+import { useSortableTable } from '../../../hooks/useSortableTable';
+import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 
 export function AdminStaffPTManagement() {
   // State for filters and pagination
@@ -40,6 +42,7 @@ export function AdminStaffPTManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<StaffTrainerUser | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   // Fetch data
   const { data: staffTrainersData, isLoading } = useStaffTrainers({
@@ -64,6 +67,23 @@ export function AdminStaffPTManagement() {
   const pagination = staffTrainersData?.pagination;
   console.log('👥 staffTrainers:', staffTrainers);
   console.log('📄 pagination:', pagination);
+
+  // Sort staff trainers - Hook must be called before early returns
+  const { sortedData, requestSort, getSortDirection } = useSortableTable({
+    data: staffTrainers,
+    initialSort: { key: 'fullName', direction: 'asc' }
+  });
+
+  // Reset selected users when page changes
+  React.useEffect(() => {
+    setSelectedUsers([]);
+  }, [page]);
+
+  // Reset selected users when sort changes
+  const handleSort = (key: string) => {
+    setSelectedUsers([]);
+    requestSort(key);
+  };
 
   const handleAddNew = () => {
     setShowCreateModal(true);
@@ -137,6 +157,22 @@ export function AdminStaffPTManagement() {
     setRoleFilter('all');
     setStatusFilter('all');
     setPage(1);
+  };
+
+  const handleSelectUser = (userId: string) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedUsers.length === sortedData.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(sortedData.map((user: StaffTrainerUser) => user._id));
+    }
   };
 
   return (
@@ -214,6 +250,29 @@ export function AdminStaffPTManagement() {
         </CardContent>
       </Card>
 
+      {/* Bulk Actions */}
+      {selectedUsers.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">
+                Đã chọn {selectedUsers.length} nhân viên/PT
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Gửi email
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Vô hiệu hóa
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Staff/PT List */}
       <Card>
         <CardHeader>
@@ -234,21 +293,61 @@ export function AdminStaffPTManagement() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-3 font-medium text-gray-600">Thông tin</th>
-                      <th className="text-left p-3 font-medium text-gray-600">Vai trò</th>
-                      <th className="text-left p-3 font-medium text-gray-600">Chi nhánh</th>
-                      <th className="text-left p-3 font-medium text-gray-600">Trạng thái</th>
-                      <th className="text-left p-3 font-medium text-gray-600">Thông tin bổ sung</th>
-                      <th className="text-left p-3 font-medium text-gray-600">Thao tác</th>
+                      <NonSortableHeader className="p-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.length === sortedData.length && sortedData.length > 0}
+                          onChange={handleSelectAll}
+                          className="rounded"
+                        />
+                      </NonSortableHeader>
+                      <SortableTableHeader
+                        label="Thông tin"
+                        sortKey="fullName"
+                        currentSortKey={getSortDirection('fullName') ? 'fullName' : ''}
+                        sortDirection={getSortDirection('fullName')}
+                        onSort={handleSort}
+                        align="left"
+                        className="p-3"
+                      />
+                      <SortableTableHeader
+                        label="Vai trò"
+                        sortKey="role"
+                        currentSortKey={getSortDirection('role') ? 'role' : ''}
+                        sortDirection={getSortDirection('role')}
+                        onSort={handleSort}
+                        align="left"
+                        className="p-3"
+                      />
+                      <NonSortableHeader label="Chi nhánh" align="left" className="p-3" />
+                      <SortableTableHeader
+                        label="Trạng thái"
+                        sortKey="status"
+                        currentSortKey={getSortDirection('status') ? 'status' : ''}
+                        sortDirection={getSortDirection('status')}
+                        onSort={handleSort}
+                        align="left"
+                        className="p-3"
+                      />
+                      <NonSortableHeader label="Thông tin bổ sung" align="left" className="p-3" />
+                      <NonSortableHeader label="Thao tác" align="left" className="p-3" />
                     </tr>
                   </thead>
                   <tbody>
-                    {staffTrainers.map((user) => {
+                    {sortedData.map((user) => {
                       const trainerInfo = user.role === 'trainer' ? user.trainerInfo : undefined;
                       const staffInfo = user.role === 'staff' ? user.staffInfo : undefined;
 
                       return (
                         <tr key={user._id} className="border-b hover:bg-gray-50">
+                          <td className="p-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedUsers.includes(user._id)}
+                              onChange={() => handleSelectUser(user._id)}
+                              className="rounded"
+                            />
+                          </td>
                           <td className="p-3">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
@@ -347,7 +446,7 @@ export function AdminStaffPTManagement() {
                 </table>
               </div>
 
-              {staffTrainers.length === 0 && (
+              {sortedData.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                   <p>Không tìm thấy nhân viên/PT nào</p>
@@ -356,18 +455,19 @@ export function AdminStaffPTManagement() {
 
               {/* Pagination */}
               {pagination && pagination.totalPages > 1 && (
-                <div className="flex justify-between items-center mt-6 pt-4 border-t">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <span>
                       Hiển thị {((page - 1) * limit) + 1} - {Math.min(page * limit, pagination.filteredRecords)} trong tổng số {pagination.filteredRecords} kết quả
                     </span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap justify-center">
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => setPage(1)}
-                      disabled={page === 1}
+                      disabled={page === 1 || isLoading}
+                      title="Trang đầu"
                     >
                       «
                     </Button>
@@ -375,7 +475,8 @@ export function AdminStaffPTManagement() {
                       variant="outline" 
                       size="sm"
                       onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={page === 1}
+                      disabled={page === 1 || isLoading}
+                      title="Trang trước"
                     >
                       ‹
                     </Button>
@@ -398,7 +499,8 @@ export function AdminStaffPTManagement() {
                           variant="outline"
                           size="sm"
                           onClick={() => setPage(pageNum)}
-                          className={page === pageNum ? 'bg-blue-600 text-white' : ''}
+                          disabled={isLoading}
+                          className={page === pageNum ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
                         >
                           {pageNum}
                         </Button>
@@ -409,7 +511,8 @@ export function AdminStaffPTManagement() {
                       variant="outline" 
                       size="sm"
                       onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
-                      disabled={page === pagination.totalPages}
+                      disabled={page === pagination.totalPages || isLoading}
+                      title="Trang sau"
                     >
                       ›
                     </Button>
@@ -417,10 +520,20 @@ export function AdminStaffPTManagement() {
                       variant="outline" 
                       size="sm"
                       onClick={() => setPage(pagination.totalPages)}
-                      disabled={page === pagination.totalPages}
+                      disabled={page === pagination.totalPages || isLoading}
+                      title="Trang cuối"
                     >
                       »
                     </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Show pagination info even when there's only 1 page */}
+              {pagination && pagination.totalPages === 1 && (
+                <div className="flex justify-center items-center mt-6 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Hiển thị {pagination.filteredRecords} kết quả
                   </div>
                 </div>
               )}
