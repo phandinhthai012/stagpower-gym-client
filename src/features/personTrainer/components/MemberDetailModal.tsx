@@ -187,10 +187,11 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
         </div>
 
         {/* Content */}
-        <CardContent className="flex-1 overflow-y-auto p-6">
-          {/* Info Tab */}
-          {activeTab === 'info' && (
-            <div className="space-y-6">
+        <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
+          <div className="overflow-y-auto p-6" style={{ height: '500px' }}>
+            {/* Info Tab */}
+            {activeTab === 'info' && (
+              <div className="space-y-6">
               {/* Contact Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
@@ -382,6 +383,7 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
               )}
             </div>
           )}
+          </div>
         </CardContent>
 
         {/* Footer Actions */}
