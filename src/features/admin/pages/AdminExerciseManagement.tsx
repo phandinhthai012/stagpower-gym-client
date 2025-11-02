@@ -19,6 +19,8 @@ import { useExercises, useDeleteExercise } from '../hooks/useExercises';
 import { Exercise } from '../types/exercise.types';
 import { ModalCreateExercise, ModalEditExercise, ModalViewExercise } from '../components/exercises-management';
 import { DeleteConfirmationDialog } from '../../../components/common/DeleteConfirmationDialog';
+import { useSortableTable } from '../../../hooks/useSortableTable';
+import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 
 export function AdminExerciseManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,16 +147,29 @@ export function AdminExerciseManagement() {
   };
 
   // Filter exercises based on search and filters
-  const filteredExercises = exercises.filter(exercise => {
-    const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exercise.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exercise.instructions.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || exercise.category === categoryFilter;
-    const matchesDifficulty = difficultyFilter === 'all' || exercise.difficultyLevel === difficultyFilter;
-    const matchesEquipment = equipmentFilter === 'all' || exercise.equipment === equipmentFilter;
+  const filteredExercises = React.useMemo(() => {
+    return exercises.filter(exercise => {
+      const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        exercise.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        exercise.instructions.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === 'all' || exercise.category === categoryFilter;
+      const matchesDifficulty = difficultyFilter === 'all' || exercise.difficultyLevel === difficultyFilter;
+      const matchesEquipment = equipmentFilter === 'all' || exercise.equipment === equipmentFilter;
 
-    return matchesSearch && matchesCategory && matchesDifficulty && matchesEquipment;
+      return matchesSearch && matchesCategory && matchesDifficulty && matchesEquipment;
+    });
+  }, [exercises, searchTerm, categoryFilter, difficultyFilter, equipmentFilter]);
+
+  // Sort exercises - Hook must be called before early returns
+  const { sortedData, requestSort, getSortDirection } = useSortableTable({
+    data: filteredExercises,
+    initialSort: { key: 'name', direction: 'asc' }
   });
+
+  // Reset selected exercises when sort changes
+  const handleSort = (key: string) => {
+    requestSort(key);
+  };
 
   if (isLoading) {
     return (
@@ -280,18 +295,66 @@ export function AdminExerciseManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-4">Tên bài tập</th>
-                  <th className="text-left p-4">Danh mục</th>
-                  <th className="text-left p-4">Độ khó</th>
-                  <th className="text-left p-4">Nhóm cơ</th>
-                  <th className="text-left p-4">Thiết bị</th>
-                  <th className="text-left p-4">Sets/Reps</th>
-                  <th className="text-left p-4">Trạng thái</th>
-                  <th className="text-left p-4">Thao tác</th>
+                  <SortableTableHeader
+                    label="Tên bài tập"
+                    sortKey="name"
+                    currentSortKey={getSortDirection('name') ? 'name' : ''}
+                    sortDirection={getSortDirection('name')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-4"
+                  />
+                  <SortableTableHeader
+                    label="Danh mục"
+                    sortKey="category"
+                    currentSortKey={getSortDirection('category') ? 'category' : ''}
+                    sortDirection={getSortDirection('category')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-4"
+                  />
+                  <SortableTableHeader
+                    label="Độ khó"
+                    sortKey="difficultyLevel"
+                    currentSortKey={getSortDirection('difficultyLevel') ? 'difficultyLevel' : ''}
+                    sortDirection={getSortDirection('difficultyLevel')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-4"
+                  />
+                  <NonSortableHeader label="Nhóm cơ" align="left" className="p-4" />
+                  <SortableTableHeader
+                    label="Thiết bị"
+                    sortKey="equipment"
+                    currentSortKey={getSortDirection('equipment') ? 'equipment' : ''}
+                    sortDirection={getSortDirection('equipment')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-4"
+                  />
+                  <SortableTableHeader
+                    label="Sets/Reps"
+                    sortKey="sets"
+                    currentSortKey={getSortDirection('sets') ? 'sets' : ''}
+                    sortDirection={getSortDirection('sets')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-4"
+                  />
+                  <SortableTableHeader
+                    label="Trạng thái"
+                    sortKey="isActive"
+                    currentSortKey={getSortDirection('isActive') ? 'isActive' : ''}
+                    sortDirection={getSortDirection('isActive')}
+                    onSort={handleSort}
+                    align="left"
+                    className="p-4"
+                  />
+                  <NonSortableHeader label="Thao tác" align="left" className="p-4" />
                 </tr>
               </thead>
               <tbody>
-                {filteredExercises.map((exercise) => (
+                {sortedData.map((exercise) => (
                   <tr key={exercise._id} className="border-b hover:bg-gray-50">
                     <td className="p-4">
                       <div>
