@@ -17,6 +17,7 @@ import {
 import { User as UserType } from '../../../../mockdata/users';
 import { useHealthInfoByMemberId } from '../../../member/hooks/useHealthInfo';
 import { useSubscriptionByMemberId } from '../../hooks/useSubscriptions';
+import { useCheckInByMemberId } from '../../../member/hooks/useCheckIns';
 import { HealthInfoSection } from './HealthInfoSection';
 import { UniversalUser, normalizeUser } from '../../types/user.types';
 
@@ -55,6 +56,15 @@ export function ModalDetailMember({
   
   // Get active subscription
   const activeSubscription = subscriptions.find((sub: any) => sub.status === 'Active');
+
+  // Fetch check-ins for this member
+  const { data: checkInResponse, isLoading: isLoadingCheckIns } = useCheckInByMemberId(memberId || '');
+  const checkIns = checkInResponse?.data || [];
+  
+  // Count completed sessions (checked_out check-ins)
+  const completedSessionsCount = checkIns.filter((checkIn: any) => 
+    checkIn.status === 'checked_out' || checkIn.checkOutTime
+  ).length;
 
   // Early return after all hooks
   if (!isOpen || !rawMember || !member) return null;
@@ -313,7 +323,13 @@ export function ModalDetailMember({
                   <div className="space-y-3">
                     <div className="flex justify-between items-center py-2 border-b border-gray-100">
                       <span className="text-sm text-gray-600">Số buổi đã tập</span>
-                      <span className="text-base font-semibold text-gray-900">24 buổi</span>
+                      <span className="text-base font-semibold text-gray-900">
+                        {isLoadingCheckIns ? (
+                          <span className="text-gray-400">Đang tải...</span>
+                        ) : (
+                          `${completedSessionsCount} buổi`
+                        )}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-100">
                       <span className="text-sm text-gray-600">Tổng chi tiêu</span>

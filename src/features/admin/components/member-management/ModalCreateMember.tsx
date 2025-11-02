@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
+import axiosInstance from '../../../../configs/AxiosConfig';
+import { API_ENDPOINTS } from '../../../../configs/Api';
+import { toast } from 'sonner';
 import { 
   X, 
   User, 
@@ -62,8 +65,25 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
     preserveScrollPosition: true
   });
 
+  const handleInputChange = useCallback((field: string, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Clear error when user starts typing
+    setErrors(prev => {
+      if (prev[field]) {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []);
+
   // Tab components
-  const BasicInfoTab = () => (
+  const BasicInfoTab = useMemo(() => (
     <div className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
@@ -245,9 +265,9 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
         </div>
       </div>
     </div>
-  );
+  ), [formData, errors, handleInputChange]);
 
-  const HealthInfoTab = () => (
+  const HealthInfoTab = useMemo(() => (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
         <Heart className="w-5 h-5" />
@@ -382,22 +402,7 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
         </div>
       </div>
     </div>
-  );
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  };
+  ), [formData, errors, handleInputChange]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -408,7 +413,6 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
     if (!formData.phone.trim()) newErrors.phone = 'Số điện thoại là bắt buộc';
     if (!formData.gender) newErrors.gender = 'Giới tính là bắt buộc';
     if (!formData.date_of_birth) newErrors.date_of_birth = 'Ngày sinh là bắt buộc';
-    if (!formData.cccd.trim()) newErrors.cccd = 'CCCD là bắt buộc';
     if (!formData.password.trim()) newErrors.password = 'Mật khẩu là bắt buộc';
 
     // Email format validation
@@ -468,22 +472,21 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
 
       const memberData = {
         // Basic user info
-        role: 'Member',
+        role: 'member', // Backend expects lowercase
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         gender: formData.gender,
-        date_of_birth: new Date(formData.date_of_birth),
+        dateOfBirth: formData.date_of_birth ? new Date(formData.date_of_birth) : undefined, // Backend expects camelCase
         password: formData.password, // Should be hashed on backend
-        cccd: formData.cccd.trim(),
-        join_date: new Date(),
-        status: 'Active',
+        cccd: formData.cccd.trim() || undefined, // CCCD is optional - send undefined if not provided
+        status: 'active', // Backend expects lowercase
         
         // Member specific info
-        member_info: {
-          membership_level: formData.membership_level,
-          is_hssv: formData.is_hssv,
-          current_branch_id: formData.current_branch_id || null,
+        memberInfo: { // Backend expects camelCase
+          membership_level: formData.membership_level.toLowerCase(), // Backend expects lowercase
+          is_student: formData.is_hssv, // Backend expects is_student, not is_hssv
+          current_brand_id: formData.current_branch_id || null, // Backend expects current_brand_id
           notes: formData.notes.trim(),
           total_spending: 0,
           membership_month: 0
@@ -492,41 +495,77 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
         // Note: Health info should be created after member is created via dedicated API
       };
 
-      // TODO: Call API to create member
-      console.log('Creating member:', memberData);
+      // Call API to create member
+      const response = await axiosInstance.post(API_ENDPOINTS.USER.CREATE_USER, memberData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (response.data.success) {
+        toast.success('Tạo hội viên thành công!');
+        
+        // If health info was provided, create it after member is created
+        if (formData.height || formData.weight || formData.goal) {
+          try {
+            const createdMember = response.data.data;
+            const healthInfoData: any = {};
+            
+            if (formData.height) healthInfoData.height = Number(formData.height);
+            if (formData.weight) healthInfoData.weight = Number(formData.weight);
+            if (formData.goal) healthInfoData.goal = formData.goal;
+            if (formData.experience) healthInfoData.experience = formData.experience.toLowerCase();
+            if (formData.fitness_level) healthInfoData.fitnessLevel = formData.fitness_level.toLowerCase();
+            if (formData.preferred_time) healthInfoData.preferredTime = formData.preferred_time.toLowerCase();
+            if (formData.weekly_sessions) healthInfoData.weeklySessions = formData.weekly_sessions;
+            if (formData.medical_history) healthInfoData.medicalHistory = formData.medical_history;
+            if (formData.allergies) healthInfoData.allergies = formData.allergies;
+            
+            // Create health info if any data provided
+            if (Object.keys(healthInfoData).length > 0) {
+              await axiosInstance.post(
+                API_ENDPOINTS.HEALTH_INFO.CREATE_HEALTH_INFO(createdMember._id),
+                healthInfoData
+              );
+            }
+          } catch (healthError: any) {
+            console.warn('Could not create health info:', healthError);
+            // Don't fail the whole operation if health info creation fails
+          }
+        }
+        
+        // Reset form
+        setFormData({
+          fullName: '',
+          email: '',
+          phone: '',
+          gender: '',
+          date_of_birth: '',
+          cccd: '',
+          password: '',
+          membership_level: 'Basic',
+          is_hssv: false,
+          current_branch_id: '',
+          notes: '',
+          height: '',
+          weight: '',
+          medical_history: '',
+          allergies: '',
+          goal: '',
+          experience: '',
+          fitness_level: '',
+          preferred_time: '',
+          weekly_sessions: ''
+        });
+        
+        onSuccess();
+        onClose();
+      } else {
+        throw new Error(response.data.message || 'Tạo hội viên thất bại');
+      }
       
-      onSuccess();
-      onClose();
-      
-      // Reset form
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        gender: '',
-        date_of_birth: '',
-        cccd: '',
-        password: '',
-        membership_level: 'Basic',
-        is_hssv: false,
-        current_branch_id: '',
-        notes: '',
-        height: '',
-        weight: '',
-        medical_history: '',
-        allergies: '',
-        goal: '',
-        experience: '',
-        fitness_level: '',
-        preferred_time: '',
-        weekly_sessions: ''
-      });
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating member:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi tạo hội viên';
+      toast.error('Tạo hội viên thất bại', {
+        description: errorMessage
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -586,8 +625,8 @@ export function ModalCreateMember({ isOpen, onClose, onSuccess }: ModalCreateMem
             </div>
 
             {/* Tab Content */}
-            {activeTab === 'basic' && <BasicInfoTab />}
-            {activeTab === 'health' && <HealthInfoTab />}
+            {activeTab === 'basic' && BasicInfoTab}
+            {activeTab === 'health' && HealthInfoTab}
 
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4 border-t">
