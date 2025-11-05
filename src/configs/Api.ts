@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
         GET_MY_HEALTH_INFO: `${API_PREFIX}/health-info/me`,
         GET_HEALTH_INFO_BY_ID: (healthInfoId: string) => `${API_PREFIX}/health-info/${healthInfoId}`,
         GET_HEALTH_INFO_BY_MEMBER_ID: (memberId: string) => `${API_PREFIX}/health-info/member/${memberId}`,
+        GET_ALL_HEALTH_INFO_BY_MEMBER_ID: (memberId: string) => `${API_PREFIX}/health-info/member/${memberId}/all`,
         CREATE_HEALTH_INFO: (memberId: string) => `${API_PREFIX}/health-info/${memberId}`,
         UPDATE_HEALTH_INFO: (healthInfoId: string) => `${API_PREFIX}/health-info/${healthInfoId}`,
         DELETE_HEALTH_INFO: (healthInfoId: string) => `${API_PREFIX}/health-info/${healthInfoId}`,

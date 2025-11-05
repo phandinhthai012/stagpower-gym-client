@@ -15,7 +15,7 @@ import {
   Package
 } from 'lucide-react';
 import { User as UserType } from '../../../../mockdata/users';
-import { useHealthInfoByMemberId } from '../../../member/hooks/useHealthInfo';
+import { useAllHealthInfoByMemberId } from '../../../member/hooks/useHealthInfo';
 import { useSubscriptionByMemberId } from '../../hooks/useSubscriptions';
 import { useCheckInByMemberId } from '../../../member/hooks/useCheckIns';
 import { HealthInfoSection } from './HealthInfoSection';
@@ -45,10 +45,10 @@ export function ModalDetailMember({
   // Must do this before hooks to avoid conditional hook calls
   const member = rawMember ? normalizeUser(rawMember as UniversalUser) : null;
 
-  // Fetch health info for this member
+  // Fetch all health info records for this member
   // Hook must be called unconditionally
   const memberId = member?._id;
-  const { data: healthInfo, isLoading: isLoadingHealthInfo } = useHealthInfoByMemberId(memberId);
+  const { data: healthInfoList, isLoading: isLoadingHealthInfo } = useAllHealthInfoByMemberId(memberId);
 
   // Fetch subscription for this member
   const { data: subscriptionResponse, isLoading: isLoadingSubscription } = useSubscriptionByMemberId(memberId);
@@ -218,7 +218,7 @@ export function ModalDetailMember({
 
               {/* Health Information */}
               <HealthInfoSection 
-                healthInfo={healthInfo}
+                healthInfo={healthInfoList || []}
                 isLoading={isLoadingHealthInfo}
               />
             </div>

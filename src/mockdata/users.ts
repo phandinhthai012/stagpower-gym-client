@@ -18,7 +18,6 @@ export interface User {
   member_info?: {
     membership_level: 'Basic' | 'VIP';
     qr_code: string;
-    health_info_id?: string;
     notes?: string;
     is_hssv: boolean;
     total_spending: number;
@@ -67,7 +66,6 @@ export const mockUsers: User[] = [
     member_info: {
       membership_level: 'VIP',
       qr_code: 'QR_AN_20240115_001',
-      health_info_id: '507f1f77bcf86cd799439021',
       notes: 'Khách hàng VIP, tập thường xuyên',
       is_hssv: false,
       total_spending: 15000000,
@@ -93,7 +91,6 @@ export const mockUsers: User[] = [
     member_info: {
       membership_level: 'Basic',
       qr_code: 'QR_BINH_20240201_002',
-      health_info_id: '507f1f77bcf86cd799439022',
       notes: 'Học sinh sinh viên, ưu đãi HSSV',
       is_hssv: true,
       total_spending: 3000000,
@@ -119,7 +116,6 @@ export const mockUsers: User[] = [
     member_info: {
       membership_level: 'VIP',
       qr_code: 'QR_CUONG_20240120_003',
-      health_info_id: '507f1f77bcf86cd799439023',
       notes: 'Khách hàng thân thiết, tập PT',
       is_hssv: false,
       total_spending: 25000000,
@@ -145,7 +141,6 @@ export const mockUsers: User[] = [
     member_info: {
       membership_level: 'Basic',
       qr_code: 'QR_DUNG_20240301_004',
-      health_info_id: '507f1f77bcf86cd799439024',
       notes: 'Gói thử 7 ngày',
       is_hssv: false,
       total_spending: 500000,

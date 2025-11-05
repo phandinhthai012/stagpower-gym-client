@@ -74,10 +74,31 @@ export interface HealthInfo {
   
   // Body composition
   bodyFatPercent?: number;
+  bodyFatMass?: number; // kg - Khối lượng mỡ cơ thể
   muscleMass?: number; // kg
   visceralFatLevel?: number; // Cấp độ mỡ nội tạng (1-20)
   waterPercent?: number; // %
   boneMass?: number; // kg
+  
+  // InBody Analysis
+  basalMetabolicRate?: number; // kcal - Tỷ lệ trao đổi chất cơ bản
+  waistHipRatio?: number; // Tỷ lệ vòng eo/vòng hông
+  inBodyScore?: number; // Điểm InBody (0-100)
+  
+  // Segmental Analysis
+  segmentalLeanAnalysis?: {
+    leftArm?: { mass?: number; percent?: number };
+    rightArm?: { mass?: number; percent?: number };
+    leftLeg?: { mass?: number; percent?: number };
+    rightLeg?: { mass?: number; percent?: number };
+  };
+  segmentalFatAnalysis?: {
+    leftArm?: { mass?: number; percent?: number };
+    rightArm?: { mass?: number; percent?: number };
+    trunk?: { mass?: number; percent?: number };
+    leftLeg?: { mass?: number; percent?: number };
+    rightLeg?: { mass?: number; percent?: number };
+  };
   
   // Medical history
   medicalHistory?: string;
@@ -119,10 +140,27 @@ export interface HealthInfoServerResponse {
   gender?: 'male' | 'female';
   age?: number;
   bodyFatPercent?: number;
+  bodyFatMass?: number;
   muscleMass?: number;
   visceralFatLevel?: number;
   waterPercent?: number;
   boneMass?: number;
+  basalMetabolicRate?: number;
+  waistHipRatio?: number;
+  inBodyScore?: number;
+  segmentalLeanAnalysis?: {
+    leftArm?: { mass?: number; percent?: number };
+    rightArm?: { mass?: number; percent?: number };
+    leftLeg?: { mass?: number; percent?: number };
+    rightLeg?: { mass?: number; percent?: number };
+  };
+  segmentalFatAnalysis?: {
+    leftArm?: { mass?: number; percent?: number };
+    rightArm?: { mass?: number; percent?: number };
+    trunk?: { mass?: number; percent?: number };
+    leftLeg?: { mass?: number; percent?: number };
+    rightLeg?: { mass?: number; percent?: number };
+  };
   medicalHistory?: string;
   allergies?: string;
   goal?: string;
@@ -150,10 +188,27 @@ export interface CreateHealthInfoRequest {
   gender?: 'male' | 'female';
   age?: number;
   bodyFatPercent?: number;
+  bodyFatMass?: number;
   muscleMass?: number;
   visceralFatLevel?: number;
   waterPercent?: number;
   boneMass?: number;
+  basalMetabolicRate?: number;
+  waistHipRatio?: number;
+  inBodyScore?: number;
+  segmentalLeanAnalysis?: {
+    leftArm?: { mass?: number; percent?: number };
+    rightArm?: { mass?: number; percent?: number };
+    leftLeg?: { mass?: number; percent?: number };
+    rightLeg?: { mass?: number; percent?: number };
+  };
+  segmentalFatAnalysis?: {
+    leftArm?: { mass?: number; percent?: number };
+    rightArm?: { mass?: number; percent?: number };
+    trunk?: { mass?: number; percent?: number };
+    leftLeg?: { mass?: number; percent?: number };
+    rightLeg?: { mass?: number; percent?: number };
+  };
   medicalHistory?: string;
   allergies?: string;
   goal?: string;
@@ -203,5 +258,13 @@ export const healthInfoApi = {
   getHealthInfoById: async (healthInfoId: string): Promise<HealthInfo> => {
     const response = await apiClient.get(API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_ID(healthInfoId));
     return transformHealthInfoFromServer(response.data.data);
+  },
+
+  // Lấy tất cả thông tin sức khỏe theo member ID (lịch sử)
+  getAllHealthInfoByMemberId: async (memberId: string): Promise<HealthInfo[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.HEALTH_INFO.GET_ALL_HEALTH_INFO_BY_MEMBER_ID(memberId));
+    // Transform array of health info records
+    const healthInfoList = response.data.data || [];
+    return healthInfoList.map((item: HealthInfoServerResponse) => transformHealthInfoFromServer(item));
   },
 };

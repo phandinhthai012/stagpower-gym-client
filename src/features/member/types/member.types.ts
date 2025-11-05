@@ -133,7 +133,6 @@ export interface User {
   memberInfo?: {
     membershipLevel: string;
     qrCode: string;
-    healthInfoId?: string;
     notes?: string;
     isStudent: boolean;
     totalSpending: number;

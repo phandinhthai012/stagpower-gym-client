@@ -1,25 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Badge } from '../../../../components/ui/badge';
-import { 
+import { Button } from '../../../../components/ui/button';
+import {
   Heart,
   Activity,
   Target,
   Clock,
   Calendar,
   AlertCircle,
-  TrendingUp
+  TrendingUp,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { HealthInfo } from '../../../member/api/healthInfo.api';
 import { healthInfoUtils } from '../../../member/utils/healthInfo.utils';
 
 interface HealthInfoSectionProps {
-  healthInfo: HealthInfo | null;
+  healthInfo: HealthInfo | HealthInfo[] | null;
   isLoading?: boolean;
   onEdit?: () => void;
 }
 
 export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoSectionProps) {
+  const [selectedIndex, setSelectedIndex] = useState<number>(0); // Show first item by default
+  
+  // Normalize to array
+  const healthInfoList: HealthInfo[] = healthInfo === null 
+    ? [] 
+    : Array.isArray(healthInfo) 
+      ? healthInfo 
+      : [healthInfo];
+
   if (isLoading) {
     return (
       <Card>
@@ -38,7 +52,7 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
     );
   }
 
-  if (!healthInfo) {
+  if (healthInfoList.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -57,77 +71,226 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
     );
   }
 
-  const bmi = healthInfo.bmi || (healthInfo.height && healthInfo.weight 
-    ? parseFloat(healthInfoUtils.calculateBMI(healthInfo.height, healthInfo.weight).toFixed(1))
-    : null);
-  const getBMICategoryBadge = (bmi: number | null) => {
-    if (!bmi) return null;
-    if (bmi < 18.5) return { label: 'Thiếu cân', color: 'bg-yellow-100 text-yellow-800' };
-    if (bmi < 25) return { label: 'Bình thường', color: 'bg-green-100 text-green-800' };
-    if (bmi < 30) return { label: 'Thừa cân', color: 'bg-orange-100 text-orange-800' };
-    return { label: 'Béo phì', color: 'bg-red-100 text-red-800' };
+  // Navigation functions
+  const goToPrevious = () => {
+    if (healthInfoList.length > 0) {
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : healthInfoList.length - 1));
+    }
   };
-  const bmiCategory = bmi ? getBMICategoryBadge(bmi) : null;
 
-  return (
-    <Card className="border-l-4 border-l-red-500">
-      <CardHeader className="bg-red-50/50">
-        <CardTitle className="flex items-center space-x-2 text-red-900">
-          <Heart className="h-5 w-5 text-red-600" />
-          <span>Thông tin sức khỏe</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Body Metrics */}
-        <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
-            <Activity className="h-4 w-4" />
-            <span>Chỉ số cơ thể</span>
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <label className="text-xs text-gray-600">Chiều cao</label>
-              <p className="text-lg font-semibold text-blue-600">
-                {healthInfo.height || '-'} <span className="text-sm">cm</span>
-              </p>
+  const goToNext = () => {
+    if (healthInfoList.length > 0) {
+      setSelectedIndex((prev) => (prev < healthInfoList.length - 1 ? prev + 1 : 0));
+    }
+  };
+
+  const formatHealthInfoDate = (healthInfo: HealthInfo) => {
+    if (healthInfo.updatedAt) {
+      return new Date(healthInfo.updatedAt).toLocaleDateString('vi-VN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } else if (healthInfo.createdAt) {
+      return new Date(healthInfo.createdAt).toLocaleDateString('vi-VN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+    return 'Không có ngày';
+  };
+
+  const renderHealthInfoCard = (healthInfo: HealthInfo, index: number) => {
+    const bmi = healthInfo.bmi || (healthInfo.height && healthInfo.weight 
+      ? parseFloat(healthInfoUtils.calculateBMI(healthInfo.height, healthInfo.weight).toFixed(1))
+      : null);
+    const getBMICategoryBadge = (bmi: number | null) => {
+      if (!bmi) return null;
+      if (bmi < 18.5) return { label: 'Thiếu cân', color: 'bg-yellow-100 text-yellow-800' };
+      if (bmi < 25) return { label: 'Bình thường', color: 'bg-green-100 text-green-800' };
+      if (bmi < 30) return { label: 'Thừa cân', color: 'bg-orange-100 text-orange-800' };
+      return { label: 'Béo phì', color: 'bg-red-100 text-red-800' };
+    };
+    const bmiCategory = bmi ? getBMICategoryBadge(bmi) : null;
+
+    return (
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="p-4 bg-white">
+            {/* Body Metrics */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
+                <Activity className="h-4 w-4" />
+                <span>Chỉ số cơ thể</span>
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <label className="text-xs text-gray-600">Chiều cao</label>
+                  <p className="text-lg font-semibold text-blue-600">
+                    {healthInfo.height || '-'} <span className="text-sm">cm</span>
+                  </p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <label className="text-xs text-gray-600">Cân nặng</label>
+                  <p className="text-lg font-semibold text-green-600">
+                    {healthInfo.weight || '-'} <span className="text-sm">kg</span>
+                  </p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <label className="text-xs text-gray-600">BMI</label>
+                  <p className="text-lg font-semibold text-purple-600">
+                    {bmi || '-'}
+                  </p>
+                  {bmiCategory && (
+                    <Badge className={`${bmiCategory.color} text-xs mt-1`}>
+                      {bmiCategory.label}
+                    </Badge>
+                  )}
+                </div>
+                <div className="bg-orange-50 p-3 rounded-lg">
+                  <label className="text-xs text-gray-600">% Mỡ cơ thể</label>
+                  <p className="text-lg font-semibold text-orange-600">
+                    {healthInfo.bodyFatPercent || '-'} <span className="text-sm">%</span>
+                  </p>
+                </div>
+                <div className="bg-pink-50 p-3 rounded-lg">
+                  <label className="text-xs text-gray-600">Khối lượng cơ</label>
+                  <p className="text-lg font-semibold text-pink-600">
+                    {healthInfo.muscleMass || '-'} <span className="text-sm">kg</span>
+                  </p>
+                </div>
+                <div className="bg-indigo-50 p-3 rounded-lg">
+                  <label className="text-xs text-gray-600">% Nước</label>
+                  <p className="text-lg font-semibold text-indigo-600">
+                    {healthInfo.waterPercent || '-'} <span className="text-sm">%</span>
+                  </p>
+                </div>
+                         {healthInfo.bodyFatMass !== undefined && healthInfo.bodyFatMass !== null && (
+               <div className="bg-red-50 p-3 rounded-lg">
+                 <label className="text-xs text-gray-600">Khối lượng mỡ</label>
+                 <p className="text-lg font-semibold text-red-600">
+                   {healthInfo.bodyFatMass} <span className="text-sm">kg</span>
+                 </p>
+               </div>
+             )}
+             {healthInfo.basalMetabolicRate !== undefined && healthInfo.basalMetabolicRate !== null && (
+               <div className="bg-orange-50 p-3 rounded-lg">
+                 <label className="text-xs text-gray-600">Tỷ lệ trao đổi chất</label>
+                 <p className="text-lg font-semibold text-orange-600">
+                   {healthInfo.basalMetabolicRate} <span className="text-sm">kcal</span>
+                 </p>
+               </div>
+             )}
+             {healthInfo.waistHipRatio !== undefined && healthInfo.waistHipRatio !== null && (
+               <div className="bg-teal-50 p-3 rounded-lg">
+                 <label className="text-xs text-gray-600">Tỷ lệ vòng eo/hông</label>
+                 <p className="text-lg font-semibold text-teal-600">
+                   {healthInfo.waistHipRatio}
+                 </p>
+               </div>
+             )}
+                          {healthInfo.inBodyScore !== undefined && healthInfo.inBodyScore !== null && (
+               <div className="bg-purple-50 p-3 rounded-lg">
+                 <label className="text-xs text-gray-600">Điểm InBody</label>
+                 <p className="text-lg font-semibold text-purple-600">
+                   {healthInfo.inBodyScore} <span className="text-sm">/ 100</span>
+                 </p>
+               </div>
+             )}
             </div>
-            <div className="bg-green-50 p-3 rounded-lg">
-              <label className="text-xs text-gray-600">Cân nặng</label>
-              <p className="text-lg font-semibold text-green-600">
-                {healthInfo.weight || '-'} <span className="text-sm">kg</span>
-              </p>
-            </div>
-            <div className="bg-purple-50 p-3 rounded-lg">
-              <label className="text-xs text-gray-600">BMI</label>
-              <p className="text-lg font-semibold text-purple-600">
-                {bmi || '-'}
-              </p>
-              {bmiCategory && (
-                <Badge className={`${bmiCategory.color} text-xs mt-1`}>
-                  {bmiCategory.label}
-                </Badge>
-              )}
-            </div>
-            <div className="bg-orange-50 p-3 rounded-lg">
-              <label className="text-xs text-gray-600">% Mỡ cơ thể</label>
-              <p className="text-lg font-semibold text-orange-600">
-                {healthInfo.bodyFatPercent || '-'} <span className="text-sm">%</span>
-              </p>
-            </div>
-            <div className="bg-pink-50 p-3 rounded-lg">
-              <label className="text-xs text-gray-600">Khối lượng cơ</label>
-              <p className="text-lg font-semibold text-pink-600">
-                {healthInfo.muscleMass || '-'} <span className="text-sm">kg</span>
-              </p>
-            </div>
-            <div className="bg-indigo-50 p-3 rounded-lg">
-              <label className="text-xs text-gray-600">% Nước</label>
-              <p className="text-lg font-semibold text-indigo-600">
-                {healthInfo.waterPercent || '-'} <span className="text-sm">%</span>
-              </p>
-            </div>
-          </div>
-          
+            
+            {/* Segmental Lean Analysis */}
+            {healthInfo.segmentalLeanAnalysis && (
+              <div className="mt-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Phân tích cơ theo vùng (Segmental Lean Analysis)</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {healthInfo.segmentalLeanAnalysis.leftArm && (
+                    <div className="bg-blue-50 p-2 rounded">
+                      <label className="text-xs text-gray-600">Tay trái</label>
+                      <p className="text-sm font-semibold text-blue-600">
+                        {healthInfo.segmentalLeanAnalysis.leftArm.mass} kg ({healthInfo.segmentalLeanAnalysis.leftArm.percent}%)
+                      </p>
+                    </div>
+                  )}
+                  {healthInfo.segmentalLeanAnalysis.rightArm && (
+                    <div className="bg-blue-50 p-2 rounded">
+                      <label className="text-xs text-gray-600">Tay phải</label>
+                      <p className="text-sm font-semibold text-blue-600">
+                        {healthInfo.segmentalLeanAnalysis.rightArm.mass} kg ({healthInfo.segmentalLeanAnalysis.rightArm.percent}%)
+                      </p>
+                    </div>
+                  )}
+                  {healthInfo.segmentalLeanAnalysis.leftLeg && (
+                    <div className="bg-blue-50 p-2 rounded">
+                      <label className="text-xs text-gray-600">Chân trái</label>
+                      <p className="text-sm font-semibold text-blue-600">
+                        {healthInfo.segmentalLeanAnalysis.leftLeg.mass} kg ({healthInfo.segmentalLeanAnalysis.leftLeg.percent}%)
+                      </p>
+                    </div>
+                  )}
+                  {healthInfo.segmentalLeanAnalysis.rightLeg && (
+                    <div className="bg-blue-50 p-2 rounded">
+                      <label className="text-xs text-gray-600">Chân phải</label>
+                      <p className="text-sm font-semibold text-blue-600">
+                        {healthInfo.segmentalLeanAnalysis.rightLeg.mass} kg ({healthInfo.segmentalLeanAnalysis.rightLeg.percent}%)
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Segmental Fat Analysis */}
+            {healthInfo.segmentalFatAnalysis && (
+              <div className="mt-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Phân tích mỡ theo vùng (Segmental Fat Analysis)</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {healthInfo.segmentalFatAnalysis.leftArm && (
+                    <div className="bg-red-50 p-2 rounded">
+                      <label className="text-xs text-gray-600">Tay trái</label>
+                      <p className="text-sm font-semibold text-red-600">
+                        {healthInfo.segmentalFatAnalysis.leftArm.mass} kg ({healthInfo.segmentalFatAnalysis.leftArm.percent}%)
+                      </p>
+                    </div>
+                  )}
+                  {healthInfo.segmentalFatAnalysis.rightArm && (
+                    <div className="bg-red-50 p-2 rounded">
+                      <label className="text-xs text-gray-600">Tay phải</label>
+                      <p className="text-sm font-semibold text-red-600">
+                        {healthInfo.segmentalFatAnalysis.rightArm.mass} kg ({healthInfo.segmentalFatAnalysis.rightArm.percent}%)
+                      </p>
+                    </div>
+                  )}
+                  {healthInfo.segmentalFatAnalysis.trunk && (
+                    <div className="bg-red-50 p-2 rounded">
+                      <label className="text-xs text-gray-600">Thân</label>
+                      <p className="text-sm font-semibold text-red-600">
+                        {healthInfo.segmentalFatAnalysis.trunk.mass} kg ({healthInfo.segmentalFatAnalysis.trunk.percent}%)
+                      </p>
+                    </div>
+                  )}
+                                     {healthInfo.segmentalFatAnalysis.leftLeg && (
+                     <div className="bg-red-50 p-2 rounded">
+                       <label className="text-xs text-gray-600">Chân trái</label>
+                       <p className="text-sm font-semibold text-red-600">
+                         {healthInfo.segmentalFatAnalysis.leftLeg.mass} kg ({healthInfo.segmentalFatAnalysis.leftLeg.percent}%)
+                       </p>
+                     </div>
+                   )}
+                   {healthInfo.segmentalFatAnalysis.rightLeg && (
+                     <div className="bg-red-50 p-2 rounded">
+                       <label className="text-xs text-gray-600">Chân phải</label>
+                       <p className="text-sm font-semibold text-red-600">
+                         {healthInfo.segmentalFatAnalysis.rightLeg.mass} kg ({healthInfo.segmentalFatAnalysis.rightLeg.percent}%)
+                       </p>
+                     </div>
+                   )}
+                 </div>
+               </div>
+             )}
+                      
           {/* Additional Body Composition */}
           {(healthInfo.visceralFatLevel !== undefined || healthInfo.boneMass !== undefined) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -327,14 +490,103 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
           </div>
         )}
 
-        {/* Last Updated */}
-        {healthInfo.updatedAt && (
-          <div className="pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500 flex items-center space-x-1">
-              <Calendar className="h-3 w-3" />
-              <span>Cập nhật lần cuối: {new Date(healthInfo.updatedAt).toLocaleDateString('vi-VN')}</span>
-            </p>
+          {/* Last Updated */}
+          {healthInfo.updatedAt && (
+            <div className="pt-3 border-t border-gray-200 mt-4">
+              <p className="text-xs text-gray-500 flex items-center space-x-1">
+                <Calendar className="h-3 w-3" />
+                <span>Cập nhật lần cuối: {new Date(healthInfo.updatedAt).toLocaleDateString('vi-VN')}</span>
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Get current health info to display
+  const currentHealthInfo = healthInfoList.length > 0 ? healthInfoList[selectedIndex] : null;
+
+  return (
+    <Card className="border-l-4 border-l-red-500">
+      <CardHeader className="bg-red-50/50">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center space-x-2 text-red-900">
+            <Heart className="h-5 w-5 text-red-600" />
+            <span>Thông tin sức khỏe</span>
+          </CardTitle>
+          {healthInfoList.length > 1 && (
+            <Badge className="bg-blue-100 text-blue-800">
+              {selectedIndex + 1} / {healthInfoList.length}
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {healthInfoList.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 space-y-4">
+            <AlertCircle className="h-12 w-12 text-gray-400" />
+            <p className="text-sm text-gray-500">Chưa có thông tin sức khỏe</p>
           </div>
+        ) : (
+          <>
+            {/* Navigation Controls */}
+            {healthInfoList.length > 1 && (
+              <div className="flex items-center justify-between gap-4 pb-4 border-b border-gray-200">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPrevious}
+                  className="flex items-center gap-2"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span>Trước</span>
+                </Button>
+                
+                <div className="flex-1 flex items-center justify-center gap-2">
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-gray-900">
+                      {formatHealthInfoDate(currentHealthInfo!)}
+                    </p>
+                    {selectedIndex === 0 && (
+                      <Badge className="bg-green-100 text-green-800 text-xs mt-1">Mới nhất</Badge>
+                    )}
+                  </div>
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNext}
+                  className="flex items-center gap-2"
+                >
+                  <span>Sau</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* Health Info Records Navigation Dots */}
+            {healthInfoList.length > 1 && (
+              <div className="flex items-center justify-center gap-2 pb-4">
+                {healthInfoList.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedIndex(index)}
+                    className={`h-2 rounded-full transition-all ${
+                      index === selectedIndex
+                        ? 'bg-red-600 w-8'
+                        : 'bg-gray-300 w-2 hover:bg-gray-400'
+                    }`}
+                    aria-label={`Xem bản ghi ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Display Selected Health Info */}
+            {currentHealthInfo && renderHealthInfoCard(currentHealthInfo, selectedIndex)}
+          </>
         )}
       </CardContent>
     </Card>

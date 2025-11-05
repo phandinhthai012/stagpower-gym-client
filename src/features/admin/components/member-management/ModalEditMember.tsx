@@ -63,10 +63,15 @@ const editMemberSchema = z.object({
   weight: z.number().min(30, 'Tối thiểu 30kg').max(300, 'Tối đa 300kg').nullable().optional(),
   age: z.number().min(1, 'Tối thiểu 1 tuổi').max(100, 'Tối đa 100 tuổi').nullable().optional(),
   bodyFatPercent: z.number().min(0, 'Tối thiểu 0%').max(100, 'Tối đa 100%').nullable().optional(),
+  bodyFatMass: z.number().min(0, 'Không được âm').nullable().optional(),
   muscleMass: z.number().min(0, 'Không được âm').nullable().optional(),
   visceralFatLevel: z.number().min(0, 'Không được âm').nullable().optional(),
   waterPercent: z.number().min(0, 'Tối thiểu 0%').max(100, 'Tối đa 100%').nullable().optional(),
   boneMass: z.number().min(0, 'Không được âm').nullable().optional(),
+  // InBody fields
+  basalMetabolicRate: z.number().min(0, 'Không được âm').nullable().optional(),
+  waistHipRatio: z.number().min(0, 'Không được âm').max(3, 'Tối đa 3').nullable().optional(),
+  inBodyScore: z.number().min(0, 'Tối thiểu 0').max(100, 'Tối đa 100').nullable().optional(),
   medicalHistory: z.string().max(1000, 'Tối đa 1000 ký tự').nullable().optional(),
   allergies: z.string().max(500, 'Tối đa 500 ký tự').nullable().optional(),
   goal: z.string().nullable().optional(), // Allow any string value for goal
@@ -81,6 +86,48 @@ const editMemberSchema = z.object({
   stressLevel: z.enum(['low', 'medium', 'high']).nullable().optional(),
   alcohol: z.enum(['none', 'occasional', 'frequent']).nullable().optional(),
   smoking: z.boolean().nullable().optional(),
+  // Segmental Lean Analysis
+  segmentalLeanAnalysis: z.object({
+    leftArm: z.object({
+      mass: z.number().min(0).nullable().optional(),
+      percent: z.number().min(0).nullable().optional(), // Allow > 100% for segmental analysis
+    }).nullable().optional(),
+    rightArm: z.object({
+      mass: z.number().min(0).nullable().optional(),
+      percent: z.number().min(0).nullable().optional(), // Allow > 100% for segmental analysis
+    }).nullable().optional(),
+    leftLeg: z.object({
+      mass: z.number().min(0).nullable().optional(),
+      percent: z.number().min(0).nullable().optional(), // Allow > 100% for segmental analysis
+    }).nullable().optional(),
+    rightLeg: z.object({
+      mass: z.number().min(0).nullable().optional(),
+      percent: z.number().min(0).nullable().optional(), // Allow > 100% for segmental analysis
+    }).nullable().optional(),
+  }).nullable().optional(),
+  // Segmental Fat Analysis
+  segmentalFatAnalysis: z.object({
+    leftArm: z.object({
+      mass: z.number().min(0).nullable().optional(),
+      percent: z.number().min(0).nullable().optional(), // Allow > 100% for segmental analysis
+    }).nullable().optional(),
+    rightArm: z.object({
+      mass: z.number().min(0).nullable().optional(),
+      percent: z.number().min(0).nullable().optional(), // Allow > 100% for segmental analysis
+    }).nullable().optional(),
+    trunk: z.object({
+      mass: z.number().min(0).nullable().optional(),
+      percent: z.number().min(0).nullable().optional(), // Allow > 100% for segmental analysis
+    }).nullable().optional(),
+    leftLeg: z.object({
+      mass: z.number().min(0).nullable().optional(),
+      percent: z.number().min(0).nullable().optional(), // Allow > 100% for segmental analysis
+    }).nullable().optional(),
+    rightLeg: z.object({
+      mass: z.number().min(0).nullable().optional(),
+      percent: z.number().min(0).nullable().optional(), // Allow > 100% for segmental analysis
+    }).nullable().optional(),
+  }).nullable().optional(),
 });
 
 type EditMemberFormData = z.infer<typeof editMemberSchema>;
@@ -144,10 +191,14 @@ export function ModalEditMember({
         weight: healthInfo?.weight || undefined,
         age: healthInfo?.age || undefined,
         bodyFatPercent: healthInfo?.bodyFatPercent || undefined,
+        bodyFatMass: healthInfo?.bodyFatMass || undefined,
         muscleMass: healthInfo?.muscleMass || undefined,
         visceralFatLevel: healthInfo?.visceralFatLevel || undefined,
         waterPercent: healthInfo?.waterPercent || undefined,
         boneMass: healthInfo?.boneMass || undefined,
+        basalMetabolicRate: healthInfo?.basalMetabolicRate || undefined,
+        waistHipRatio: healthInfo?.waistHipRatio || undefined,
+        inBodyScore: healthInfo?.inBodyScore || undefined,
         medicalHistory: healthInfo?.medicalHistory || '',
         allergies: healthInfo?.allergies || '',
         goal: healthInfo?.goal || undefined,
@@ -167,6 +218,8 @@ export function ModalEditMember({
         stressLevel: healthInfo?.stressLevel || undefined,
         alcohol: healthInfo?.alcohol || undefined,
         smoking: healthInfo?.smoking ?? undefined,
+        segmentalLeanAnalysis: healthInfo?.segmentalLeanAnalysis || undefined,
+        segmentalFatAnalysis: healthInfo?.segmentalFatAnalysis || undefined,
       };
       
       reset(formData);
@@ -183,7 +236,13 @@ export function ModalEditMember({
   }, [member, healthInfo, isLoadingHealthInfo, reset, setValue]);
 
   const onSubmit = async (data: EditMemberFormData) => {
-    if (!member) return;
+    if (!member) {
+      toast.error('Lỗi', { description: 'Không tìm thấy thông tin thành viên' });
+      return;
+    }
+    
+    console.log('Form submitted with data:', data);
+    console.log('Form errors:', errors);
     
     try {
       setIsSubmitting(true);
@@ -230,10 +289,14 @@ export function ModalEditMember({
         gender: data.gender,
         age: age || data.age,
         bodyFatPercent: data.bodyFatPercent,
+        bodyFatMass: data.bodyFatMass,
         muscleMass: data.muscleMass,
         visceralFatLevel: data.visceralFatLevel,
         waterPercent: data.waterPercent,
         boneMass: data.boneMass,
+        basalMetabolicRate: data.basalMetabolicRate,
+        waistHipRatio: data.waistHipRatio,
+        inBodyScore: data.inBodyScore,
         medicalHistory: data.medicalHistory,
         allergies: data.allergies,
         goal: data.goal,
@@ -247,7 +310,46 @@ export function ModalEditMember({
         stressLevel: data.stressLevel,
         alcohol: data.alcohol,
         smoking: data.smoking,
+        segmentalLeanAnalysis: data.segmentalLeanAnalysis,
+        segmentalFatAnalysis: data.segmentalFatAnalysis,
       };
+
+      // Clean nested objects (segmental analysis) - remove empty objects
+      if (healthUpdateData.segmentalLeanAnalysis) {
+        const lean = healthUpdateData.segmentalLeanAnalysis;
+        Object.keys(lean).forEach(limb => {
+          const limbData = lean[limb];
+          if (limbData && (limbData.mass === undefined || limbData.mass === null) && 
+              (limbData.percent === undefined || limbData.percent === null)) {
+            delete lean[limb];
+          } else if (limbData) {
+            if (limbData.mass === undefined || limbData.mass === null) delete limbData.mass;
+            if (limbData.percent === undefined || limbData.percent === null) delete limbData.percent;
+            if (Object.keys(limbData).length === 0) delete lean[limb];
+          }
+        });
+        if (Object.keys(lean).length === 0) {
+          delete healthUpdateData.segmentalLeanAnalysis;
+        }
+      }
+
+      if (healthUpdateData.segmentalFatAnalysis) {
+        const fat = healthUpdateData.segmentalFatAnalysis;
+        Object.keys(fat).forEach(limb => {
+          const limbData = fat[limb];
+          if (limbData && (limbData.mass === undefined || limbData.mass === null) && 
+              (limbData.percent === undefined || limbData.percent === null)) {
+            delete fat[limb];
+          } else if (limbData) {
+            if (limbData.mass === undefined || limbData.mass === null) delete limbData.mass;
+            if (limbData.percent === undefined || limbData.percent === null) delete limbData.percent;
+            if (Object.keys(limbData).length === 0) delete fat[limb];
+          }
+        });
+        if (Object.keys(fat).length === 0) {
+          delete healthUpdateData.segmentalFatAnalysis;
+        }
+      }
 
       // Remove undefined, null, and empty string fields
       Object.keys(healthUpdateData).forEach(key => {
@@ -323,11 +425,19 @@ export function ModalEditMember({
     if (selectedFile) {
       const validTypes = [
         'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/pdf'
       ];
       if (!validTypes.includes(selectedFile.type)) {
         toast.error('File không hợp lệ', {
-          description: 'Vui lòng chọn file Excel (.xls hoặc .xlsx)',
+          description: 'Vui lòng chọn file Excel (.xls, .xlsx) hoặc PDF (.pdf)',
+        });
+        return;
+      }
+      // Validate file size (max 10MB)
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        toast.error('File quá lớn', {
+          description: 'Kích thước file không được vượt quá 10MB',
         });
         return;
       }
@@ -356,8 +466,175 @@ export function ModalEditMember({
       if (response.data.success) {
         setParsedData(response.data.data);
         if (response.data.data.isValid) {
+          // Auto-fill form with parsed data for preview
+          const data = response.data.data.data;
+          
+          // Fill health info fields
+          if (data.height !== undefined && data.height !== null) {
+            setValue('height', data.height);
+          }
+          if (data.weight !== undefined && data.weight !== null) {
+            setValue('weight', data.weight);
+          }
+          if (data.age !== undefined && data.age !== null) {
+            setValue('age', data.age);
+          }
+          if (data.bodyFatPercent !== undefined && data.bodyFatPercent !== null) {
+            setValue('bodyFatPercent', data.bodyFatPercent);
+          }
+          if (data.bodyFatMass !== undefined && data.bodyFatMass !== null) {
+            setValue('bodyFatMass', data.bodyFatMass);
+          }
+          if (data.muscleMass !== undefined && data.muscleMass !== null) {
+            setValue('muscleMass', data.muscleMass);
+          }
+          if (data.visceralFatLevel !== undefined && data.visceralFatLevel !== null) {
+            setValue('visceralFatLevel', data.visceralFatLevel);
+          }
+          if (data.waterPercent !== undefined && data.waterPercent !== null) {
+            setValue('waterPercent', data.waterPercent);
+          }
+          if (data.boneMass !== undefined && data.boneMass !== null) {
+            setValue('boneMass', data.boneMass);
+          }
+          if (data.basalMetabolicRate !== undefined && data.basalMetabolicRate !== null) {
+            setValue('basalMetabolicRate', data.basalMetabolicRate);
+          }
+          if (data.waistHipRatio !== undefined && data.waistHipRatio !== null) {
+            setValue('waistHipRatio', data.waistHipRatio);
+          }
+          if (data.inBodyScore !== undefined && data.inBodyScore !== null) {
+            setValue('inBodyScore', data.inBodyScore);
+          }
+          if (data.medicalHistory !== undefined && data.medicalHistory !== null) {
+            setValue('medicalHistory', data.medicalHistory);
+          }
+          if (data.allergies !== undefined && data.allergies !== null) {
+            setValue('allergies', data.allergies);
+          }
+          if (data.goal !== undefined && data.goal !== null) {
+            setValue('goal', data.goal);
+          }
+          // Set Select values after a short delay to ensure they display correctly
+          setTimeout(() => {
+            if (data.experience !== undefined && data.experience !== null) {
+              // Normalize enum value to match form schema
+              const experience = typeof data.experience === 'string' 
+                ? data.experience.toLowerCase() as 'beginner' | 'intermediate' | 'advanced'
+                : data.experience;
+              setValue('experience', experience as any);
+            }
+            if (data.fitnessLevel !== undefined && data.fitnessLevel !== null) {
+              // Normalize enum value to match form schema
+              const fitnessLevel = typeof data.fitnessLevel === 'string'
+                ? data.fitnessLevel.toLowerCase() as 'low' | 'medium' | 'high'
+                : data.fitnessLevel;
+              setValue('fitnessLevel', fitnessLevel as any);
+            }
+            if (data.preferredTime !== undefined && data.preferredTime !== null) {
+              // Normalize enum value to match form schema
+              const preferredTime = typeof data.preferredTime === 'string'
+                ? data.preferredTime.toLowerCase() as 'morning' | 'afternoon' | 'evening'
+                : data.preferredTime;
+              setValue('preferredTime', preferredTime as any);
+            }
+            if (data.weeklySessions !== undefined && data.weeklySessions !== null) {
+              setValue('weeklySessions', data.weeklySessions as any);
+            }
+            if (data.goal !== undefined && data.goal !== null) {
+              setValue('goal', data.goal as any);
+            }
+          }, 100);
+          
+          // Also update gender if provided
+          if (data.gender !== undefined && data.gender !== null) {
+            setValue('gender', data.gender);
+          }
+          
+          // Set segmental analysis data
+          if (data.segmentalLeanAnalysis) {
+            if (data.segmentalLeanAnalysis.leftArm) {
+              if (data.segmentalLeanAnalysis.leftArm.mass !== undefined) {
+                setValue('segmentalLeanAnalysis.leftArm.mass', data.segmentalLeanAnalysis.leftArm.mass);
+              }
+              if (data.segmentalLeanAnalysis.leftArm.percent !== undefined) {
+                setValue('segmentalLeanAnalysis.leftArm.percent', data.segmentalLeanAnalysis.leftArm.percent);
+              }
+            }
+            if (data.segmentalLeanAnalysis.rightArm) {
+              if (data.segmentalLeanAnalysis.rightArm.mass !== undefined) {
+                setValue('segmentalLeanAnalysis.rightArm.mass', data.segmentalLeanAnalysis.rightArm.mass);
+              }
+              if (data.segmentalLeanAnalysis.rightArm.percent !== undefined) {
+                setValue('segmentalLeanAnalysis.rightArm.percent', data.segmentalLeanAnalysis.rightArm.percent);
+              }
+            }
+            if (data.segmentalLeanAnalysis.leftLeg) {
+              if (data.segmentalLeanAnalysis.leftLeg.mass !== undefined) {
+                setValue('segmentalLeanAnalysis.leftLeg.mass', data.segmentalLeanAnalysis.leftLeg.mass);
+              }
+              if (data.segmentalLeanAnalysis.leftLeg.percent !== undefined) {
+                setValue('segmentalLeanAnalysis.leftLeg.percent', data.segmentalLeanAnalysis.leftLeg.percent);
+              }
+            }
+            if (data.segmentalLeanAnalysis.rightLeg) {
+              if (data.segmentalLeanAnalysis.rightLeg.mass !== undefined) {
+                setValue('segmentalLeanAnalysis.rightLeg.mass', data.segmentalLeanAnalysis.rightLeg.mass);
+              }
+              if (data.segmentalLeanAnalysis.rightLeg.percent !== undefined) {
+                setValue('segmentalLeanAnalysis.rightLeg.percent', data.segmentalLeanAnalysis.rightLeg.percent);
+              }
+            }
+          }
+          
+          if (data.segmentalFatAnalysis) {
+            if (data.segmentalFatAnalysis.leftArm) {
+              if (data.segmentalFatAnalysis.leftArm.mass !== undefined) {
+                setValue('segmentalFatAnalysis.leftArm.mass', data.segmentalFatAnalysis.leftArm.mass);
+              }
+              if (data.segmentalFatAnalysis.leftArm.percent !== undefined) {
+                setValue('segmentalFatAnalysis.leftArm.percent', data.segmentalFatAnalysis.leftArm.percent);
+              }
+            }
+            if (data.segmentalFatAnalysis.rightArm) {
+              if (data.segmentalFatAnalysis.rightArm.mass !== undefined) {
+                setValue('segmentalFatAnalysis.rightArm.mass', data.segmentalFatAnalysis.rightArm.mass);
+              }
+              if (data.segmentalFatAnalysis.rightArm.percent !== undefined) {
+                setValue('segmentalFatAnalysis.rightArm.percent', data.segmentalFatAnalysis.rightArm.percent);
+              }
+            }
+            if (data.segmentalFatAnalysis.trunk) {
+              if (data.segmentalFatAnalysis.trunk.mass !== undefined) {
+                setValue('segmentalFatAnalysis.trunk.mass', data.segmentalFatAnalysis.trunk.mass);
+              }
+              if (data.segmentalFatAnalysis.trunk.percent !== undefined) {
+                setValue('segmentalFatAnalysis.trunk.percent', data.segmentalFatAnalysis.trunk.percent);
+              }
+            }
+            if (data.segmentalFatAnalysis.leftLeg) {
+              if (data.segmentalFatAnalysis.leftLeg.mass !== undefined) {
+                setValue('segmentalFatAnalysis.leftLeg.mass', data.segmentalFatAnalysis.leftLeg.mass);
+              }
+              if (data.segmentalFatAnalysis.leftLeg.percent !== undefined) {
+                setValue('segmentalFatAnalysis.leftLeg.percent', data.segmentalFatAnalysis.leftLeg.percent);
+              }
+            }
+            if (data.segmentalFatAnalysis.rightLeg) {
+              if (data.segmentalFatAnalysis.rightLeg.mass !== undefined) {
+                setValue('segmentalFatAnalysis.rightLeg.mass', data.segmentalFatAnalysis.rightLeg.mass);
+              }
+              if (data.segmentalFatAnalysis.rightLeg.percent !== undefined) {
+                setValue('segmentalFatAnalysis.rightLeg.percent', data.segmentalFatAnalysis.rightLeg.percent);
+              }
+            }
+          }
+
+          // Close import dialog to show the form with filled data
+          setIsImportDialogOpen(false);
+          
           toast.success('Đọc file thành công!', {
-            description: 'Dữ liệu hợp lệ, sẵn sàng import',
+            description: 'Dữ liệu đã được tự động điền vào form. Vui lòng xem lại và chỉnh sửa nếu cần.',
           });
         } else {
           toast.error('File có lỗi', {
@@ -475,7 +752,22 @@ export function ModalEditMember({
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <form 
+          id="edit-member-form"
+          onSubmit={handleSubmit(
+            (data) => {
+              console.log('Form validation passed, submitting...', data);
+              onSubmit(data);
+            },
+            (errors) => {
+              console.error('Form validation failed:', errors);
+              toast.error('Vui lòng kiểm tra lại thông tin', {
+                description: 'Có một số trường không hợp lệ. Vui lòng kiểm tra lại.',
+              });
+            }
+          )} 
+          className="flex-1 overflow-y-auto p-4 sm:p-6"
+        >
           <div className="space-y-6">
             {/* Basic Information */}
             <Card className="border-l-4 border-l-blue-500">
@@ -675,8 +967,13 @@ export function ModalEditMember({
                         type="number"
                         min="100"
                         max="250"
+                        step="0.0001"
                         {...register('height', { 
-                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
                         })}
                         placeholder="VD: 175"
                         className={errors.height ? 'border-red-500 focus:ring-red-500' : ''}
@@ -695,8 +992,13 @@ export function ModalEditMember({
                         type="number"
                         min="30"
                         max="300"
+                        step="0.0001"
                         {...register('weight', { 
-                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
                         })}
                         placeholder="VD: 70"
                         className={errors.weight ? 'border-red-500 focus:ring-red-500' : ''}
@@ -735,9 +1037,13 @@ export function ModalEditMember({
                         type="number"
                         min="0"
                         max="100"
-                        step="0.1"
+                        step="0.0001"
                         {...register('bodyFatPercent', { 
-                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
                         })}
                         placeholder="VD: 15.5"
                         className={errors.bodyFatPercent ? 'border-red-500 focus:ring-red-500' : ''}
@@ -755,9 +1061,13 @@ export function ModalEditMember({
                         id="muscleMass"
                         type="number"
                         min="0"
-                        step="0.1"
+                        step="0.0001"
                         {...register('muscleMass', { 
-                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
                         })}
                         placeholder="VD: 45.5"
                         className={errors.muscleMass ? 'border-red-500 focus:ring-red-500' : ''}
@@ -776,9 +1086,13 @@ export function ModalEditMember({
                         type="number"
                         min="0"
                         max="100"
-                        step="0.1"
+                        step="0.0001"
                         {...register('waterPercent', { 
-                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
                         })}
                         placeholder="VD: 60.5"
                         className={errors.waterPercent ? 'border-red-500 focus:ring-red-500' : ''}
@@ -799,8 +1113,13 @@ export function ModalEditMember({
                         id="visceralFatLevel"
                         type="number"
                         min="0"
+                        step="0.0001"
                         {...register('visceralFatLevel', { 
-                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
                         })}
                         placeholder="VD: 8"
                         className={errors.visceralFatLevel ? 'border-red-500 focus:ring-red-500' : ''}
@@ -818,12 +1137,123 @@ export function ModalEditMember({
                         id="boneMass"
                         type="number"
                         min="0"
-                        step="0.1"
+                        step="0.0001"
                         {...register('boneMass', { 
-                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
                         })}
                         placeholder="VD: 3.2"
                         className={errors.boneMass ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+
+                    {/* Body Fat Mass */}
+                    <div>
+                      <Label htmlFor="bodyFatMass" className="text-sm font-medium text-gray-700">
+                        Khối lượng mỡ (kg) {errors.bodyFatMass && (
+                          <span className="text-red-500 text-xs">- {errors.bodyFatMass.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="bodyFatMass"
+                        type="number"
+                        min="0"
+                        step="0.0001"
+                        {...register('bodyFatMass', { 
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
+                        })}
+                        placeholder="VD: 22.1"
+                        className={errors.bodyFatMass ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* InBody Analysis */}
+                <div className="mt-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Phân tích InBody
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Basal Metabolic Rate */}
+                    <div>
+                      <Label htmlFor="basalMetabolicRate" className="text-sm font-medium text-gray-700">
+                        Tỷ lệ trao đổi chất (kcal) {errors.basalMetabolicRate && (
+                          <span className="text-red-500 text-xs">- {errors.basalMetabolicRate.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="basalMetabolicRate"
+                        type="number"
+                        min="0"
+                        step="0.0001"
+                        {...register('basalMetabolicRate', { 
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
+                        })}
+                        placeholder="VD: 1168"
+                        className={errors.basalMetabolicRate ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+
+                    {/* Waist Hip Ratio */}
+                    <div>
+                      <Label htmlFor="waistHipRatio" className="text-sm font-medium text-gray-700">
+                        Tỷ lệ vòng eo/hông {errors.waistHipRatio && (
+                          <span className="text-red-500 text-xs">- {errors.waistHipRatio.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="waistHipRatio"
+                        type="number"
+                        min="0"
+                        max="3"
+                        step="0.0001"
+                        {...register('waistHipRatio', { 
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
+                        })}
+                        placeholder="VD: 0.98"
+                        className={errors.waistHipRatio ? 'border-red-500 focus:ring-red-500' : ''}
+                      />
+                    </div>
+
+                    {/* InBody Score */}
+                    <div>
+                      <Label htmlFor="inBodyScore" className="text-sm font-medium text-gray-700">
+                        Điểm InBody {errors.inBodyScore && (
+                          <span className="text-red-500 text-xs">- {errors.inBodyScore.message}</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="inBodyScore"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.0001"
+                        {...register('inBodyScore', { 
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
+                        })}
+                        placeholder="VD: 66"
+                        className={errors.inBodyScore ? 'border-red-500 focus:ring-red-500' : ''}
                       />
                     </div>
                   </div>
@@ -931,8 +1361,395 @@ export function ModalEditMember({
                   </Select>
                 </div>
 
+                {/* Segmental Lean Analysis */}
+                <div className="mt-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Phân tích cơ theo vùng (Segmental Lean Analysis)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Left Arm */}
+                    <div className="space-y-2 border border-blue-200 rounded-lg p-4 bg-blue-50/30">
+                      <Label className="text-sm font-medium text-gray-700">Tay trái</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="segmentalLeanAnalysis.leftArm.mass" className="text-xs text-gray-600">Khối lượng (kg)</Label>
+                          <Input
+                            id="segmentalLeanAnalysis.leftArm.mass"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalLeanAnalysis.leftArm.mass', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 2.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="segmentalLeanAnalysis.leftArm.percent" className="text-xs text-gray-600">%</Label>
+                          <Input
+                            id="segmentalLeanAnalysis.leftArm.percent"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalLeanAnalysis.leftArm.percent', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 15.5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Arm */}
+                    <div className="space-y-2 border border-blue-200 rounded-lg p-4 bg-blue-50/30">
+                      <Label className="text-sm font-medium text-gray-700">Tay phải</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="segmentalLeanAnalysis.rightArm.mass" className="text-xs text-gray-600">Khối lượng (kg)</Label>
+                          <Input
+                            id="segmentalLeanAnalysis.rightArm.mass"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalLeanAnalysis.rightArm.mass', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 2.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="segmentalLeanAnalysis.rightArm.percent" className="text-xs text-gray-600">%</Label>
+                          <Input
+                            id="segmentalLeanAnalysis.rightArm.percent"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalLeanAnalysis.rightArm.percent', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 15.5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Left Leg */}
+                    <div className="space-y-2 border border-blue-200 rounded-lg p-4 bg-blue-50/30">
+                      <Label className="text-sm font-medium text-gray-700">Chân trái</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="segmentalLeanAnalysis.leftLeg.mass" className="text-xs text-gray-600">Khối lượng (kg)</Label>
+                          <Input
+                            id="segmentalLeanAnalysis.leftLeg.mass"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalLeanAnalysis.leftLeg.mass', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 7.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="segmentalLeanAnalysis.leftLeg.percent" className="text-xs text-gray-600">%</Label>
+                          <Input
+                            id="segmentalLeanAnalysis.leftLeg.percent"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalLeanAnalysis.leftLeg.percent', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 45.5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Leg */}
+                    <div className="space-y-2 border border-blue-200 rounded-lg p-4 bg-blue-50/30">
+                      <Label className="text-sm font-medium text-gray-700">Chân phải</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="segmentalLeanAnalysis.rightLeg.mass" className="text-xs text-gray-600">Khối lượng (kg)</Label>
+                          <Input
+                            id="segmentalLeanAnalysis.rightLeg.mass"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalLeanAnalysis.rightLeg.mass', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 7.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="segmentalLeanAnalysis.rightLeg.percent" className="text-xs text-gray-600">%</Label>
+                          <Input
+                            id="segmentalLeanAnalysis.rightLeg.percent"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalLeanAnalysis.rightLeg.percent', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 45.5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Segmental Fat Analysis */}
+                <div className="mt-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Phân tích mỡ theo vùng (Segmental Fat Analysis)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Left Arm */}
+                    <div className="space-y-2 border border-red-200 rounded-lg p-4 bg-red-50/30">
+                      <Label className="text-sm font-medium text-gray-700">Tay trái</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.leftArm.mass" className="text-xs text-gray-600">Khối lượng (kg)</Label>
+                          <Input
+                            id="segmentalFatAnalysis.leftArm.mass"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.leftArm.mass', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 0.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.leftArm.percent" className="text-xs text-gray-600">%</Label>
+                          <Input
+                            id="segmentalFatAnalysis.leftArm.percent"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.leftArm.percent', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 3.5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Arm */}
+                    <div className="space-y-2 border border-red-200 rounded-lg p-4 bg-red-50/30">
+                      <Label className="text-sm font-medium text-gray-700">Tay phải</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.rightArm.mass" className="text-xs text-gray-600">Khối lượng (kg)</Label>
+                          <Input
+                            id="segmentalFatAnalysis.rightArm.mass"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.rightArm.mass', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 0.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.rightArm.percent" className="text-xs text-gray-600">%</Label>
+                          <Input
+                            id="segmentalFatAnalysis.rightArm.percent"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.rightArm.percent', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 3.5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Trunk */}
+                    <div className="space-y-2 border border-red-200 rounded-lg p-4 bg-red-50/30">
+                      <Label className="text-sm font-medium text-gray-700">Thân</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.trunk.mass" className="text-xs text-gray-600">Khối lượng (kg)</Label>
+                          <Input
+                            id="segmentalFatAnalysis.trunk.mass"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.trunk.mass', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 10.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.trunk.percent" className="text-xs text-gray-600">%</Label>
+                          <Input
+                            id="segmentalFatAnalysis.trunk.percent"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.trunk.percent', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 20.5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Left Leg */}
+                    <div className="space-y-2 border border-red-200 rounded-lg p-4 bg-red-50/30">
+                      <Label className="text-sm font-medium text-gray-700">Chân trái</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.leftLeg.mass" className="text-xs text-gray-600">Khối lượng (kg)</Label>
+                          <Input
+                            id="segmentalFatAnalysis.leftLeg.mass"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.leftLeg.mass', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 3.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.leftLeg.percent" className="text-xs text-gray-600">%</Label>
+                          <Input
+                            id="segmentalFatAnalysis.leftLeg.percent"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.leftLeg.percent', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 8.5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Leg */}
+                    <div className="space-y-2 border border-red-200 rounded-lg p-4 bg-red-50/30">
+                      <Label className="text-sm font-medium text-gray-700">Chân phải</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.rightLeg.mass" className="text-xs text-gray-600">Khối lượng (kg)</Label>
+                          <Input
+                            id="segmentalFatAnalysis.rightLeg.mass"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.rightLeg.mass', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 3.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="segmentalFatAnalysis.rightLeg.percent" className="text-xs text-gray-600">%</Label>
+                          <Input
+                            id="segmentalFatAnalysis.rightLeg.percent"
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            {...register('segmentalFatAnalysis.rightLeg.percent', { 
+                              setValueAs: (v) => {
+                                if (v === '' || v === null) return undefined;
+                                const num = Number(v);
+                                return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                              }
+                            })}
+                            placeholder="VD: 8.5"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Medical History & Allergies */}
-                <div className="space-y-4">
+                <div className="space-y-4 mt-6">
                   {/* Medical History */}
                   <div>
                     <Label htmlFor="medicalHistory" className="text-sm font-medium text-gray-700">
@@ -1008,8 +1825,13 @@ export function ModalEditMember({
                         type="number"
                         min="800"
                         max="5000"
+                        step="0.0001"
                         {...register('dailyCalories', { 
-                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
                         })}
                         placeholder="VD: 2000"
                         className={errors.dailyCalories ? 'border-red-500 focus:ring-red-500' : ''}
@@ -1028,9 +1850,13 @@ export function ModalEditMember({
                         type="number"
                         min="0"
                         max="24"
-                        step="0.5"
+                        step="0.0001"
                         {...register('sleepHours', { 
-                          setValueAs: (v) => v === '' || v === null ? undefined : Number(v)
+                          setValueAs: (v) => {
+                            if (v === '' || v === null) return undefined;
+                            const num = Number(v);
+                            return isNaN(num) ? undefined : parseFloat(num.toFixed(4));
+                          }
                         })}
                         placeholder="VD: 7.5"
                         className={errors.sleepHours ? 'border-red-500 focus:ring-red-500' : ''}
@@ -1110,8 +1936,8 @@ export function ModalEditMember({
               Hủy
             </Button>
             <Button 
-              type="button"
-              onClick={handleSubmit(onSubmit)}
+              type="submit"
+              form="edit-member-form"
               disabled={isSubmitting}
               className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
             >
@@ -1159,11 +1985,11 @@ export function ModalEditMember({
                       Import cho: <strong>{member.fullName}</strong>
                     </p>
                     <p className="text-xs text-gray-500 mb-3">
-                      Hỗ trợ định dạng .xls, .xlsx
+                      Hỗ trợ định dạng .xls, .xlsx, .pdf
                     </p>
                     <input
                       type="file"
-                      accept=".xls,.xlsx"
+                      accept=".xls,.xlsx,.pdf"
                       onChange={handleFileChange}
                       className="hidden"
                       id="import-file-input"
@@ -1197,8 +2023,10 @@ export function ModalEditMember({
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-4">
                     <p className="text-xs font-medium text-gray-700 mb-2">📝 Lưu ý:</p>
                     <ul className="text-xs text-gray-600 space-y-0.5 ml-3 list-disc">
-                      <li>File phải có các cột: height, weight, gender, goal, experience, fitnessLevel</li>
-                      <li>Dữ liệu nằm ở dòng đầu tiên (sau header)</li>
+                      <li>Hỗ trợ file Excel (.xls, .xlsx) và PDF (.pdf)</li>
+                      <li>File Excel: phải có các cột height, weight, gender, goal, experience, fitnessLevel</li>
+                      <li>File PDF: hỗ trợ định dạng InBody, tự động trích xuất dữ liệu</li>
+                      <li>Dữ liệu Excel nằm ở dòng đầu tiên (sau header)</li>
                     </ul>
                   </div>
                 </div>
@@ -1232,14 +2060,162 @@ export function ModalEditMember({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-sm bg-white/50 p-3 rounded">
-                      <div><strong>Chiều cao:</strong> {parsedData.data.height} cm</div>
-                      <div><strong>Cân nặng:</strong> {parsedData.data.weight} kg</div>
-                      <div><strong>BMI:</strong> {parsedData.data.bmi}</div>
-                      <div><strong>Giới tính:</strong> {parsedData.data.gender === 'male' ? 'Nam' : 'Nữ'}</div>
-                      <div className="col-span-2"><strong>Mục tiêu:</strong> {parsedData.data.goal}</div>
-                      <div><strong>Trình độ:</strong> {parsedData.data.experience}</div>
-                      <div><strong>Thể lực:</strong> {parsedData.data.fitnessLevel}</div>
+                    <div className="space-y-4">
+                      {/* Basic Info */}
+                      <div>
+                        <h5 className="text-xs font-semibold text-gray-700 mb-2">Thông tin cơ bản</h5>
+                        <div className="grid grid-cols-2 gap-2 text-sm bg-white/50 p-3 rounded">
+                          {parsedData.data.height !== undefined && parsedData.data.height !== null && (
+                            <div><strong>Chiều cao:</strong> {parsedData.data.height} cm</div>
+                          )}
+                          {parsedData.data.weight !== undefined && parsedData.data.weight !== null && (
+                            <div><strong>Cân nặng:</strong> {parsedData.data.weight} kg</div>
+                          )}
+                          {parsedData.data.bmi !== undefined && parsedData.data.bmi !== null && (
+                            <div><strong>BMI:</strong> {parsedData.data.bmi}</div>
+                          )}
+                          {parsedData.data.age !== undefined && parsedData.data.age !== null && (
+                            <div><strong>Tuổi:</strong> {parsedData.data.age}</div>
+                          )}
+                          {parsedData.data.gender && (
+                            <div><strong>Giới tính:</strong> {parsedData.data.gender === 'male' ? 'Nam' : 'Nữ'}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Body Composition */}
+                      {(parsedData.data.bodyFatPercent !== undefined || parsedData.data.bodyFatMass !== undefined || 
+                        parsedData.data.muscleMass !== undefined || parsedData.data.waterPercent !== undefined ||
+                        parsedData.data.visceralFatLevel !== undefined || parsedData.data.boneMass !== undefined) && (
+                        <div>
+                          <h5 className="text-xs font-semibold text-gray-700 mb-2">Thành phần cơ thể</h5>
+                          <div className="grid grid-cols-2 gap-2 text-sm bg-white/50 p-3 rounded">
+                            {parsedData.data.bodyFatPercent !== undefined && parsedData.data.bodyFatPercent !== null && (
+                              <div><strong>% Mỡ cơ thể:</strong> {parsedData.data.bodyFatPercent}%</div>
+                            )}
+                            {parsedData.data.bodyFatMass !== undefined && parsedData.data.bodyFatMass !== null && (
+                              <div><strong>Khối lượng mỡ:</strong> {parsedData.data.bodyFatMass} kg</div>
+                            )}
+                            {parsedData.data.muscleMass !== undefined && parsedData.data.muscleMass !== null && (
+                              <div><strong>Khối lượng cơ:</strong> {parsedData.data.muscleMass} kg</div>
+                            )}
+                            {parsedData.data.waterPercent !== undefined && parsedData.data.waterPercent !== null && (
+                              <div><strong>% Nước:</strong> {parsedData.data.waterPercent}%</div>
+                            )}
+                            {parsedData.data.visceralFatLevel !== undefined && parsedData.data.visceralFatLevel !== null && (
+                              <div><strong>Mỡ nội tạng:</strong> {parsedData.data.visceralFatLevel} cấp độ</div>
+                            )}
+                            {parsedData.data.boneMass !== undefined && parsedData.data.boneMass !== null && (
+                              <div><strong>Khối lượng xương:</strong> {parsedData.data.boneMass} kg</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* InBody Analysis */}
+                      {(parsedData.data.basalMetabolicRate !== undefined || parsedData.data.waistHipRatio !== undefined || 
+                        parsedData.data.inBodyScore !== undefined) && (
+                        <div>
+                          <h5 className="text-xs font-semibold text-gray-700 mb-2">Phân tích InBody</h5>
+                          <div className="grid grid-cols-2 gap-2 text-sm bg-white/50 p-3 rounded">
+                            {parsedData.data.basalMetabolicRate !== undefined && parsedData.data.basalMetabolicRate !== null && (
+                              <div><strong>BMR:</strong> {parsedData.data.basalMetabolicRate} kcal</div>
+                            )}
+                            {parsedData.data.waistHipRatio !== undefined && parsedData.data.waistHipRatio !== null && (
+                              <div><strong>Tỷ lệ eo/hông:</strong> {parsedData.data.waistHipRatio}</div>
+                            )}
+                            {parsedData.data.inBodyScore !== undefined && parsedData.data.inBodyScore !== null && (
+                              <div><strong>Điểm InBody:</strong> {parsedData.data.inBodyScore} / 100</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Segmental Lean Analysis */}
+                      {(parsedData.data.segmentalLeanAnalysis && (
+                        parsedData.data.segmentalLeanAnalysis.leftArm ||
+                        parsedData.data.segmentalLeanAnalysis.rightArm ||
+                        parsedData.data.segmentalLeanAnalysis.leftLeg ||
+                        parsedData.data.segmentalLeanAnalysis.rightLeg
+                      )) && (
+                        <div>
+                          <h5 className="text-xs font-semibold text-gray-700 mb-2">Phân tích cơ theo vùng</h5>
+                          <div className="grid grid-cols-2 gap-2 text-sm bg-blue-50 p-3 rounded">
+                            {parsedData.data.segmentalLeanAnalysis?.leftArm && (
+                              <div><strong>Tay trái:</strong> {parsedData.data.segmentalLeanAnalysis.leftArm.mass} kg ({parsedData.data.segmentalLeanAnalysis.leftArm.percent}%)</div>
+                            )}
+                            {parsedData.data.segmentalLeanAnalysis?.rightArm && (
+                              <div><strong>Tay phải:</strong> {parsedData.data.segmentalLeanAnalysis.rightArm.mass} kg ({parsedData.data.segmentalLeanAnalysis.rightArm.percent}%)</div>
+                            )}
+                            {parsedData.data.segmentalLeanAnalysis?.leftLeg && (
+                              <div><strong>Chân trái:</strong> {parsedData.data.segmentalLeanAnalysis.leftLeg.mass} kg ({parsedData.data.segmentalLeanAnalysis.leftLeg.percent}%)</div>
+                            )}
+                            {parsedData.data.segmentalLeanAnalysis?.rightLeg && (
+                              <div><strong>Chân phải:</strong> {parsedData.data.segmentalLeanAnalysis.rightLeg.mass} kg ({parsedData.data.segmentalLeanAnalysis.rightLeg.percent}%)</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Segmental Fat Analysis */}
+                      {(parsedData.data.segmentalFatAnalysis && (
+                        parsedData.data.segmentalFatAnalysis.leftArm ||
+                        parsedData.data.segmentalFatAnalysis.rightArm ||
+                        parsedData.data.segmentalFatAnalysis.trunk ||
+                        parsedData.data.segmentalFatAnalysis.leftLeg ||
+                        parsedData.data.segmentalFatAnalysis.rightLeg
+                      )) && (
+                        <div>
+                          <h5 className="text-xs font-semibold text-gray-700 mb-2">Phân tích mỡ theo vùng</h5>
+                          <div className="grid grid-cols-2 gap-2 text-sm bg-red-50 p-3 rounded">
+                            {parsedData.data.segmentalFatAnalysis?.leftArm && (
+                              <div><strong>Tay trái:</strong> {parsedData.data.segmentalFatAnalysis.leftArm.mass} kg ({parsedData.data.segmentalFatAnalysis.leftArm.percent}%)</div>
+                            )}
+                            {parsedData.data.segmentalFatAnalysis?.rightArm && (
+                              <div><strong>Tay phải:</strong> {parsedData.data.segmentalFatAnalysis.rightArm.mass} kg ({parsedData.data.segmentalFatAnalysis.rightArm.percent}%)</div>
+                            )}
+                            {parsedData.data.segmentalFatAnalysis?.trunk && (
+                              <div><strong>Thân:</strong> {parsedData.data.segmentalFatAnalysis.trunk.mass} kg ({parsedData.data.segmentalFatAnalysis.trunk.percent}%)</div>
+                            )}
+                            {parsedData.data.segmentalFatAnalysis?.leftLeg && (
+                              <div><strong>Chân trái:</strong> {parsedData.data.segmentalFatAnalysis.leftLeg.mass} kg ({parsedData.data.segmentalFatAnalysis.leftLeg.percent}%)</div>
+                            )}
+                            {parsedData.data.segmentalFatAnalysis?.rightLeg && (
+                              <div><strong>Chân phải:</strong> {parsedData.data.segmentalFatAnalysis.rightLeg.mass} kg ({parsedData.data.segmentalFatAnalysis.rightLeg.percent}%)</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fitness Goals */}
+                      {(parsedData.data.goal || parsedData.data.experience || parsedData.data.fitnessLevel || 
+                        parsedData.data.preferredTime || parsedData.data.weeklySessions) && (
+                        <div>
+                          <h5 className="text-xs font-semibold text-gray-700 mb-2">Mục tiêu tập luyện</h5>
+                          <div className="grid grid-cols-2 gap-2 text-sm bg-white/50 p-3 rounded">
+                            {parsedData.data.goal && <div><strong>Mục tiêu:</strong> {parsedData.data.goal}</div>}
+                            {parsedData.data.experience && <div><strong>Trình độ:</strong> {parsedData.data.experience}</div>}
+                            {parsedData.data.fitnessLevel && <div><strong>Thể lực:</strong> {parsedData.data.fitnessLevel}</div>}
+                            {parsedData.data.preferredTime && <div><strong>Thời gian ưa thích:</strong> {parsedData.data.preferredTime}</div>}
+                            {parsedData.data.weeklySessions && <div><strong>Số buổi/tuần:</strong> {parsedData.data.weeklySessions}</div>}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Medical History */}
+                      {(parsedData.data.medicalHistory || parsedData.data.allergies) && (
+                        <div>
+                          <h5 className="text-xs font-semibold text-gray-700 mb-2">Lịch sử y tế</h5>
+                          <div className="text-sm bg-white/50 p-3 rounded space-y-1">
+                            {parsedData.data.medicalHistory && (
+                              <div><strong>Tiền sử bệnh:</strong> {parsedData.data.medicalHistory}</div>
+                            )}
+                            {parsedData.data.allergies && (
+                              <div><strong>Dị ứng:</strong> {parsedData.data.allergies}</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
