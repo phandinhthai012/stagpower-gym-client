@@ -5,13 +5,13 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
-import { 
-  DollarSign, 
-  Search, 
-  Filter, 
-  Plus, 
-  Eye, 
-  CreditCard, 
+import {
+  DollarSign,
+  Search,
+  Filter,
+  Plus,
+  Eye,
+  CreditCard,
   Bell,
   Download,
   Calendar,
@@ -24,10 +24,10 @@ import {
   Edit,
   Printer
 } from 'lucide-react';
-import { 
-  useSendPaymentReminder, 
+import {
+  useSendPaymentReminder,
   useBulkSendReminders,
-  useExportInvoices 
+  useExportInvoices
 } from '../hooks/useInvoices';
 import { usePayments, usePaymentStats, useUpdatePayment } from '../../member/hooks/usePayments';
 import { Invoice } from '../types/invoice.types';
@@ -150,8 +150,8 @@ export function AdminInvoicePayment() {
   };
 
   const handleSelectPayment = (paymentId: string) => {
-    setSelectedInvoices(prev => 
-      prev.includes(paymentId) 
+    setSelectedInvoices(prev =>
+      prev.includes(paymentId)
         ? prev.filter((id: string) => id !== paymentId)
         : [...prev, paymentId]
     );
@@ -298,16 +298,16 @@ export function AdminInvoicePayment() {
               <Plus className="w-4 h-4 mr-2" />
               Tạo hóa đơn mới
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleExportInvoices}
               disabled={exportInvoicesMutation.isPending}
             >
               <Download className="w-4 h-4 mr-2" />
               {exportInvoicesMutation.isPending ? 'Đang xuất...' : 'Xuất báo cáo'}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleBulkSendReminders}
               disabled={selectedInvoices.length === 0 || bulkSendRemindersMutation.isPending}
             >
@@ -328,14 +328,18 @@ export function AdminInvoicePayment() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Tìm kiếm theo mã hóa đơn, tên hội viên..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="invoiceSearch">Tìm kiếm</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  id="invoiceSearch"
+                  placeholder="Tìm kiếm theo mã hóa đơn, tên hội viên..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
 
             <div>
@@ -417,8 +421,8 @@ export function AdminInvoicePayment() {
                 Đã chọn {selectedInvoices.length} thanh toán
               </span>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={handleBulkSendReminders}
                   disabled={bulkSendRemindersMutation.isPending}
@@ -426,8 +430,8 @@ export function AdminInvoicePayment() {
                   <Bell className="w-4 h-4 mr-2" />
                   Gửi nhắc nhở hàng loạt
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={handleExportInvoices}
                   disabled={exportInvoicesMutation.isPending}
@@ -435,27 +439,27 @@ export function AdminInvoicePayment() {
                   <Download className="w-4 h-4 mr-2" />
                   Xuất dữ liệu
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="text-red-600 hover:text-red-700"
                 >
                   <XCircle className="w-4 h-4 mr-2" />
                   Xóa hàng loạt
-              </Button>
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       )}
 
       {/* Invoice Table */}
       <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-green-600" />
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-green-600" />
             Danh sách hóa đơn ({filteredPayments.length})
-            </CardTitle>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -589,12 +593,12 @@ export function AdminInvoicePayment() {
                     <td className="p-2">
                       <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs">
                         {payment.paymentMethod === 'Cash' ? 'Tiền mặt' :
-                         payment.paymentMethod === 'Card' ? 'Thẻ' :
-                         payment.paymentMethod === 'Momo' ? 'Momo' :
-                         payment.paymentMethod === 'ZaloPay' ? 'ZaloPay' :
-                         payment.paymentMethod === 'BankTransfer' ? 'Chuyển khoản' :
-                         payment.paymentMethod === 'VNPay' ? 'VNPay' :
-                         payment.paymentMethod || 'N/A'}
+                          payment.paymentMethod === 'Card' ? 'Thẻ' :
+                            payment.paymentMethod === 'Momo' ? 'Momo' :
+                              payment.paymentMethod === 'ZaloPay' ? 'ZaloPay' :
+                                payment.paymentMethod === 'BankTransfer' ? 'Chuyển khoản' :
+                                  payment.paymentMethod === 'VNPay' ? 'VNPay' :
+                                    payment.paymentMethod || 'N/A'}
                       </Badge>
                     </td>
                     <td className="p-2">
