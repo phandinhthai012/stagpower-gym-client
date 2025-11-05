@@ -16,7 +16,6 @@ export interface User {
   memberInfo?: {
     membership_level: 'vip' | 'basic';
     qr_code?: string;
-    health_info_id?: string;
     notes?: string;
     is_student: boolean;
     total_spending: number;

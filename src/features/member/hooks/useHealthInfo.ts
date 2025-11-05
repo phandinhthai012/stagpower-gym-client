@@ -24,7 +24,7 @@ export const useMyHealthInfo = () => {
   });
 };
 
-// Get health info by member ID
+// Get health info by member ID (latest)
 export const useHealthInfoByMemberId = (memberId: string | null | undefined) => {
   return useQuery({
     queryKey: ['health-info', 'member', memberId],
@@ -37,6 +37,29 @@ export const useHealthInfoByMemberId = (memberId: string | null | undefined) => 
         // 404 is expected when member doesn't have health info yet
         if (error?.response?.status === 404) {
           return null;
+        }
+        throw error;
+      }
+    },
+    enabled: !!memberId, // Only run if memberId exists
+    staleTime: 1000 * 60 * 5,
+    retry: false, // Don't retry on 404 errors
+  });
+};
+
+// Get all health info records by member ID
+export const useAllHealthInfoByMemberId = (memberId: string | null | undefined) => {
+  return useQuery({
+    queryKey: ['health-info', 'member', memberId, 'all'],
+    queryFn: async () => {
+      if (!memberId) return [];
+      try {
+        // Use healthInfoApi to get transformed data (lowercase enums -> PascalCase)
+        return await healthInfoApi.getAllHealthInfoByMemberId(memberId);
+      } catch (error: any) {
+        // 404 is expected when member doesn't have health info yet
+        if (error?.response?.status === 404) {
+          return [];
         }
         throw error;
       }
