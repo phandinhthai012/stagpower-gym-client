@@ -1,26 +1,31 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Card, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { Input } from '../../../components/ui/input';
-import { 
+import {
   MessageSquare,
   Send,
-  CheckCircle,
   Circle,
   Flame,
   TrendingUp,
   Heart,
   User,
-  Calendar
+  Calendar,
+  Activity,
+  Dumbbell,
+  Sparkles,
+  UtensilsCrossed
 } from 'lucide-react';
-import { getMockDataByMemberId } from '../../../mockdata';
-
+import { useAISuggestions, useCreateAISuggestion } from '../hooks/useAISuggestions';
+import { formatSuggestionToMessage } from '../utils/aiSuggestion.utils';
+import { SuggestionDetailDialog } from '../components/SuggestionDetailDialog';
 export function MemberSuggestions() {
   const { user } = useAuth();
   const [question, setQuestion] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [displayedAISuggestionsCount, setDisplayedAISuggestionsCount] = useState(5);
   const [messages, setMessages] = useState<Array<{ id: string; role: 'assistant' | 'user'; content: string; time: string }>>(() => {
     const now = new Date();
     return [
@@ -33,25 +38,175 @@ export function MemberSuggestions() {
       }
     ];
   });
+  const { data: suggestionData, isLoading: isLoadingSuggestions, refetch: refetchSuggestions } = useAISuggestions(user?.id);
+  const {
+    chatWithAI,
+    isChatWithAILoading,
+    createAISuggestionCompletion,
+    isCreateAISuggestionCompletionLoading,
+    generateWorkoutSuggestion,
+    isGenerateWorkoutSuggestionLoading,
+    generateNutritionSuggestion,
+    isGenerateNutritionSuggestionLoading,
+  } = useCreateAISuggestion();
   const listRef = useRef<HTMLDivElement | null>(null);
-  const injectedLatestRef = useRef(false);
+  const [openSuggestionDetailDialog, setOpenSuggestionDetailDialog] = useState(false);
+  const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null);
+  const quickChips = useMemo(() => [
+    {
+      key: 'complete',
+      label: 'Tạo gợi ý toàn diện',
+      icon: <Sparkles className="h-4 w-4" />,
+      onClick: async () => {
+        if (!user?.id) return;
+        const now = new Date();
+        const currentQuestion = question?.trim() || '';
+        const messageText = currentQuestion || 'Tạo gợi ý toàn diện';
+        const userMessage = {
+          id: Math.random().toString(16).slice(2),
+          role: 'user' as const,
+          content: currentQuestion ? `Tạo gợi ý toàn diện: ${currentQuestion}` : 'Tạo gợi ý toàn diện',
+          time: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages((prev) => [...prev, userMessage]);
+        setIsTyping(true);
+        setQuestion('');
+        setIsTyping(true);
+        try {
+          const response = await createAISuggestionCompletion({
+            memberId: user.id,
+            message: messageText?.trim() || 'Tạo gợi ý toàn diện'
+          });
+          await refetchSuggestions();
+          const assistantMessage = {
+            id: Math.random().toString(16).slice(2),
+            role: 'assistant' as const,
+            content: formatSuggestionToMessage(response),
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
 
-  const suggestions = useMemo(() => {
-    if (!user?.id) return [] as any[];
-    return getMockDataByMemberId('aiSuggestions', user.id)
-      .sort((a: any, b: any) => new Date(b.recommendation_date).getTime() - new Date(a.recommendation_date).getTime());
-  }, [user?.id]);
+        } catch (error) {
+          const errorMessage = {
+            id: Math.random().toString(16).slice(2),
+            role: 'assistant' as const,
+            content: `Đã có lỗi xảy ra: ${error.message || 'Vui lòng thử lại sau.'}`,
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          };
+          console.error('Error creating AI suggestion completion:', error);
+          setMessages((prev) => [...prev, errorMessage]);
+        } finally {
+          setIsTyping(false);
 
-  const memberName = useMemo(() => (user as any)?.fullName || (user as any)?.fullName || 'bạn', [user]);
+        }
+      },
+      loading: isCreateAISuggestionCompletionLoading
+    },
+    {
+      key: 'workout',
+      label: 'Tạo gợi ý luyện tập',
+      icon: <Dumbbell className="h-4 w-4" />,
+      onClick: async () => {
+        if (!user?.id) return;
+        const now = new Date();
+        const currentQuestion = question?.trim() || '';
+        const messageText = currentQuestion || 'Tạo gợi ý toàn diện';
+        const userMessage = {
+          id: Math.random().toString(16).slice(2),
+          role: 'user' as const,
+          content: currentQuestion ? `Tạo gợi ý toàn diện: ${currentQuestion}` : 'Tạo gợi ý toàn diện',
+          time: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages((prev) => [...prev, userMessage]);
+        setIsTyping(true);
+        setQuestion('');
+        setIsTyping(true);
+        try {
+          const response = await generateWorkoutSuggestion({
+            memberId: user.id,
+            message: messageText?.trim() || 'Tạo gợi ý luyện tập'
+          });
+          const assistantMessage = {
+            id: Math.random().toString(16).slice(2),
+            role: 'assistant' as const,
+            content: formatSuggestionToMessage(response),
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
+        } catch (error) {
+          const errorMessage = {
+            id: Math.random().toString(16).slice(2),
+            role: 'assistant' as const,
+            content: `Đã có lỗi xảy ra: ${error.message || 'Vui lòng thử lại sau.'}`,
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+          console.error('Error generating workout suggestion:', error);
+        } finally {
+          setIsTyping(false);
+        }
+      },
+      loading: isGenerateWorkoutSuggestionLoading
+    },
+    {
+      key: 'nutrition',
+      label: 'Tạo gợi ý dinh dưỡng',
+      icon: <UtensilsCrossed className="h-4 w-4" />,
+      onClick: async () => {
+        if (!user?.id) return;
+        const now = new Date();
+        const currentQuestion = question?.trim() || '';
+        const messageText = currentQuestion || 'Tạo gợi ý dinh dưỡng';
+        const userMessage = {
+          id: Math.random().toString(16).slice(2),
+          role: 'user' as const,
+          content: currentQuestion ? `Tạo gợi ý dinh dưỡng: ${currentQuestion}` : 'Tạo gợi ý dinh dưỡng',
+          time: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages((prev) => [...prev, userMessage]);
+        setIsTyping(true);
+        setQuestion('');
+        setIsTyping(true);
 
-  const quickChips = [
-    { key: 'loss', label: 'Giảm cân', icon: <Flame className="h-4 w-4" /> },
-    { key: 'gain', label: 'Tăng cơ', icon: <TrendingUp className="h-4 w-4" /> },
-    { key: 'health', label: 'Sức khỏe', icon: <Heart className="h-4 w-4" /> },
-    { key: 'newbie', label: 'Người mới', icon: <User className="h-4 w-4" /> },
-    { key: 'plan', label: 'Kế hoạch', icon: <Calendar className="h-4 w-4" /> },
-    { key: 'history', label: 'Lịch sử', icon: <Calendar className="h-4 w-4" /> },
-  ];
+
+        try {
+          const response = await generateNutritionSuggestion({
+            memberId: user.id,
+            message: messageText?.trim() || 'Tạo gợi ý dinh dưỡng'
+          });
+          const assistantMessage = {
+            id: Math.random().toString(16).slice(2),
+            role: 'assistant' as const,
+            content: formatSuggestionToMessage(response),
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
+        } catch (error) {
+          const errorMessage = {
+            id: Math.random().toString(16).slice(2),
+            role: 'assistant' as const,
+            content: `Đã có lỗi xảy ra: ${error.message || 'Vui lòng thử lại sau.'}`,
+            time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+          console.error('Error generating nutrition suggestion:', error);
+        } finally {
+          setIsTyping(false);
+        }
+      },
+      loading: isGenerateNutritionSuggestionLoading
+    },
+  ], [
+    question,
+    user?.id,
+    createAISuggestionCompletion,
+    generateWorkoutSuggestion,
+    generateNutritionSuggestion,
+    refetchSuggestions,
+    isCreateAISuggestionCompletionLoading,
+    isGenerateWorkoutSuggestionLoading,
+    isGenerateNutritionSuggestionLoading
+  ]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -65,49 +220,62 @@ export function MemberSuggestions() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // inject latest suggestion summary on load
-  useEffect(() => {
-    if (injectedLatestRef.current) return;
-    if (!suggestions || suggestions.length === 0) return;
-    const latest = suggestions[0] as any;
-    const text = buildLatestSummary(latest);
-    const t = new Date();
-    setMessages((prev) => [
-      ...prev,
-      { id: 'latest-summary', role: 'assistant', content: text, time: t.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }
-    ]);
-    injectedLatestRef.current = true;
-  }, [suggestions]);
-
-  const sendMessage = (text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     const content = text.trim();
-    if (!content) return;
+    if (!content || !user?.id) return;
     const now = new Date();
-    setMessages((prev) => [
-      ...prev,
-      { id: Math.random().toString(16).slice(2), role: 'user', content, time: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }
-    ]);
+    const userMessage = {
+      id: Math.random().toString(16).slice(2),
+      role: 'user' as const,
+      content,
+      time: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    };
+    // Thêm tin nhắn user vào messages
+    setMessages((prev) => [...prev, userMessage]);
     setQuestion('');
-    // mock typing and response
     setIsTyping(true);
-    setTimeout(() => {
-      const reply = buildMockReply(content);
-      const t = new Date();
-      setMessages((prev) => [
-        ...prev,
-        { id: Math.random().toString(16).slice(2), role: 'assistant', content: reply, time: t.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }
-      ]);
+    try {
+      const conversationHistory = messages
+        .filter(m => m.id !== 'welcome') // Bỏ welcome message
+        .map(m => ({
+          role: m.role,
+          content: m.content
+        }));
+      const response = await chatWithAI({
+        memberId: user.id,
+        message: content,
+        conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined
+      });
+      console.log('response', response);
+      const assistantMessage = {
+        id: Math.random().toString(16).slice(2),
+        role: 'assistant' as const,
+        content: response.answer + '\n' + response.suggestedActions?.join('\n') + '\n' + response.safetyWarning,
+        time: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
       setIsTyping(false);
-    }, 900);
-  };
+    } catch (error) {
+      const errorMessage = {
+        id: Math.random().toString(16).slice(2),
+        role: 'assistant' as const,
+        content: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.',
+        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      console.error('Error sending message:', error);
+    } finally {
+      setIsTyping(false);
+    }
+  }, [user?.id, messages]);
 
   const buildMockReply = (text: string) => {
     const lower = text.toLowerCase();
     if (lower.includes('lịch sử')) {
-      if (!suggestions || suggestions.length === 0) return 'Chưa có lịch sử gợi ý.';
-      const top = suggestions.slice(0, 3) as any[];
+      if (!suggestionData || suggestionData.length === 0) return 'Chưa có lịch sử gợi ý.';
+      const top = suggestionData.slice(0, 3);
       const items = top
-        .map((s: any, i: number) => `${i + 1}. ${mapGoal(s.goal)} • cấp độ ${mapLevel(s.level)} • ${formatVNDate(s.recommendation_date)} • ${s.workout_duration} phút/buổi, ${s.estimated_time} tuần`)
+        .map((s, i) => `${i + 1}. ${s.goal} • ${formatVNDate(s.recommendationDate)} • ${s.workoutDuration || 'N/A'} phút/buổi`)
         .join('\n');
       return `3 gợi ý gần đây:\n${items}\nBạn muốn xem chi tiết gợi ý nào?`;
     }
@@ -129,18 +297,44 @@ export function MemberSuggestions() {
     return 'Mình đã nhận câu hỏi. Bạn cho mình biết mục tiêu (giảm cân/tăng cơ/sức khỏe), tần suất tập/tuần và tình trạng hiện tại để cá nhân hóa kế hoạch nhé!';
   };
 
-  const mapGoal = (g: string) => (g === 'WeightLoss' ? 'Giảm cân' : g === 'MuscleGain' ? 'Tăng cơ' : 'Sức khỏe');
-  const mapLevel = (l: string) => (l === 'Beginner' ? 'Mới bắt đầu' : l === 'Intermediate' ? 'Trung bình' : 'Nâng cao');
-  const formatVNDate = (iso: string) => new Date(iso).toLocaleDateString('vi-VN');
-  const buildLatestSummary = (s: any) =>
-    `Gợi ý mới nhất (${formatVNDate(s.recommendation_date)}):\n• Mục tiêu: ${mapGoal(s.goal)}\n• Cấp độ: ${mapLevel(s.level)}\n• Thời lượng: ${s.workout_duration} phút/buổi, ${s.estimated_time} tuần\nBạn có muốn xem lịch sử gợi ý không?`;
+  const formatVNDate = useCallback((iso: string) => {
+    return new Date(iso).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }, []);
 
+  const handleOpenSuggestionDetailDialog = useCallback((suggestionId: string) => {
+    if (!suggestionId) return;
+    setSelectedSuggestionId(suggestionId);
+    setOpenSuggestionDetailDialog(true);
+  }, []);
+
+  const handleCloseSuggestionDetailDialog = useCallback(() => {
+    setSelectedSuggestionId(null);
+    setOpenSuggestionDetailDialog(false);
+  }, []);
+
+  const handleLoadMoreSuggestions = useCallback(() => {
+    setDisplayedAISuggestionsCount((prev) => prev + 5);
+  }, []);
+
+  const handleUnloadSuggestions = useCallback(() => {
+    setDisplayedAISuggestionsCount(5);
+  }, []);
+  const RecentSuggestions = useMemo(() => {
+    if (!suggestionData) return undefined;
+    return suggestionData
+      .sort((a, b) => new Date(b.recommendationDate).getTime() - new Date(a.recommendationDate).getTime())
+      .slice(0, displayedAISuggestionsCount);
+  }, [suggestionData, displayedAISuggestionsCount]);
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Banner header */}
       <div className="rounded-xl overflow-hidden border border-blue-200">
         <div className="bg-blue-800 text-white p-4 md:p-6">
-      <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 md:w-14 md:h-14 bg-blue-600 rounded-full flex items-center justify-center">
                 <MessageSquare className="h-6 w-6 md:h-7 md:w-7 text-white" />
@@ -154,8 +348,8 @@ export function MemberSuggestions() {
               <span className="inline-flex h-2.5 w-2.5 rounded-full bg-green-400" />
               <span className="text-sm text-blue-100">Đang hoạt động</span>
             </div>
-                  </div>
-                </div>
+          </div>
+        </div>
         {/* Chat area */}
         <div className="bg-white p-0">
           <div ref={listRef} className="h-[52vh] md:h-[60vh] overflow-y-auto px-4 md:px-6 py-4 space-y-3">
@@ -182,12 +376,19 @@ export function MemberSuggestions() {
       {/* Quick chips */}
       <div className="flex flex-wrap items-center gap-2">
         {quickChips.map((c) => (
-          <Button key={c.key} variant="outline" size="sm" className="rounded-full" onClick={() => sendMessage(c.label)}>
+          <Button
+            key={c.key}
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            onClick={c.onClick}
+            disabled={c.loading || isCreateAISuggestionCompletionLoading || isGenerateWorkoutSuggestionLoading || isGenerateNutritionSuggestionLoading}
+          >
             <span className="mr-2">{c.icon}</span>
-            {c.label}
+            {c.loading || isCreateAISuggestionCompletionLoading || isGenerateWorkoutSuggestionLoading || isGenerateNutritionSuggestionLoading ? 'Đang tạo...' : c.label}
           </Button>
         ))}
-                    </div>
+      </div>
 
       {/* Input area */}
       <div className="sticky bottom-0 bg-white pt-2">
@@ -209,6 +410,108 @@ export function MemberSuggestions() {
           </Button>
         </form>
       </div>
+      {/* History suggestions */}
+      <div className="p-4 md:p-6 space-y-6">
+        {/* History suggestions */}
+        <div className="flex flex-col gap-4">
+          <h2 className="text-xl font-bold">Lịch sử gợi ý</h2>
+
+          {isLoadingSuggestions ? (
+            <div className="text-center text-gray-500 py-4">Đang tải...</div>
+          ) : suggestionData && suggestionData.length > 0 ? (
+            <>
+              <div className="space-y-3">
+                {RecentSuggestions.map((suggestion) => {
+                  return (
+                    <Card key={suggestion._id} className="border border-gray-200 hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="outline">{suggestion.status}</Badge>
+                              {suggestion.evaluation?.healthScore !== undefined && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                  Điểm: {suggestion.evaluation.healthScore}/100
+                                </Badge>
+                              )}
+                            </div>
+
+                            <h3 className="font-semibold text-lg">{suggestion.goal}</h3>
+
+                            <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                <span>{formatVNDate(suggestion.recommendationDate)}</span>
+                              </div>
+                              {suggestion.workoutDuration && (
+                                <div className="flex items-center gap-1">
+                                  <Activity className="h-4 w-4" />
+                                  <span>{suggestion.workoutDuration} phút</span>
+                                </div>
+                              )}
+                              {suggestion.exercises && suggestion.exercises.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Dumbbell className="h-4 w-4" />
+                                  <span>{suggestion.exercises.length} bài tập</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              handleOpenSuggestionDetailDialog(suggestion._id);
+                            }}
+                            disabled={isLoadingSuggestions}
+                          >
+                            Chi tiết
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+              {/* Chỉ hiển thị nút khi có dữ liệu và có nhiều hơn số lượng hiển thị ban đầu */}
+              {suggestionData && suggestionData.length > 5 && (
+                <div className="flex justify-end">
+                  {displayedAISuggestionsCount < suggestionData.length ? (
+                    <>
+                      <Button variant="outline" size="sm" onClick={handleLoadMoreSuggestions}>
+                        Xem thêm
+                      </Button>
+                      {displayedAISuggestionsCount > 5 && (
+                        <Button variant="outline" size="sm" onClick={handleUnloadSuggestions} className='ml-2'>
+                          Thu gọn
+                        </Button>
+                      )}
+                    </>
+                  ) : displayedAISuggestionsCount > 5 ? (
+                    <Button variant="outline" size="sm" onClick={handleUnloadSuggestions}>
+                      Thu gọn
+                    </Button>
+                  ) : null}
+                </div>
+              )}
+
+            </>
+          ) : (
+            <Card className="border border-gray-200">
+              <CardContent className="p-6 text-center text-gray-500">
+                <p>Chưa có lịch sử gợi ý nào.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+      <SuggestionDetailDialog
+        open={openSuggestionDetailDialog}
+        onClose={handleCloseSuggestionDetailDialog}
+        AISuggestionID={selectedSuggestionId}
+      />
     </div>
+
   );
 }
