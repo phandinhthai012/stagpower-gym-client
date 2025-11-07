@@ -179,14 +179,24 @@ export function MemberProfile() {
         // Update existing health info
         await updateHealthInfoMutation.mutateAsync({
           healthInfoId: healthInfo._id!,
-          data: editedHealth
+          data: {
+            ...editedHealth,
+            experience: editedHealth.experience?.toLowerCase(),
+            fitnessLevel: editedHealth.fitnessLevel?.toLowerCase(),
+            preferredTime: editedHealth.preferredTime?.toLowerCase(),
+          }
         });
         toast.success('Cập nhật thông tin sức khỏe thành công!');
       } else {
         // Create new health info
         await createHealthInfoMutation.mutateAsync({
           memberId: userData._id,
-          data: editedHealth
+          data: {
+            ...editedHealth,
+            experience: editedHealth.experience?.toLowerCase(),
+            fitnessLevel: editedHealth.fitnessLevel?.toLowerCase(),
+            preferredTime: editedHealth.preferredTime?.toLowerCase(),
+          }
         });
         toast.success('Tạo thông tin sức khỏe thành công!');
       }
