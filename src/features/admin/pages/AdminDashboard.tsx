@@ -1,54 +1,225 @@
-import React from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { 
   Users, 
-  UserCheck, 
   TrendingUp, 
-  DollarSign, 
   Calendar, 
   Dumbbell,
   BarChart3,
   Clock,
-  MapPin,
   Bell
 } from 'lucide-react';
-import { mockUsers } from '../../../mockdata/users';
-import { mockPackages } from '../../../mockdata/packages';
-import { mockCheckIns } from '../../../mockdata/checkIns';
-import { mockPayments } from '../../../mockdata/payments';
-import { getRecentActivities, activityTypeDisplay, activityTypeColor } from '../../../mockdata/activityLogs';
+import { useMembers as useAdminMembers, useStaffs } from '../hooks/useUsers';
+import { useMembersWithActiveSubscriptions } from '../hooks/useMember';
+import { useCheckIns } from '../hooks/useCheckIns';
+import { usePayments } from '../../member/hooks/usePayments';
+import { useBranches } from '../hooks/useBranches';
+import type { Payment } from '../../member/types';
+import type { Branch } from '../api/branch.api';
+import type { User as AppUser } from '../../member/api/user.api';
+import type { CheckIn as AdminCheckIn } from '../../member/api/checkin.api';
+import socketService from '../../../services/socket';
+import { queryKeys } from '../../../constants/queryKeys';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
-  
-  // Calculate statistics from mock data
-  const totalMembers = mockUsers.filter(user => user.role === 'Member').length;
-  const activeMembers = mockUsers.filter(user => user.role === 'Member' && user.status === 'active').length;
-  const totalTrainers = mockUsers.filter(user => user.role === 'Trainer').length;
-  const totalStaff = mockUsers.filter(user => user.role === 'Staff').length;
-  
-  // Calculate revenue from payments
-  const totalRevenue = mockPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const monthlyRevenue = mockPayments
-    .filter(payment => {
-      const paymentDate = new Date(payment.payment_date);
-      const now = new Date();
-      return paymentDate.getMonth() === now.getMonth() && paymentDate.getFullYear() === now.getFullYear();
-    })
-    .reduce((sum, payment) => sum + payment.amount, 0);
+  const queryClient = useQueryClient();
+  const { data: membersResponse, isLoading: membersLoading } = useAdminMembers();
+  const { data: staffsResponse = [], isLoading: staffsLoading } = useStaffs();
+  const { data: activeMembersResponse = [], isLoading: activeMembersLoading } = useMembersWithActiveSubscriptions();
+  const { data: checkInsResponse, isLoading: checkInsLoading } = useCheckIns();
+  const { data: paymentsResponse, isLoading: paymentsLoading } = usePayments();
+  const { data: branchesResponse = [] } = useBranches();
 
-  // Get active check-ins
-  const activeCheckIns = mockCheckIns.filter(checkIn => checkIn.status === 'Active').length;
-  
-  // Get recent trainers
-  const trainers = mockUsers.filter(user => user.role === 'Trainer').slice(0, 3);
-  
-  // Get recent activities
-  const recentActivities = getRecentActivities(5);
+  const members = useMemo<AppUser[]>(() => {
+    const raw = (membersResponse as any)?.data;
+    return Array.isArray(raw) ? raw : [];
+  }, [membersResponse]);
 
+  const activeSubscriptionMembers = useMemo<AppUser[]>(() => {
+    return Array.isArray(activeMembersResponse) ? activeMembersResponse : [];
+  }, [activeMembersResponse]);
+
+  const staffs = useMemo<AppUser[]>(() => Array.isArray(staffsResponse) ? staffsResponse : [], [staffsResponse]);
+  const trainers = useMemo(() => staffs.filter(user => user.role === 'trainer'), [staffs]);
+  const topTrainers = useMemo(() => trainers.slice(0, 3), [trainers]);
+
+  const branches = useMemo<Branch[]>(() => Array.isArray(branchesResponse) ? branchesResponse : [], [branchesResponse]);
+  const branchMap = useMemo(() => new Map<string, Branch>(branches.map(branch => [String(branch._id), branch])), [branches]);
+  const memberMap = useMemo(() => new Map<string, AppUser>(members.map(member => [String(member._id), member])), [members]);
+
+  const checkIns = useMemo<AdminCheckIn[]>(() => {
+    const raw = (checkInsResponse as any)?.data;
+    return Array.isArray(raw) ? raw : [];
+  }, [checkInsResponse]);
+
+  const payments = useMemo<Payment[]>(() => {
+    const raw = (paymentsResponse as any)?.data;
+    return Array.isArray(raw) ? raw : [];
+  }, [paymentsResponse]);
+
+  const parseDate = useCallback((value?: string) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }, []);
+
+  const formatNumber = useCallback((value: number) => new Intl.NumberFormat('vi-VN').format(value), []);
+
+  const formatCurrency = useCallback((value: number) => new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(value), []);
+
+  const totalMembers = members.length;
+  const activeMembersCount = activeSubscriptionMembers.length > 0
+    ? activeSubscriptionMembers.length
+    : members.filter(member => member.status?.toLowerCase() === 'active').length;
+
+  const [socketCheckIns, setSocketCheckIns] = useState<AdminCheckIn[]>([]);
+  const [socketLoading, setSocketLoading] = useState(true);
+
+  const activeCheckInsListRaw = useMemo(() => socketCheckIns.length > 0 ? socketCheckIns : checkIns, [socketCheckIns, checkIns]);
+
+  const activeCheckInsList = useMemo(() => activeCheckInsListRaw.filter(checkIn => {
+    const status = (checkIn.status || '').toLowerCase();
+    return status === 'active' || status === 'checked_in';
+  }), [activeCheckInsListRaw]);
+  const activeCheckInCount = activeCheckInsList.length;
+
+  const now = useMemo(() => new Date(), []);
+  const startOfToday = useMemo(() => new Date(now.getFullYear(), now.getMonth(), now.getDate()), [now]);
+  const startOfWeek = useMemo(() => {
+    const date = new Date(startOfToday);
+    date.setDate(date.getDate() - 6);
+    return date;
+  }, [startOfToday]);
+  const startOfMonth = useMemo(() => new Date(now.getFullYear(), now.getMonth(), 1), [now]);
+
+  const checkInsTodayCount = useMemo(() => checkIns.filter(checkIn => {
+    const date = parseDate(checkIn.checkInTime);
+    return date && date >= startOfToday;
+  }).length, [checkIns, parseDate, startOfToday]);
+
+  const checkInsThisWeekCount = useMemo(() => checkIns.filter(checkIn => {
+    const date = parseDate(checkIn.checkInTime);
+    return date && date >= startOfWeek;
+  }).length, [checkIns, parseDate, startOfWeek]);
+
+  const checkInsThisMonthCount = useMemo(() => checkIns.filter(checkIn => {
+    const date = parseDate(checkIn.checkInTime);
+    return date && date >= startOfMonth;
+  }).length, [checkIns, parseDate, startOfMonth]);
+
+  const completedPayments = useMemo(() => payments.filter(payment =>
+    (payment.paymentStatus || '').toLowerCase() === 'completed'
+  ), [payments]);
+
+  const currentMonthRevenue = useMemo(() => {
+    return completedPayments.reduce((sum, payment) => {
+      const date = parseDate(payment.paymentDate || payment.createdAt);
+      if (!date) return sum;
+      const sameMonth = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+      return sameMonth ? sum + (payment.amount || 0) : sum;
+    }, 0);
+  }, [completedPayments, now, parseDate]);
+
+  const summaryLoading = membersLoading || activeMembersLoading || paymentsLoading || checkInsLoading;
+
+  const formatTimeAgo = useCallback((dateString: string) => {
+    const date = parseDate(dateString);
+    if (!date) return 'Không xác định';
+    const diffMinutes = Math.floor((Date.now() - date.getTime()) / (1000 * 60));
+    if (diffMinutes < 1) return 'Vừa xong';
+    if (diffMinutes < 60) return `${diffMinutes} phút trước`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+    return date.toLocaleDateString('vi-VN');
+  }, [parseDate]);
+
+  const resolveMemberName = useCallback((value: any) => {
+    if (!value) return 'Hội viên';
+    if (typeof value === 'string') {
+      return memberMap.get(value)?.fullName || 'Hội viên';
+    }
+    return value.fullName || memberMap.get(value._id || '')?.fullName || 'Hội viên';
+  }, [memberMap]);
+
+  const resolveBranchName = useCallback((value: any) => {
+    if (!value) return undefined;
+    if (typeof value === 'string') {
+      return branchMap.get(value)?.name;
+    }
+    return value.name || branchMap.get(value._id || '')?.name;
+  }, [branchMap]);
+
+  const getStatusMeta = useCallback((status?: string) => {
+    const normalized = (status || '').toLowerCase();
+    if (normalized === 'active' || normalized === 'checked_in') {
+      return { color: 'bg-green-500', label: 'Hội viên check-in' };
+    }
+    if (normalized === 'completed' || normalized === 'checked_out') {
+      return { color: 'bg-blue-500', label: 'Hoàn tất check-in' };
+    }
+    if (normalized === 'cancelled') {
+      return { color: 'bg-yellow-500', label: 'Check-in bị hủy' };
+    }
+    return { color: 'bg-gray-400', label: status || 'Cập nhật check-in' };
+  }, []);
+
+  const recentActivities = useMemo(() => {
+    return [...activeCheckInsListRaw]
+      .sort((a, b) => {
+        const dateA = parseDate(a.checkInTime)?.getTime() || 0;
+        const dateB = parseDate(b.checkInTime)?.getTime() || 0;
+        return dateB - dateA;
+      })
+      .slice(0, 5)
+      .map(checkIn => ({
+        id: checkIn._id,
+        memberName: resolveMemberName(checkIn.memberId),
+        branchName: resolveBranchName(checkIn.branchId),
+        status: checkIn.status,
+        time: checkIn.checkInTime
+      }));
+  }, [activeCheckInsListRaw, parseDate, resolveBranchName, resolveMemberName]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken') || undefined;
+    const socket = socketService.connect(token);
+
+    const handleActiveMembers = (payload: AdminCheckIn[] | { error: string }) => {
+      if (Array.isArray(payload)) {
+        setSocketCheckIns(payload);
+        setSocketLoading(false);
+      } else {
+        console.error('Socket check-in error:', payload.error);
+      }
+    };
+
+    const handleCheckInChange = () => {
+      socket.emit('get-active-members-checkIn', {});
+      queryClient.invalidateQueries({ queryKey: queryKeys.checkIns });
+    };
+
+    socket.on('active-members-checkIn-response', handleActiveMembers);
+    socket.on('checkIn_created', handleCheckInChange);
+    socket.on('checkIn_checked_out', handleCheckInChange);
+
+    socket.emit('get-active-members-checkIn', {});
+
+    return () => {
+      socket.off('active-members-checkIn-response', handleActiveMembers);
+      socket.off('checkIn_created', handleCheckInChange);
+      socket.off('checkIn_checked_out', handleCheckInChange);
+    };
+  }, [queryClient]);
 
   const quickActions = [
     { 
@@ -110,26 +281,43 @@ export function AdminDashboard() {
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5 text-blue-600" />
               Huấn Luyện Viên
+              {!staffsLoading && (
+                <Badge variant="secondary" className="ml-auto bg-blue-100 text-blue-700 border-0">
+                  {formatNumber(trainers.length)} PT
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {trainers.map((trainer, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {trainer.fullName.charAt(0)}
-                    </span>
+              {staffsLoading ? (
+                <div className="text-sm text-gray-500">Đang tải dữ liệu huấn luyện viên...</div>
+              ) : topTrainers.length > 0 ? (
+                topTrainers.map((trainer) => (
+                  <div key={trainer._id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-sm">
+                        {trainer.fullName?.charAt(0) || 'T'}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{trainer.fullName || 'Huấn luyện viên'}</h4>
+                      <p className="text-sm text-gray-600">
+                        {Array.isArray((trainer as any).trainerInfo?.specialty)
+                          ? (trainer as any).trainerInfo?.specialty.join(', ')
+                          : (trainer as any).trainerInfo?.specialty || 'PT'}
+                      </p>
+                    </div>
+                    <Badge variant={trainer.status?.toLowerCase() === 'active' ? 'secondary' : 'outline'}>
+                      {trainer.status === 'active' ? 'Hoạt động' : 'Nghỉ'}
+                    </Badge>
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{trainer.fullName}</h4>
-                    <p className="text-sm text-gray-600">
-                      {trainer.trainer_info?.specialty?.join(', ') || 'PT'}
-                    </p>
-                  </div>
-                  <Badge variant="secondary">Hoạt động</Badge>
+                ))
+              ) : (
+                <div className="text-sm text-gray-500">
+                  Chưa có huấn luyện viên nào trong hệ thống.
                 </div>
-              ))}
+              )}
               <Button 
                 variant="outline" 
                 className="w-full"
@@ -154,24 +342,34 @@ export function AdminDashboard() {
               <div className="w-24 h-24 mx-auto mb-4 relative">
                 <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
                   <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">{activeCheckIns}</span>
+                    <span className="text-white font-bold text-lg">
+                      {checkInsLoading ? '...' : formatNumber(activeCheckInCount)}
+                    </span>
                   </div>
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-green-600 mb-2">{activeCheckIns}</h3>
+              <h3 className="text-2xl font-bold text-green-600 mb-2">
+                {checkInsLoading ? 'Đang tải...' : formatNumber(activeCheckInCount)}
+              </h3>
               <p className="text-gray-600 mb-4">Hội viên đang tập</p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Hôm nay</span>
-                  <span className="font-medium">{activeCheckIns}</span>
+                  <span className="font-medium">
+                    {checkInsLoading ? '...' : formatNumber(checkInsTodayCount)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Tuần này</span>
-                  <span className="font-medium">156</span>
+                  <span className="font-medium">
+                    {checkInsLoading ? '...' : formatNumber(checkInsThisWeekCount)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Tháng này</span>
-                  <span className="font-medium">1,234</span>
+                  <span className="font-medium">
+                    {checkInsLoading ? '...' : formatNumber(checkInsThisMonthCount)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -219,45 +417,32 @@ export function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentActivities.map((activity, index) => {
-              // Get user name from mockUsers
-              const user = mockUsers.find(u => u.id === activity.user_id);
-              const userName = user?.fullName || 'Người dùng';
-              
-              // Format time ago
-              const formatTimeAgo = (dateString: string) => {
-                const now = new Date();
-                const activityDate = new Date(dateString);
-                const diffInMinutes = Math.floor((now.getTime() - activityDate.getTime()) / (1000 * 60));
-                
-                if (diffInMinutes < 60) {
-                  return `${diffInMinutes} phút trước`;
-                } else if (diffInMinutes < 1440) {
-                  const hours = Math.floor(diffInMinutes / 60);
-                  return `${hours} giờ trước`;
-                } else {
-                  const days = Math.floor(diffInMinutes / 1440);
-                  return `${days} ngày trước`;
-                }
-              };
-              
-              const activityType = activityTypeColor[activity.activity_type] || 'info';
-              const activityDisplay = activityTypeDisplay[activity.activity_type] || activity.description;
-              
-              return (
-                <div key={activity.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activityType === 'success' ? 'bg-green-500' : 
-                    activityType === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
-                  }`} />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{activityDisplay}</p>
-                    <p className="text-sm text-gray-600">{userName}</p>
+            {checkInsLoading ? (
+              <div className="text-sm text-gray-500">Đang tải hoạt động...</div>
+            ) : recentActivities.length > 0 ? (
+              recentActivities.map(activity => {
+                const meta = getStatusMeta(activity.status);
+                return (
+                  <div key={activity.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className={`w-2 h-2 rounded-full ${meta.color}`} />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{meta.label}</p>
+                      <p className="text-sm text-gray-600">
+                        {activity.memberName}
+                        {activity.branchName ? ` • ${activity.branchName}` : ''}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {formatTimeAgo(activity.time)}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-500">{formatTimeAgo(activity.created_at)}</span>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="text-sm text-gray-500">
+                Chưa có hoạt động check-in gần đây.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
