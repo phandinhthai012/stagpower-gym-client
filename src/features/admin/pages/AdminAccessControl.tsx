@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -22,7 +23,7 @@ import {
 // import { mockUsers } from '../../../mockdata/users';
 // import { mockCheckIns } from '../../../mockdata/checkIns';
 // import { mockSubscriptions } from '../../../mockdata/subscriptions';
-import { useAdminManageCheckInList, useAdminCheckIn } from '../hooks/useAdminCheckIn';
+import { useAdminManageCheckInList } from '../hooks/useAdminCheckIn';
 import { useBranches } from '../hooks/useBranches';
 import { useMembers } from '../../member/hooks/useMembers';
 import { CheckIn } from '../../member/api/checkin.api';
@@ -30,11 +31,37 @@ import { formatDateTime } from '../../../lib/date-utils';
 import { useMembersWithActiveSubscriptions } from '../hooks/useMember';
 import { ModalManualCheckIn } from '../components/checkin-management';
 import { ModalQRCheckIn } from '../components/checkin-management';
+import socketService from '../../../services/socket';
+import { queryKeys } from '../../../constants/queryKeys';
+
+interface OnlineUsersSnapshot {
+  totalOnlineUsers: number;
+  totalOnlineMembers: number;
+  byRole: Record<string, number>;
+  users: Array<{
+    userId: string;
+    fullName: string;
+    role: string;
+    connectedAt: string;
+    socketIds: string[];
+  }>;
+  members: Array<{
+    userId: string;
+    fullName: string;
+    role: string;
+    connectedAt: string;
+    socketIds: string[];
+  }>;
+}
 
 export function AdminAccessControl() {
   const [isModalManualCheckInOpen, setIsModalManualCheckInOpen] = useState(false);
   const [isModalQRCheckInOpen, setIsModalQRCheckInOpen] = useState(false);
   const [displayedCheckInsCount, setDisplayedCheckInsCount] = useState(5);
+  const [socketOnlineSnapshot, setSocketOnlineSnapshot] = useState<OnlineUsersSnapshot | null>(null);
+  const [socketActiveCheckIns, setSocketActiveCheckIns] = useState<CheckIn[]>([]);
+  const [socketConnected, setSocketConnected] = useState(false);
+  const queryClient = useQueryClient();
 
   // ===== USE HOOK - GET ALL CHECK-INS =====
   const { data: response, isLoading, isError } = useAdminManageCheckInList();
@@ -47,7 +74,12 @@ export function AdminAccessControl() {
   const membersWithActiveSubscriptions = membersWithActiveSubscriptionsData;
   // Get active check-ins
   // const activeCheckIns = mockCheckIns.filter(checkIn => checkIn.status === 'Active');
-  const activeCheckIns = checkInsData.filter(checkIn => checkIn.status === 'Active');
+  const fallbackActiveCheckIns = useMemo(
+    () => checkInsData.filter(checkIn => checkIn.status === 'Active'),
+    [checkInsData]
+  );
+  const activeCheckIns =
+    socketActiveCheckIns.length > 0 ? socketActiveCheckIns : fallbackActiveCheckIns;
 
   // Get recent check-ins (last 10)
   const recentCheckIns = checkInsData
@@ -57,6 +89,58 @@ export function AdminAccessControl() {
   const totalCheckInInWeek = checkInsData
     .filter(checkIn => new Date(checkIn.checkInTime).getTime() >= new Date().setDate(new Date().getDate() - 7))
     .length;
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken') || undefined;
+    const socket = socketService.connect(token);
+
+    const handleConnect = () => setSocketConnected(true);
+    const handleDisconnect = () => setSocketConnected(false);
+
+    const handleOnlineUsersUpdated = (payload: OnlineUsersSnapshot) => {
+      setSocketOnlineSnapshot(payload);
+    };
+
+    const handleActiveMembers = (payload: CheckIn[] | { error: string }) => {
+      if (Array.isArray(payload)) {
+        setSocketActiveCheckIns(payload.filter(item => item.status === 'Active'));
+      } else {
+        console.error('Socket check-in error:', payload.error);
+      }
+    };
+
+    const refreshActiveMembers = () => {
+      socket.emit('get-active-members-checkIn', {});
+    };
+
+    const handleCheckInStateChange = () => {
+      refreshActiveMembers();
+      queryClient.invalidateQueries({ queryKey: queryKeys.checkIns });
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('online-users-updated', handleOnlineUsersUpdated);
+    socket.on('online-users-response', handleOnlineUsersUpdated);
+    socket.on('active-members-checkIn-response', handleActiveMembers);
+    socket.on('checkIn_created', handleCheckInStateChange);
+    socket.on('checkIn_checked_out', handleCheckInStateChange);
+
+    socket.emit('get-online-users');
+    refreshActiveMembers();
+
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('online-users-updated', handleOnlineUsersUpdated);
+      socket.off('online-users-response', handleOnlineUsersUpdated);
+      socket.off('active-members-checkIn-response', handleActiveMembers);
+      socket.off('checkIn_created', handleCheckInStateChange);
+      socket.off('checkIn_checked_out', handleCheckInStateChange);
+    };
+  }, [queryClient]);
+
+  const onlineMemberCount = socketOnlineSnapshot?.totalOnlineMembers ?? 0;
 
   const handleLoadMore = () => {
     setDisplayedCheckInsCount(prev => Math.min(prev + 5, checkInsData.length));
@@ -131,7 +215,9 @@ export function AdminAccessControl() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Hội viên hoạt động</p>
-                <p className="text-2xl font-bold text-blue-600">{members.length}</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {socketOnlineSnapshot ? onlineMemberCount : members.length}
+                </p>
               </div>
               <Users className="w-8 h-8 text-blue-600" />
             </div>
@@ -154,8 +240,6 @@ export function AdminAccessControl() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                {/* <p className="text-sm font-medium text-gray-600">Chi nhánh</p>
-                <p className="text-2xl font-bold text-orange-600">Gò Vấp</p> */}
                 <p className="text-sm font-medium text-gray-600">Check-in hôm nay</p>
                 <p className="text-2xl font-bold text-orange-600">
                   {checkInsData.filter(ci => {
@@ -179,6 +263,12 @@ export function AdminAccessControl() {
             <CardTitle className="flex items-center gap-2">
               <QrCode className="w-5 h-5 text-blue-600" />
               Kiểm soát ra vào
+              <Badge
+                variant={socketConnected ? 'secondary' : 'outline'}
+                className={socketConnected ? 'bg-green-100 text-green-700 border-none' : 'text-gray-500'}
+              >
+                {socketConnected ? 'Socket hoạt động' : 'Socket ngắt kết nối'}
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
