@@ -86,7 +86,6 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
     { id: 'reports', label: 'Báo Cáo & Thống Kê', icon: BarChart3, path: '/admin/reports' },
     { id: 'invoice-payment', label: 'Hóa Đơn & Thanh Toán', icon: DollarSign, path: '/admin/invoice-payment' },
     { id: 'branch-management', label: 'Quản Lý Chi Nhánh', icon: Building2, path: '/admin/branch-management' },
-    { id: 'complaints', label: 'Quản Lý Khiếu Nại', icon: MessageSquare, path: '/admin/complaints' },
     { id: 'settings', label: 'Cài Đặt Tài Khoản', icon: Settings, path: '/admin/settings' },
   ];
 
