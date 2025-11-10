@@ -90,7 +90,10 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
 
     try {
       console.log(formData);
-      await createInvoiceMutation.mutateAsync(formData);
+      await createInvoiceMutation.mutateAsync({
+        ...formData,
+        dueDate: formData.dueDate || new Date().toISOString()
+      });
       onSuccess?.();
       onClose();
       setFormData({
