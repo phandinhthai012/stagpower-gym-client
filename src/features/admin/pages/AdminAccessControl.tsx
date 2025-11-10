@@ -177,13 +177,23 @@ export function AdminAccessControl() {
   };
 
   // Helper function to find member by ID
-  const findMemberById = (memberId: string) => {
-    return members?.find(m => m._id === memberId);
+  const getIdValue = (value: string | { _id?: string } | undefined | null) => {
+    if (!value) return undefined;
+    if (typeof value === 'string') return value;
+    return value._id;
+  };
+
+  const findMemberById = (memberId: string | { _id?: string }) => {
+    const id = getIdValue(memberId);
+    if (!id) return undefined;
+    return members?.find(m => m._id === id);
   };
 
   // Helper function to find branch by ID
-  const findBranchById = (branchId: string) => {
-    return branches?.find(b => b._id === branchId);
+  const findBranchById = (branchId: string | { _id?: string }) => {
+    const id = getIdValue(branchId);
+    if (!id) return undefined;
+    return branches?.find(b => b._id === id);
   };
   const getStatusText = (status: string) => {
     switch (status) {
@@ -304,17 +314,20 @@ export function AdminAccessControl() {
               {activeCheckIns.length > 0 ? (
                 activeCheckIns.map((checkIn) => {
                   // const member = members.find(user => user._id === checkIn.memberId);
-                  const member = findMemberById(checkIn.memberId);
-                  const branch = findBranchById(checkIn.branchId);
-                  return member ? (
+                  const member = findMemberById(checkIn.memberId) || (typeof checkIn.memberId !== 'string' ? checkIn.memberId : undefined);
+                  const branch = findBranchById(checkIn.branchId) || (typeof checkIn.branchId !== 'string' ? checkIn.branchId : undefined);
+                  if (!member) return null;
+                  const displayName = member.fullName;
+                  const memberInitial = displayName?.charAt(0) || 'T';
+                  return (
                     <div key={checkIn._id} className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
                       <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
-                          {member.fullName.charAt(0)}
+                          {memberInitial}
                         </span>
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{member.fullName}</h4>
+                        <h4 className="font-medium text-gray-900">{displayName}</h4>
                         <p className="text-sm text-gray-600">
                           Check-in: {formatDateTime(checkIn.checkInTime)}
                         </p>
@@ -331,7 +344,7 @@ export function AdminAccessControl() {
                         </Button>
                       </div>
                     </div>
-                  ) : null;
+                  );
                 })
               ) : (
                 <div className="text-center py-8 text-gray-500">
@@ -360,18 +373,20 @@ export function AdminAccessControl() {
             {recentCheckIns.length > 0 ? (
               <>
                 {recentCheckIns.map((checkIn) => {
-                  const member = findMemberById(checkIn.memberId);
-                  const branch = findBranchById(checkIn.branchId);
-
-                  return member ? (
+                  const member = findMemberById(checkIn.memberId) || (typeof checkIn.memberId !== 'string' ? checkIn.memberId : undefined);
+                  const branch = findBranchById(checkIn.branchId) || (typeof checkIn.branchId !== 'string' ? checkIn.branchId : undefined);
+                  if (!member) return null;
+                  const name = member.fullName;
+                  const initial = name?.charAt(0) || 'U';
+                  return (
                     <div key={checkIn._id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
-                          {member.fullName?.charAt(0) || 'U'}
+                          {initial}
                         </span>
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{member.fullName}</h4>
+                        <h4 className="font-medium text-gray-900">{name}</h4>
                         <p className="text-sm text-gray-600">
                           {formatDateTime(checkIn.checkInTime)}
                         </p>
@@ -383,7 +398,7 @@ export function AdminAccessControl() {
                         {getStatusText(checkIn.status)}
                       </Badge>
                     </div>
-                  ) : null;
+                  );
                 })}
                 <div className="flex justify-center gap-2 pt-4">
                   {displayedCheckInsCount < checkInsData.length && (

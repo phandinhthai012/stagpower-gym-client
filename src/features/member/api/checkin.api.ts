@@ -1,10 +1,22 @@
 import apiClient from '../../../configs/AxiosConfig';
 import { API_ENDPOINTS } from '../../../configs/Api';
 
+export interface PopulatedMember {
+    _id: string;
+    fullName: string;
+    email?: string;
+    phone?: string;
+}
+
+export interface PopulatedBranch {
+    _id: string;
+    name: string;
+}
+
 export interface CheckIn {
     _id: string;
-    memberId: string;
-    branchId: string;
+    memberId: string | PopulatedMember;
+    branchId: string | PopulatedBranch;
     checkInTime: string;
     checkOutTime?: string;
     checkInMethod: 'QR_Code' | 'Manual' | 'Webcam' | 'Card' | 'Biometric';
