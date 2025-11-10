@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -35,6 +35,8 @@ import { Payment } from '../../member/types';
 import { ModalCreateInvoice, ModalViewInvoice } from '../components/invoices-management';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
+import socketService from '../../../services/socket';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function AdminInvoicePayment() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,6 +59,8 @@ export function AdminInvoicePayment() {
   const sendReminderMutation = useSendPaymentReminder();
   const bulkSendRemindersMutation = useBulkSendReminders();
   const exportInvoicesMutation = useExportInvoices();
+  const queryClient = useQueryClient();
+  const [isRealtimeLoading, setIsRealtimeLoading] = useState(false);
 
 
   // Filter payments based on search and filters
@@ -114,6 +118,45 @@ export function AdminInvoicePayment() {
     setSelectedInvoices([]);
     requestSort(key);
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken') || undefined;
+    const socket = socketService.connect(token);
+
+    const invalidatePayments = () => {
+      setIsRealtimeLoading(true);
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['paymentStats'] });
+    };
+
+    const handleComplete = () => {
+      invalidatePayments();
+    };
+
+    const handleCreated = () => {
+      invalidatePayments();
+    };
+
+    const handleSubscriptionPayment = () => {
+      invalidatePayments();
+    };
+
+    socket.on('payment_created', handleCreated);
+    socket.on('payment_completed', handleComplete);
+    socket.on('subscription_payment_created', handleSubscriptionPayment);
+
+    return () => {
+      socket.off('payment_created', handleCreated);
+      socket.off('payment_completed', handleComplete);
+      socket.off('subscription_payment_created', handleSubscriptionPayment);
+    };
+  }, [queryClient]);
+
+  useEffect(() => {
+    if (isRealtimeLoading && !isLoading) {
+      setIsRealtimeLoading(false);
+    }
+  }, [isRealtimeLoading, isLoading]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -225,7 +268,7 @@ export function AdminInvoicePayment() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !isRealtimeLoading) {
     return <div className="flex justify-center items-center h-64">Đang tải...</div>;
   }
 
