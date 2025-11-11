@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../constants/queryKeys';
 import { invoiceApi } from '../api/invoice.api';
-import { 
-  Invoice, 
-  CreateInvoiceData, 
-  UpdateInvoiceData, 
+import {
+  Invoice,
+  CreateInvoiceData,
+  UpdateInvoiceData,
   InvoiceSearchParams,
   PaymentRecord,
   CreatePaymentData,
@@ -166,11 +166,29 @@ export const useExportInvoices = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       toast.success('Xuất báo cáo thành công');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi xuất báo cáo');
+    },
+  });
+};
+
+
+export const useCreateSubscriptionWithPayment = () => {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: invoiceApi.createSubscriptionWithPayment,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [queryKeys.invoices] });
+      queryClient.invalidateQueries({ queryKey: [queryKeys.invoices, 'stats'] });
+      toast.success('Tạo gói + hóa đơn thành công');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Không thể tạo gói kèm hóa đơn');
     },
   });
 };

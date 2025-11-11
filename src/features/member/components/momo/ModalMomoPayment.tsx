@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { QrCode, Smartphone, Clock, CheckCircle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import momoLogo from '../../../../assets/momo-logo.png';
 import QRCode from 'qrcode';
+import socketService from '../../../../services/socket';
 interface ModalMomoPaymentProps {
     open: boolean;
     qrCodeUrl: string;
@@ -20,6 +22,7 @@ export function ModalMomoPayment({
     const [timeLeft, setTimeLeft] = useState(300); // 5 phút
     const [status, setStatus] = useState<'pending' | 'success' | 'failed'>('pending');
     const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+    const queryClient = useQueryClient();
     useEffect(() => {
         if (!open || status !== 'pending') return;
 
@@ -45,6 +48,8 @@ export function ModalMomoPayment({
     }, [qrCodeUrl]);
     
     useEffect(() => {
+        const token = localStorage.getItem('accessToken') || undefined;
+        const socket = socketService.connect(token);
         if (!open) return;
 
         // Giả sử bạn có socket connection
@@ -52,14 +57,15 @@ export function ModalMomoPayment({
             if (data._id === paymentId && data.paymentStatus === 'Completed') {
                 console.log('data', data);
                 setStatus('success');
+                queryClient.invalidateQueries({ queryKey: ['payments', 'member'] });
                 setTimeout(() => onSuccess(), 2000);
             }
         };
 
-        // socket.on('payment_completed', handlePaymentUpdate);
+        socket.on('payment_completed', handlePaymentUpdate);
 
         return () => {
-            // socket.off('payment_completed', handlePaymentUpdate);
+            socket.off('payment_completed', handlePaymentUpdate);
         };
     }, [open, paymentId]);
     const formatTime = (seconds: number) => {

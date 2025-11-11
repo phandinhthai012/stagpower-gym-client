@@ -83,6 +83,7 @@ export const API_ENDPOINTS = {
        UNSUSPEND_SUBSCRIPTION: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}/unsuspend`,
        CHANGE_SUBSCRIPTION_STATUS: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}/status`,
        RENEW_SUBSCRIPTION: (subscriptionId: string) => `${API_PREFIX}/subscriptions/${subscriptionId}/renew`,
+       CREATE_SUBSCRIPTION_WITH_PAYMENT: `${API_PREFIX}/subscriptions/create-subscription-with-payment`,
     },
     PAYMENT: {
        CREATE_PAYMENT: `${API_PREFIX}/payments`,

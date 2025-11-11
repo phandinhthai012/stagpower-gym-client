@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { mockUsers } from '../mockdata/index';
 import authService from '../features/auth/services/auth.service';
-
+import socketService from '../services/socket';
 export type UserRole = 'admin' | 'staff' | 'trainer' | 'member';
 
 export interface User {
@@ -169,6 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         localStorage.clear();
       }
+      socketService.disconnect();
     } catch (error) {
       console.error('Logout failed:', error);
       localStorage.clear();

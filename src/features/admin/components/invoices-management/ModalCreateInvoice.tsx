@@ -6,11 +6,13 @@ import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Textarea } from '../../../../components/ui/textarea';
 import { X, Plus, DollarSign, Calendar, User, Package } from 'lucide-react';
-import { useCreateInvoice } from '../../hooks/useInvoices';
+import { useCreateInvoice, useCreateSubscriptionWithPayment } from '../../hooks/useInvoices';
 import { CreateInvoiceData } from '../../types/invoice.types';
 import { useMembers } from '../../../member/hooks/useMembers';
 import { usePackages } from '../../hooks/usePackages';
-
+import ModelQRMomo from './ModelQRMomo';
+import QRCode from 'qrcode';
+import socketService from '../../../../services/socket';
 interface ModalCreateInvoiceProps {
   isOpen: boolean;
   onClose: () => void;
@@ -30,13 +32,30 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const createInvoiceMutation = useCreateInvoice();
+  const createSubscriptionWithPaymentMutation = useCreateSubscriptionWithPayment();
   const { data: membersResponse } = useMembers();
   const { data: packagesResponse = [] } = usePackages();
   const packages = Array.isArray(packagesResponse?.data) ? packagesResponse.data : [];
-  const members = membersResponse && 'success' in membersResponse && membersResponse.success 
-    ? membersResponse.data || [] 
+  const members = membersResponse && 'success' in membersResponse && membersResponse.success
+    ? membersResponse.data || []
     : [];
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
+  const [qrData, setQrData] = useState<any>(null);
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
 
+  const resetForm = () => {
+    setFormData({
+      memberId: '',
+      packageId: '',
+      amount: 0,
+      originalAmount: 0,
+      paymentMethod: 'Cash',
+      dueDate: '',
+      notes: ''
+    });
+    setSelectedPackage(null);
+    setErrors({});
+  };
   // Scroll lock effect
   React.useEffect(() => {
     if (isOpen) {
@@ -44,11 +63,34 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  // socket to close modal when completed invoice success momo
+  useEffect(() => {
+    if (!showQrModal || !qrData?.paymentId) return;
+
+    const token = localStorage.getItem('accessToken') || undefined;
+    const socket = socketService.connect(token);
+
+    const handlePaymentCompleted = (payment: any) => {
+      if (payment?._id === qrData.paymentId) {
+        setShowQrModal(false);
+        setQrData(null);
+        onSuccess?.();
+        onClose();
+      }
+    };
+
+    socket.on('payment_completed', handlePaymentCompleted);
+
+    return () => {
+      socket.off('payment_completed', handlePaymentCompleted);
+    };
+  }, [showQrModal, qrData?.paymentId, onSuccess, onClose]);
 
   const handleInputChange = (field: keyof CreateInvoiceData, value: string | number) => {
     setFormData(prev => ({
@@ -85,27 +127,63 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
-      console.log(formData);
+      if (formData.paymentMethod === 'Momo') {
+        if (!selectedPackage) {
+          setErrors(prev => ({
+            ...prev,
+            packageId: 'Vui lòng chọn gói dịch vụ'
+          }));
+          return;
+        }
+
+        const payload = {
+          memberId: formData.memberId,
+          packageId: formData.packageId,
+          branchId: null,
+          type: selectedPackage.type,
+          membershipType: selectedPackage.membershipType || 'Basic',
+          durationDays: (selectedPackage.durationMonths || 0) * 30,
+          ptsessionsRemaining: selectedPackage.ptSessions || 0,
+          ptsessionsUsed: 0,
+          paymentMethod: 'Momo',
+          originalAmount: formData.originalAmount || formData.amount,
+          amount: formData.amount,
+          discountDetails: [],
+          notes: formData.notes,
+          dueDate: formData.dueDate || new Date().toISOString()
+        };
+
+        const res = await createSubscriptionWithPaymentMutation.mutateAsync(payload);
+        const momoPayment = res?.momoPayment;
+
+        if (!momoPayment) {
+          throw new Error('Không nhận được thông tin thanh toán MoMo');
+        }
+        const qrCodeUrl = momoPayment.qrCodeUrl;
+        setQrData({
+          qrCodeUrl: await QRCode.toDataURL(qrCodeUrl),
+          paymentId: res.payment?._id || momoPayment.orderId,
+          deepLink: momoPayment.deeplink || momoPayment.deepLink || momoPayment.payUrl,
+          amount: momoPayment.amount,
+          invoiceId: momoPayment.requestId || res.payment?.invoiceNumber,
+        });
+        setShowQrModal(true);
+        resetForm();
+        return;
+      }
+
       await createInvoiceMutation.mutateAsync({
         ...formData,
         dueDate: formData.dueDate || new Date().toISOString()
       });
+
       onSuccess?.();
       onClose();
-      setFormData({
-        memberId: '',
-        packageId: '',
-        amount: 0,
-        originalAmount: 0,
-        paymentMethod: 'Cash',
-        dueDate: '',
-        notes: ''
-      });
-      setErrors({});
+      resetForm();
     } catch (error) {
       console.error('Error creating invoice:', error);
     }
@@ -113,6 +191,7 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
 
   const handlePackageChange = (packageId: string) => {
     const selectedPackage = packages.find(pkg => pkg._id === packageId);
+    setSelectedPackage(selectedPackage);
     if (selectedPackage) {
       setFormData(prev => ({
         ...prev,
@@ -151,8 +230,8 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
                 <User className="w-4 h-4" />
                 Chọn hội viên *
               </Label>
-              <Select 
-                value={formData.memberId} 
+              <Select
+                value={formData.memberId}
                 onValueChange={(value) => handleInputChange('memberId', value)}
               >
                 <SelectTrigger>
@@ -177,8 +256,8 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
                 <Package className="w-4 h-4" />
                 Chọn gói dịch vụ *
               </Label>
-              <Select 
-                value={formData.packageId} 
+              <Select
+                value={formData.packageId}
                 onValueChange={handlePackageChange}
               >
                 <SelectTrigger>
@@ -238,8 +317,8 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="paymentMethod">Phương thức thanh toán</Label>
-                <Select 
-                  value={formData.paymentMethod} 
+                <Select
+                  value={formData.paymentMethod}
                   onValueChange={(value) => handleInputChange('paymentMethod', value)}
                 >
                   <SelectTrigger>
@@ -290,15 +369,15 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                disabled={createInvoiceMutation.isPending}
+                disabled={createInvoiceMutation.isPending || createSubscriptionWithPaymentMutation.isPending}
               >
                 Hủy
               </Button>
               <Button
                 type="submit"
-                disabled={createInvoiceMutation.isPending}
+                disabled={createInvoiceMutation.isPending || createSubscriptionWithPaymentMutation.isPending}
               >
-                {createInvoiceMutation.isPending ? (
+                {createInvoiceMutation.isPending || createSubscriptionWithPaymentMutation.isPending ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                     Đang tạo...
@@ -314,6 +393,19 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
           </form>
         </CardContent>
       </Card>
+      <ModelQRMomo
+        isOpen={showQrModal}
+        onClose={() => {
+          setShowQrModal(false);
+          setQrData(null);
+        }}
+        onSuccess={() => {
+          onSuccess?.();
+          onClose();
+        }}
+        qrData={qrData}
+      />
+
     </div>
   );
 }

@@ -1,13 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
-import { 
-  CreditCard, 
-  Download, 
-  Calendar, 
+import {
+  CreditCard,
+  Download,
+  Calendar,
   DollarSign,
   TrendingUp,
   TrendingDown,
@@ -30,15 +30,16 @@ import { ModalPaymentDetail } from '../components/ModalPaymentDetail';
 import { usePaymentsByMemberId, usePackages, useSubscriptionsByMemberId } from '../hooks';
 import { useTableRowClick } from '../../../hooks/useTableRowClick';
 import { ClickableTableRow, TableActions } from '../../../components/ui';
+import socketService from '../../../services/socket';
 
 export function MemberPayments() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const memberId = user?._id || user?.id || '';
   const [activeTab, setActiveTab] = useState<'renew' | 'new' | 'pt'>('pt');
-  const [selectedPkg, setSelectedPkg] = useState<undefined | { 
-    id: string; 
-    name: string; 
+  const [selectedPkg, setSelectedPkg] = useState<undefined | {
+    id: string;
+    name: string;
     amount: number;
     type?: string;
     membershipType?: string;
@@ -46,6 +47,28 @@ export function MemberPayments() {
     ptSessions?: number;
   }>(undefined);
   const [openModal, setOpenModal] = useState(false);
+
+  // socket to close modal when completed payment success momo
+  useEffect(() => {
+    if (!memberId) return;
+    const token = localStorage.getItem('accessToken') || undefined;
+    const socket = socketService.connect(token);
+
+    const invalidate = () => {
+      queryClient.invalidateQueries({ queryKey: ['payments', 'member', memberId] });
+      queryClient.invalidateQueries({ queryKey: ['subscriptions', 'member', memberId] });
+    };
+
+    socket.on('payment_created', invalidate);
+    socket.on('payment_completed', invalidate);
+    socket.on('subscription_payment_created', invalidate);
+
+    return () => {
+      socket.off('payment_created', invalidate);
+      socket.off('payment_completed', invalidate);
+      socket.off('subscription_payment_created', invalidate);
+    };
+  }, [memberId, queryClient]);
 
   // Use reusable hook for table row click
   const {
@@ -87,20 +110,20 @@ export function MemberPayments() {
   // Process payments data with package names
   const memberPayments = useMemo(() => {
     if (!paymentsResponse?.data) return [];
-    
+
     return (paymentsResponse.data || [])
       .map((payment: any) => {
         // Find subscription from payment.subscriptionId
-        const subscription = subscriptions.find((sub: any) => 
+        const subscription = subscriptions.find((sub: any) =>
           (sub._id === payment.subscriptionId) || (sub.id === payment.subscriptionId)
         );
-        
+
         // Find package from subscription.packageId
         let packageName = 'Gói tập'; // Default fallback
         if (subscription) {
           const packageIdValue = subscription.packageId;
           let packageId: string | undefined;
-          
+
           if (packageIdValue && packageIdValue !== null) {
             if (typeof packageIdValue === 'object') {
               packageId = (packageIdValue as any)._id;
@@ -111,10 +134,10 @@ export function MemberPayments() {
             } else if (typeof packageIdValue === 'string') {
               packageId = packageIdValue;
             }
-            
+
             // Try to find package by ID if we haven't found the name yet
             if ((!packageName || packageName === 'Gói tập') && packageId) {
-              const pkg = packages.find((p: any) => 
+              const pkg = packages.find((p: any) =>
                 (p._id === packageId) || (p.id === packageId)
               );
               if (pkg?.name) {
@@ -122,7 +145,7 @@ export function MemberPayments() {
               }
             }
           }
-          
+
           // Final fallback: use subscription type + membership type
           if (!packageName || packageName === 'Gói tập') {
             const membershipType = subscription.membershipType;
@@ -131,7 +154,7 @@ export function MemberPayments() {
             }
           }
         }
-        
+
         return {
           ...payment,
           id: payment._id,
@@ -164,18 +187,18 @@ export function MemberPayments() {
   const getStatusColor = (status: string) => {
     const statusLower = status?.toLowerCase() || '';
     if (statusLower === 'completed' || statusLower === 'success') {
-        return 'bg-green-100 text-green-800';
+      return 'bg-green-100 text-green-800';
     }
     if (statusLower === 'pending' || statusLower === 'waiting') {
-        return 'bg-yellow-100 text-yellow-800';
+      return 'bg-yellow-100 text-yellow-800';
     }
     if (statusLower === 'failed' || statusLower === 'error') {
-        return 'bg-red-100 text-red-800';
+      return 'bg-red-100 text-red-800';
     }
     if (statusLower === 'refunded') {
-        return 'bg-blue-100 text-blue-800';
+      return 'bg-blue-100 text-blue-800';
     }
-        return 'bg-gray-100 text-gray-800';
+    return 'bg-gray-100 text-gray-800';
   };
 
   const getStatusIcon = (status: string) => {
@@ -264,7 +287,7 @@ export function MemberPayments() {
         return status === 'completed' || status === 'success';
       })
       .reduce((sum, p) => sum + (p.amount || 0), 0);
-    
+
     const totalTransactions = memberPayments.length;
     const completedTransactions = memberPayments.filter(p => {
       const status = (p.payment_status || '').toLowerCase();
@@ -274,7 +297,7 @@ export function MemberPayments() {
       const status = (p.payment_status || '').toLowerCase();
       return status === 'pending' || status === 'waiting';
     }).length;
-    
+
     const methodStats = memberPayments.reduce((acc, payment) => {
       const status = (payment.payment_status || '').toLowerCase();
       if (status === 'completed' || status === 'success') {
@@ -327,9 +350,9 @@ export function MemberPayments() {
 
   // Select a renew option but do not open modal yet
   const handleSelectRenewPackage = (id: string, name: string, amount: number, pkg?: any) => {
-    setSelectedPkg({ 
-      id, 
-      name, 
+    setSelectedPkg({
+      id,
+      name,
       amount,
       type: pkg?.type || 'Membership',
       membershipType: pkg?.membership_type || pkg?.membershipType || 'Basic',
@@ -349,7 +372,6 @@ export function MemberPayments() {
       </div>
     );
   }
-
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Top tabs like design */}
@@ -359,7 +381,7 @@ export function MemberPayments() {
           className={`flex-1 h-11 rounded-lg justify-center text-base sm:text-sm ${activeTab === 'renew' ? 'bg-blue-900 hover:bg-blue-900/90 text-white' : 'text-blue-900 border-blue-200'}`}
           onClick={() => setActiveTab('renew')}
         >
-          <RefreshCw className="h-4 w-4 mr-2" /> 
+          <RefreshCw className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">Gia hạn gói tập</span>
           <span className="sm:hidden">Gia hạn</span>
         </Button>
@@ -368,7 +390,7 @@ export function MemberPayments() {
           className={`flex-1 h-11 rounded-lg justify-center text-base sm:text-sm ${activeTab === 'new' ? 'bg-blue-900 hover:bg-blue-900/90 text-white' : 'text-blue-900 border-blue-200'}`}
           onClick={() => setActiveTab('new')}
         >
-          <Plus className="h-4 w-4 mr-2" /> 
+          <Plus className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">Đăng ký gói mới</span>
           <span className="sm:hidden">Đăng ký mới</span>
         </Button>
@@ -377,7 +399,7 @@ export function MemberPayments() {
           className={`flex-1 h-11 rounded-lg justify-center text-base sm:text-sm ${activeTab === 'pt' ? 'bg-blue-900 hover:bg-blue-900/90 text-white' : 'text-blue-900 border-blue-200'}`}
           onClick={() => setActiveTab('pt')}
         >
-          <Dumbbell className="h-4 w-4 mr-2" /> 
+          <Dumbbell className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">Mua buổi tập PT</span>
           <span className="sm:hidden">Mua PT</span>
         </Button>
@@ -401,38 +423,38 @@ export function MemberPayments() {
 
       {/* Tab contents */}
       {activeTab === 'pt' && (
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Dumbbell className="h-5 w-5 text-blue-900" />
-          <h2 className="text-lg sm:text-xl font-semibold text-blue-900">Mua buổi tập PT</h2>
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Dumbbell className="h-5 w-5 text-blue-900" />
+            <h2 className="text-lg sm:text-xl font-semibold text-blue-900">Mua buổi tập PT</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            {ptPackages.slice(0, 3).map((opt) => (
+              <Card
+                key={opt.id}
+                className={`border-2 cursor-pointer select-none ${selectedPkg?.id === opt.id ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}`}
+                onClick={() => handleSelectRenewPackage(opt.id, opt.name, opt.price, opt)}
+              >
+                <CardContent className="p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-2">
+                    {opt.name}
+                    <span className="block sm:inline sm:ml-3 text-green-600 font-bold text-base sm:text-sm mt-1 sm:mt-0">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(opt.price).replace('₫', 'VNĐ')}
+                    </span>
+                  </h3>
+                  <div className="space-y-2 text-base sm:text-sm text-gray-700">
+                    <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-blue-700 flex-shrink-0" /> {opt.pt_session_duration || 90} phút/buổi</div>
+                    <div className="flex items-center gap-2"><Users className="h-4 w-4 text-blue-700 flex-shrink-0" /> 1-1 với PT</div>
+                    <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-blue-700 flex-shrink-0" /> Theo dõi tiến độ</div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={() => setOpenModal(true)} disabled={!selectedPkg} className="text-base sm:text-sm w-full sm:w-auto">Thanh toán</Button>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          {ptPackages.slice(0,3).map((opt) => (
-            <Card
-              key={opt.id}
-              className={`border-2 cursor-pointer select-none ${selectedPkg?.id === opt.id ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}`}
-              onClick={() => handleSelectRenewPackage(opt.id, opt.name, opt.price, opt)}
-            >
-              <CardContent className="p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-2">
-                  {opt.name}
-                  <span className="block sm:inline sm:ml-3 text-green-600 font-bold text-base sm:text-sm mt-1 sm:mt-0">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(opt.price).replace('₫','VNĐ')}
-                  </span>
-                </h3>
-                <div className="space-y-2 text-base sm:text-sm text-gray-700">
-                  <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-blue-700 flex-shrink-0" /> {opt.pt_session_duration || 90} phút/buổi</div>
-                  <div className="flex items-center gap-2"><Users className="h-4 w-4 text-blue-700 flex-shrink-0" /> 1-1 với PT</div>
-                  <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-blue-700 flex-shrink-0" /> Theo dõi tiến độ</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-4 flex justify-end">
-          <Button onClick={() => setOpenModal(true)} disabled={!selectedPkg} className="text-base sm:text-sm w-full sm:w-auto">Thanh toán</Button>
-        </div>
-      </div>
       )}
 
       {/* Payment methods section removed as requested */}
@@ -509,7 +531,7 @@ export function MemberPayments() {
           <div className="mt-4 flex justify-end">
             <Button onClick={() => setOpenModal(true)} disabled={!selectedPkg} className="text-base sm:text-sm w-full sm:w-auto">Thanh toán</Button>
           </div>
-      </div>
+        </div>
       )}
 
       {/* Payment methods stats section removed as requested */}
@@ -545,7 +567,7 @@ export function MemberPayments() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
-          <div 
+          <div
             className="overflow-x-auto"
             style={{
               scrollbarWidth: 'thin',
@@ -629,10 +651,10 @@ export function MemberPayments() {
                         <td className="px-2 sm:px-4 py-3">
                           <span className={`px-2 sm:px-3 py-1 rounded-full text-xs ${getStatusColor(p.payment_status)}`}>
                             {p.payment_status === 'completed' ? 'Hoàn thành' :
-                             p.payment_status === 'pending' ? 'Đang chờ' :
-                             p.payment_status === 'failed' ? 'Thất bại' :
-                             p.payment_status === 'refunded' ? 'Đã hoàn tiền' :
-                             p.payment_status || 'N/A'}
+                              p.payment_status === 'pending' ? 'Đang chờ' :
+                                p.payment_status === 'failed' ? 'Thất bại' :
+                                  p.payment_status === 'refunded' ? 'Đã hoàn tiền' :
+                                    p.payment_status || 'N/A'}
                           </span>
                         </td>
                         <td className="px-2 sm:px-4 py-3">
@@ -679,10 +701,10 @@ export function MemberPayments() {
                   .reduce((acc, payment) => {
                     const paymentDate = payment.payment_date || payment.createdAt;
                     if (!paymentDate) return acc;
-                    
-                    const month = new Date(paymentDate).toLocaleDateString('vi-VN', { 
-                      year: 'numeric', 
-                      month: 'long' 
+
+                    const month = new Date(paymentDate).toLocaleDateString('vi-VN', {
+                      year: 'numeric',
+                      month: 'long'
                     });
                     acc[month] = (acc[month] || 0) + (payment.amount || 0);
                     return acc;
@@ -726,8 +748,8 @@ export function MemberPayments() {
                         <span className="text-base sm:text-sm text-gray-600">{count as number} lần</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full" 
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
                           style={{ width: `${percentage}%` }}
                         ></div>
                       </div>

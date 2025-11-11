@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
-import { 
-  X, 
-  Copy, 
+import {
+  X,
+  Copy,
   Download,
   CreditCard,
   Calendar,
@@ -23,7 +23,8 @@ import { Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { paymentApi } from '../api/payment.api';
 import QRCode from 'qrcode';
-
+import socketService from '../../../services/socket';
+import { useAuth } from '../../../contexts/AuthContext';
 interface PaymentDetail {
   id: string;
   invoice_number?: string;
@@ -48,7 +49,7 @@ export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: 
   const queryClient = useQueryClient();
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
-
+  const { user } = useAuth();
   // Fetch full payment details from API
   const { data: paymentResponse, isLoading } = useQuery({
     queryKey: ['payment', paymentId],
@@ -58,7 +59,7 @@ export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: 
   });
 
   const payment: any = paymentResponse?.data || paymentDetail;
-  
+
   // Check if payment is pending and MoMo payment
   const isPendingPayment = (payment?.payment_status || payment?.paymentStatus || '').toLowerCase() === 'pending';
   const isMomoPayment = (payment?.payment_method || payment?.paymentMethod || '').toLowerCase() === 'momo';
@@ -85,6 +86,26 @@ export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: 
       setQrCodeDataUrl('');
     }
   }, [qrCodeUrl, shouldShowQR]);
+  // socket to close modal when completed payment success momo
+  useEffect(() => {
+    if (!open || !paymentId) return;
+    const token = localStorage.getItem('accessToken') || undefined;
+    const socket = socketService.connect(token);
+
+    const handlePaymentCompleted = (data: any) => {
+      if (data?._id === paymentId) {
+        toast.success('Thanh toán MoMo thành công!');
+        onClose();
+        queryClient.invalidateQueries({ queryKey: ['payments', 'member', payment.memberId || user?.id] });
+      }
+    };
+
+    socket.on('payment_completed', handlePaymentCompleted);
+
+    return () => {
+      socket.off('payment_completed', handlePaymentCompleted);
+    };
+  }, [open, paymentId, onClose, queryClient]);
 
   // Regenerate QR mutation
   const regenerateQRMutation = useMutation({
@@ -298,9 +319,9 @@ export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: 
                   <div className="flex flex-col items-center gap-4">
                     <div className="bg-white p-4 rounded-lg shadow-sm">
                       {qrCodeDataUrl ? (
-                        <img 
-                          src={qrCodeDataUrl} 
-                          alt="QR Code thanh toán" 
+                        <img
+                          src={qrCodeDataUrl}
+                          alt="QR Code thanh toán"
                           className="w-64 h-64 object-contain"
                         />
                       ) : (
@@ -402,26 +423,26 @@ export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: 
               {/* Amount Details */}
               <div className="border-t pt-4 space-y-3">
                 <h4 className="font-semibold text-gray-900">Chi tiết thanh toán</h4>
-                
-                {(payment.original_amount || payment.originalAmount) && 
-                 payment.original_amount !== payment.amount && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Giá gốc:</span>
-                    <span className="line-through text-gray-500">
-                      {formatPrice(payment.original_amount || payment.originalAmount || 0)}
-                    </span>
-                  </div>
-                )}
 
-                {(payment.original_amount || payment.originalAmount) && 
-                 payment.original_amount !== payment.amount && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Giảm giá:</span>
-                    <span className="text-green-600 font-medium">
-                      -{formatPrice((payment.original_amount || payment.originalAmount || 0) - (payment.amount || 0))}
-                    </span>
-                  </div>
-                )}
+                {(payment.original_amount || payment.originalAmount) &&
+                  payment.original_amount !== payment.amount && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Giá gốc:</span>
+                      <span className="line-through text-gray-500">
+                        {formatPrice(payment.original_amount || payment.originalAmount || 0)}
+                      </span>
+                    </div>
+                  )}
+
+                {(payment.original_amount || payment.originalAmount) &&
+                  payment.original_amount !== payment.amount && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Giảm giá:</span>
+                      <span className="text-green-600 font-medium">
+                        -{formatPrice((payment.original_amount || payment.originalAmount || 0) - (payment.amount || 0))}
+                      </span>
+                    </div>
+                  )}
 
                 <div className="flex justify-between items-center pt-2 border-t">
                   <span className="text-lg font-semibold text-gray-900">Tổng thanh toán:</span>

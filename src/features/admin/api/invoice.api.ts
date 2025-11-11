@@ -73,8 +73,8 @@ export const invoiceApi = {
     return response.data;
   },
 
-  // createSubscriptionWithPayment: async (data: CreateSubscriptionWithPaymentData): Promise<Subscription> => {
-  //   const response = await apiClient.post(API_ENDPOINTS.INVOICE.CREATE_SUBSCRIPTION_WITH_PAYMENT, data);
-  //   return response.data.data;
-  // },
+  createSubscriptionWithPayment: async (data: any): Promise<any> => {
+    const response = await apiClient.post(API_ENDPOINTS.SUBSCRIPTION.CREATE_SUBSCRIPTION_WITH_PAYMENT, data);
+    return response.data.data;
+  },
 };
