@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-
 import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
-import { AuthPage, RegistrationSuccessPage } from './features/auth';
+import { AuthPage, RegistrationSuccessPage, ForgotPasswordPage } from './features/auth';
 import { MemberLayout } from './features/member/components/MemberLayout';
 import { MemberDashboard } from './features/member/pages/MemberDashboard';
 import { MemberProfile } from './features/member/pages/MemberProfile';
@@ -38,6 +38,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/register" element={<AuthPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/registration-success" element={<RegistrationSuccessPage />} />
 
           {/* Protected Routes */}

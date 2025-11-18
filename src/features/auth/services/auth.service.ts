@@ -103,6 +103,58 @@ const authService = {
             };
         }
     },
+
+    forgotPassword: async (email: string): Promise<any> => {
+        try {
+            const response = await apiClient.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+            return response.data;
+        } catch (error: any) {
+            return {
+                success: false,
+                message: error?.response?.data?.message || error?.message || 'Gửi OTP thất bại',
+                error: error?.response?.data || error
+            };
+        }
+    },
+
+    verifyOtp: async (email: string, otp: string): Promise<any> => {
+        try {
+            const response = await apiClient.post(API_ENDPOINTS.AUTH.VERIFY_OTP, { email, otp });
+            return response.data;
+        } catch (error: any) {
+            return {
+                success: false,
+                message: error?.response?.data?.message || error?.message || 'Xác thực OTP thất bại',
+                error: error?.response?.data || error
+            };
+        }
+    },
+
+    resendOtp: async (email: string): Promise<any> => {
+        try {
+            const response = await apiClient.post(API_ENDPOINTS.AUTH.RESEND_OTP, { email });
+            return response.data;
+        } catch (error: any) {
+            return {
+                success: false,
+                message: error?.response?.data?.message || error?.message || 'Gửi lại OTP thất bại',
+                error: error?.response?.data || error
+            };
+        }
+    },
+
+    resetPassword: async (email: string, otp: string, newPassword: string): Promise<any> => {
+        try {
+            const response = await apiClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, { email, otp, newPassword });
+            return response.data;
+        } catch (error: any) {
+            return {
+                success: false,
+                message: error?.response?.data?.message || error?.message || 'Đặt lại mật khẩu thất bại',
+                error: error?.response?.data || error
+            };
+        }
+    },
 }
 
 export default authService;
