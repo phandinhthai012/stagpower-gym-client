@@ -24,7 +24,9 @@ import {
   RefreshCcw,
   CheckCircle,
   CreditCard as CreditCardIcon,
-  Loader2
+  Loader2,
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 import { 
   useCheckInMember,
@@ -42,6 +44,7 @@ export function MemberDashboard() {
   const {
     qrCodeDataUrl,
     isLoadingQR,
+    qrError,
     checkInHistory,
     isLoadingHistory
   } = useCheckInMember(memberId || '');
@@ -176,6 +179,26 @@ export function MemberDashboard() {
               <div className="w-full max-w-3xl h-64 sm:h-72 md:h-80 lg:h-96 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center">
                 {isLoadingQR ? (
                   <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                ) : qrError ? (
+                  <div className="w-full max-w-md p-6 sm:p-8 text-center">
+                    <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                      <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10 text-orange-600" />
+                    </div>
+                    <h4 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                      Gói tập của bạn đã hết hạn
+                    </h4>
+                    <p className="text-sm sm:text-base text-gray-600 mb-4">
+                      {(qrError as any)?.response?.data?.message || 
+                       (qrError as any)?.message || 
+                       'Bạn chưa có gói tập hoặc gói tập đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng dịch vụ.'}
+                    </p>
+                    <Link to="/member/payments">
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                        <Package className="w-4 h-4 mr-2" />
+                        Gia hạn gói tập ngay
+                      </Button>
+                    </Link>
+                  </div>
                 ) : qrCodeDataUrl ? (
                   <img 
                     src={qrCodeDataUrl} 
@@ -189,9 +212,11 @@ export function MemberDashboard() {
                 )}
               </div>
             </div>
-            <p className="text-center text-base sm:text-sm text-gray-600 mt-3 sm:mt-4">
-              {qrCodeDataUrl ? 'Hiển thị mã QR này tại cửa để check-in' : 'Không thể tạo QR code. Vui lòng thử lại.'}
-            </p>
+            {!qrError && (
+              <p className="text-center text-base sm:text-sm text-gray-600 mt-3 sm:mt-4">
+                {qrCodeDataUrl ? 'Hiển thị mã QR này tại cửa để check-in' : 'Không thể tạo QR code. Vui lòng thử lại.'}
+              </p>
+            )}
             </div>
 
           {/* Quick Actions (moved below QR) */}

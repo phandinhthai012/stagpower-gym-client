@@ -11,11 +11,14 @@ import {
   Activity,
   AlertTriangle,
   RefreshCw,
-  Loader2
+  Loader2,
+  Package,
+  AlertCircle
 } from 'lucide-react';
 import { formatDateTime } from '../../../lib/date-utils';
 import { useCheckInMember } from '../hooks';
 import { LoadingSpinner } from '../../../components/common/LoadingSpinner';
+import { Link } from 'react-router-dom';
 
 export function MemberCheckin() {
   const { user } = useAuth();
@@ -108,44 +111,53 @@ export function MemberCheckin() {
           <CardContent className="p-4 md:p-8">
             <div className="flex justify-center">
               <div className="w-full max-w-2xl rounded-2xl border-2 border-dashed border-gray-300 p-4 md:p-8 text-center">
-                <div className="mx-auto mb-4 w-40 h-40 md:w-64 md:h-64 bg-white rounded-xl shadow flex items-center justify-center">
-                  {/* QR Code Display */}
-                  <div className="mx-auto mb-4 w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 xl:w-80 xl:h-80 rounded-xl flex items-center justify-center">
-                    {qrError ? (
-                      <div className="text-center p-4">
-                        <AlertTriangle className="w-12 h-12 mx-auto text-red-500 mb-2" />
-                        <p className="text-sm text-red-600">
-                          {(qrError as any)?.response?.data?.message || 'Không thể tạo QR Code'}
-                        </p>
+                {/* QR Code Display */}
+                <div className="mx-auto mb-4 w-full max-w-md flex items-center justify-center min-h-[300px]">
+                  {qrError ? (
+                    <div className="text-center w-full p-6">
+                      <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                        <AlertTriangle className="w-8 h-8 sm:w-10 sm:h-10 text-orange-600" />
+                      </div>
+                      <h4 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                        Gói tập của bạn đã hết hạn
+                      </h4>
+                      <p className="text-sm sm:text-base text-gray-600 mb-4 px-4">
+                        {(qrError as any)?.response?.data?.message || 
+                         (qrError as any)?.message || 
+                         'Bạn chưa có gói tập hoặc gói tập đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng dịch vụ.'}
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Link to="/member/payments">
+                          <Button className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto">
+                            <Package className="w-4 h-4 mr-2" />
+                            Gia hạn gói tập ngay
+                          </Button>
+                        </Link>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="mt-3"
                           onClick={handleRefreshQR}
+                          className="w-full sm:w-auto"
                         >
                           <RefreshCw className="w-4 h-4 mr-2" />
                           Thử lại
                         </Button>
                       </div>
-                    ) : qrCodeDataUrl ? (
+                    </div>
+                  ) : qrCodeDataUrl ? (
+                    <div className="w-40 h-40 md:w-64 md:h-64 bg-white rounded-xl shadow flex items-center justify-center p-4">
                       <img
                         src={qrCodeDataUrl.toString()}
                         alt="QR Code Check-in"
                         className="w-full h-full object-contain"
-                        style={{
-                          maxWidth: '100%',
-                          maxHeight: '100%',
-                          width: 'auto',
-                          height: 'auto'
-                        }}
                       />
-                    ) : (
-                      <div className="text-center">
-                        <Loader2 className="w-12 h-12 mx-auto text-blue-600 animate-spin mb-2" />
-                        <p className="text-sm text-gray-600">Đang tạo QR Code...</p>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <Loader2 className="w-12 h-12 mx-auto text-blue-600 animate-spin mb-2" />
+                      <p className="text-sm text-gray-600">Đang tạo QR Code...</p>
+                    </div>
+                  )}
                 </div>
                 {/* Member Info */}
                 <div className="flex flex-col items-center gap-1">
