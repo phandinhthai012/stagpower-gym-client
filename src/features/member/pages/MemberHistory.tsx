@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { formatDate } from '../../../lib/date-utils';
 import { useCheckInMember, useMySchedules } from '../hooks';
+import { exportWorkoutHistoryToExcel } from '../../../lib/excel-utils';
+import { toast } from 'sonner';
 
 export function MemberHistory() {
   const { user } = useAuth();
@@ -96,6 +98,20 @@ export function MemberHistory() {
   // Loading state
   const isLoading = isLoadingHistory || isLoadingSchedules;
 
+  const handleExportReport = () => {
+    try {
+      exportWorkoutHistoryToExcel(
+        checkIns,
+        schedules,
+        user?.fullName || 'KhachHang'
+      );
+      toast.success('Đã xuất báo cáo lịch sử tập luyện thành công');
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      toast.error('Có lỗi xảy ra khi xuất báo cáo');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-4 sm:p-6 flex items-center justify-center h-96">
@@ -115,7 +131,7 @@ export function MemberHistory() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Lịch sử tập luyện</h1>
           <p className="text-base sm:text-sm text-gray-600 mt-1">Theo dõi tiến độ và lịch sử tập luyện</p>
         </div>
-        <Button variant="outline" className="w-full sm:w-auto text-base sm:text-sm">
+        <Button variant="outline" className="w-full sm:w-auto text-base sm:text-sm" onClick={handleExportReport}>
           <Download className="h-4 w-4 mr-2" />
           Xuất báo cáo
         </Button>

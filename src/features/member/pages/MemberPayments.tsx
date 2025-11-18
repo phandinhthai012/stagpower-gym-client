@@ -31,6 +31,8 @@ import { usePaymentsByMemberId, usePackages, useSubscriptionsByMemberId } from '
 import { useTableRowClick } from '../../../hooks/useTableRowClick';
 import { ClickableTableRow, TableActions } from '../../../components/ui';
 import socketService from '../../../services/socket';
+import { generateInvoicePDF } from '../../../lib/pdf-utils';
+import { toast } from 'sonner';
 
 export function MemberPayments() {
   const { user } = useAuth();
@@ -276,6 +278,33 @@ export function MemberPayments() {
         return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">Mua PT</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">Khác</Badge>;
+    }
+  };
+
+  const handleExportPDF = async (payment: any) => {
+    try {
+      await generateInvoicePDF({
+        invoiceNumber: payment.invoice_number || payment.id || payment._id || '',
+        transactionId: payment.transaction_id,
+        paymentDate: payment.payment_date || payment.createdAt || new Date().toISOString(),
+        paymentStatus: payment.payment_status || 'pending',
+        paymentMethod: payment.payment_method || 'cash',
+        paymentType: payment.payment_type || payment.paymentType,
+        packageName: payment.package_name || 'Gói tập',
+        amount: payment.amount || 0,
+        originalAmount: payment.original_amount,
+        discountAmount: payment.original_amount && payment.amount 
+          ? (payment.original_amount - payment.amount) 
+          : undefined,
+        memberName: user?.fullName || 'Khách hàng',
+        memberEmail: user?.email,
+        memberPhone: user?.phone,
+        notes: payment.notes,
+      });
+      toast.success('Đã tạo hóa đơn PDF thành công');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Có lỗi xảy ra khi tạo PDF');
     }
   };
 
@@ -662,8 +691,18 @@ export function MemberPayments() {
                             actions={[
                               {
                                 label: 'Chi tiết',
-                                icon: <Download className="h-3 w-3 mr-1" />,
+                                icon: <Receipt className="h-3 w-3 mr-1" />,
                                 onClick: handleButtonClick(p.id || p._id, p),
+                                variant: 'outline',
+                                size: 'sm',
+                              },
+                              {
+                                label: 'Tải PDF',
+                                icon: <Download className="h-3 w-3 mr-1" />,
+                                onClick: (e) => {
+                                  e.stopPropagation();
+                                  handleExportPDF(p);
+                                },
                                 variant: 'outline',
                                 size: 'sm',
                               },

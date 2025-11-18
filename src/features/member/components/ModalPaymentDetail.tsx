@@ -25,6 +25,7 @@ import { paymentApi } from '../api/payment.api';
 import QRCode from 'qrcode';
 import socketService from '../../../services/socket';
 import { useAuth } from '../../../contexts/AuthContext';
+import { generateInvoicePDF } from '../../../lib/pdf-utils';
 interface PaymentDetail {
   id: string;
   invoice_number?: string;
@@ -208,6 +209,40 @@ export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`Đã sao chép ${label}`);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!payment) {
+      toast.error('Không có thông tin thanh toán để xuất PDF');
+      return;
+    }
+
+    try {
+      await generateInvoicePDF({
+        invoiceNumber: payment.invoice_number || payment.invoiceNumber || payment.id || payment._id || '',
+        transactionId: payment.transaction_id || payment.transactionId,
+        paymentDate: payment.payment_date || payment.paymentDate || payment.createdAt || new Date().toISOString(),
+        paymentStatus: payment.payment_status || payment.paymentStatus || 'pending',
+        paymentMethod: payment.payment_method || payment.paymentMethod || 'cash',
+        paymentType: payment.paymentType || (payment as any).payment_type,
+        packageName: (payment as any).package_name || 'Gói tập',
+        amount: payment.amount || 0,
+        originalAmount: payment.original_amount || payment.originalAmount,
+        discountAmount: payment.original_amount && payment.amount 
+          ? (payment.original_amount - payment.amount) 
+          : payment.originalAmount && payment.amount
+          ? (payment.originalAmount - payment.amount)
+          : undefined,
+        memberName: user?.fullName || 'Khách hàng',
+        memberEmail: user?.email,
+        memberPhone: user?.phone,
+        notes: payment.notes || (payment as any).note,
+      });
+      toast.success('Đã tạo hóa đơn PDF thành công');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Có lỗi xảy ra khi tạo PDF');
+    }
   };
 
   if (!open) return null;
@@ -462,7 +497,7 @@ export function ModalPaymentDetail({ open, onClose, paymentId, paymentDetail }: 
 
               {/* Actions */}
               <div className="flex gap-2 pt-4 border-t">
-                <Button variant="outline" className="flex-1">
+                <Button variant="outline" className="flex-1" onClick={handleDownloadPDF}>
                   <Download className="h-4 w-4 mr-2" />
                   Tải hóa đơn PDF
                 </Button>
