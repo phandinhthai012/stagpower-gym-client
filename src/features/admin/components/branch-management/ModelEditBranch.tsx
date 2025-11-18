@@ -7,6 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Edit, X } from 'lucide-react';
 import { Branch } from "../../api/branch.api";
 import { useScrollLock } from '../../../../hooks/useScrollLock';
+import { useQuery } from '@tanstack/react-query';
+import { userApi } from '../../../member/api/user.api';
+import { LoadingSpinner } from '../../../../components/common';
 
 interface ModalEditBranchProps {
     isOpen: boolean;
@@ -43,7 +46,21 @@ export const ModelEditBranch = ({ isOpen, branchData, onClose, onSubmit }: Modal
         createdAt: '',
         updatedAt: ''
     });
+    const [selectedAdminId, setSelectedAdminId] = useState<string>('none');
     const [errors, setErrors] = useState<ValidationErrors>({});
+
+    // Fetch all admins
+    const { data: allAdmins = [], isLoading: isLoadingAdmins } = useQuery({
+        queryKey: ['admins'],
+        queryFn: userApi.getAllAdmins,
+        enabled: isOpen,
+    });
+
+    // Get current admin if exists
+    const currentAdmin = branchData?.adminId && typeof branchData.adminId === 'object' && branchData.adminId !== null 
+        ? branchData.adminId 
+        : null;
+    const currentAdminId = currentAdmin?._id || (typeof branchData?.adminId === 'string' ? branchData.adminId : '');
 
     const convertTo24Hour = (time12: string): string => {
         if (!time12) return '';
@@ -89,6 +106,13 @@ export const ModelEditBranch = ({ isOpen, branchData, onClose, onSubmit }: Modal
                 status: branchData.status || 'Active'
             };
             setEditBranch(newEditBranch);
+            
+            // Set current admin ID
+            const adminId = branchData.adminId && typeof branchData.adminId === 'object' && branchData.adminId !== null
+                ? branchData.adminId._id 
+                : (typeof branchData.adminId === 'string' ? branchData.adminId : 'none');
+            setSelectedAdminId(adminId || 'none');
+            
             setErrors({});
         } else {
             console.log("❌ useEffect conditions not met - isOpen:", isOpen, "branchData exists:", !!branchData);
@@ -219,6 +243,7 @@ export const ModelEditBranch = ({ isOpen, branchData, onClose, onSubmit }: Modal
             openTime: convertTo12Hour(editBranch.openTime),
             closeTime: convertTo12Hour(editBranch.closeTime),
             status: editBranch.status,
+            adminId: selectedAdminId === 'none' ? null : selectedAdminId, // Send null if "none" is selected
         }
         console.log(data);
         onSubmit?.(data);
@@ -227,6 +252,7 @@ export const ModelEditBranch = ({ isOpen, branchData, onClose, onSubmit }: Modal
 
     const handleClose = () => {
         setErrors({});
+        setSelectedAdminId('none');
         setEditBranch({
             _id: '',
             name: '',
@@ -339,11 +365,6 @@ export const ModelEditBranch = ({ isOpen, branchData, onClose, onSubmit }: Modal
                             <div>
                                 <Label htmlFor="branchOpenTime">
                                     Giờ mở cửa
-                                    {/* {editBranch.openTime && (
-                                        <span className="text-xs text-gray-500 ml-2">
-                                            ({convertTo24Hour(editBranch.openTime)})
-                                        </span>
-                                    )} */}
                                 </Label>
                                 <Input
                                     id="branchOpenTime"
@@ -357,11 +378,6 @@ export const ModelEditBranch = ({ isOpen, branchData, onClose, onSubmit }: Modal
                             <div>
                                 <Label htmlFor="branchCloseTime">
                                     Giờ đóng cửa
-                                    {/* {editBranch.closeTime && (
-                                        <span className="text-xs text-gray-500 ml-2">
-                                            ({convertTo24Hour(editBranch.closeTime)})
-                                        </span>
-                                    )} */}
                                 </Label>
                                 <Input
                                     id="branchCloseTime"
@@ -372,6 +388,43 @@ export const ModelEditBranch = ({ isOpen, branchData, onClose, onSubmit }: Modal
                                 />
                                 {errors.closeTime && <p className="text-xs text-red-500">{errors.closeTime}</p>}
                             </div>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="branchAdmin">Admin quản lý</Label>
+                            {isLoadingAdmins ? (
+                                <div className="flex items-center gap-2 p-2">
+                                    <LoadingSpinner size="sm" />
+                                    <span className="text-sm text-gray-500">Đang tải danh sách admin...</span>
+                                </div>
+                            ) : (
+                                <Select
+                                    value={selectedAdminId}
+                                    onValueChange={(value) => setSelectedAdminId(value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Chọn admin quản lý (tùy chọn)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">Không có admin</SelectItem>
+                                        {allAdmins.map((admin) => {
+                                            const isCurrentAdmin = branchData?.adminId && 
+                                                typeof branchData.adminId === 'object' && 
+                                                branchData.adminId !== null &&
+                                                branchData.adminId._id === admin._id;
+                                            return (
+                                                <SelectItem key={admin._id} value={admin._id}>
+                                                    {admin.fullName} {admin.email ? `(${admin.email})` : ''}
+                                                    {isCurrentAdmin && ' (Hiện tại)'}
+                                                </SelectItem>
+                                            );
+                                        })}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                                Chọn admin để quản lý chi nhánh này. Một admin chỉ có thể quản lý một chi nhánh.
+                            </p>
                         </div>
 
                         <div className="flex justify-end gap-4 pt-4 border-t">

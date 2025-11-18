@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AdminSidebar } from './AdminSidebar';
@@ -16,6 +16,8 @@ import {
   AvatarFallback,
 } from '../../../components/ui';
 import LogoStagPower from '../../../assets/Logo_StagPower_4x.png';
+import { useQuery } from '@tanstack/react-query';
+import { branchApi } from '../api/branch.api';
 
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Always open on desktop
@@ -65,11 +67,56 @@ export function AdminLayout() {
   };
 
   const getUserRoleDisplayName = (user: any) => {
-    return user?.role === 'Admin' ? 'Quản trị viên' : 'Người dùng';
+    if (!user) return 'Người dùng';
+    const role = user.role?.toLowerCase() || user.role;
+    switch (role) {
+      case 'admin':
+        return 'Quản trị viên';
+      case 'staff':
+        return 'Nhân viên';
+      case 'trainer':
+        return 'Huấn luyện viên';
+      case 'member':
+        return 'Hội viên';
+      default:
+        return 'Người dùng';
+    }
   };
+
+  // Get branch ID from user based on role
+  const getBranchId = (user: any): string | null => {
+    if (!user) return null;
+    const role = user.role?.toLowerCase() || user.role;
+    
+    if (role === 'admin' && user.adminInfo?.branchId) {
+      // Admin: branchId can be string or object
+      return typeof user.adminInfo.branchId === 'object' 
+        ? user.adminInfo.branchId._id 
+        : user.adminInfo.branchId;
+    }
+    
+    if ((role === 'staff' || role === 'trainer') && user.staffInfo?.brand_id) {
+      // Staff/Trainer: brand_id can be string or object
+      return typeof user.staffInfo.brand_id === 'object'
+        ? user.staffInfo.brand_id._id
+        : user.staffInfo.brand_id;
+    }
+    
+    return null;
+  };
+
+  const branchId = useMemo(() => getBranchId(user), [user]);
+
+  // Fetch branch details if branchId exists
+  const { data: branchData } = useQuery({
+    queryKey: ['branch', branchId],
+    queryFn: () => branchApi.getBranchById(branchId!),
+    enabled: !!branchId,
+  });
 
   const userDisplayName = getUserDisplayName(user);
   const userRole = getUserRoleDisplayName(user);
+  const branchName = branchData?.name || (branchId ? 'Đang tải...' : null);
   const userInitials = userDisplayName
     .split(' ')
     .map((name: string) => name.charAt(0))
@@ -133,7 +180,9 @@ export function AdminLayout() {
             <img src={LogoStagPower} alt="StagPower" className="w-16 h-16 rounded-full object-cover hidden md:block" />
             <div>
               <span className="text-sm md:text-2xl font-semibold text-blue-900">StagPower</span>
-              <p className="text-xs md:text-sm text-gray-600">Admin Dashboard</p>
+              <p className="text-xs md:text-sm text-gray-600">
+                {user?.role === 'admin' ? 'Admin Dashboard' : 'Staff Dashboard'}
+              </p>
             </div>
           </div>
           
@@ -146,7 +195,10 @@ export function AdminLayout() {
           <div className="flex items-center justify-end gap-4">
             <span className="hidden md:flex items-center gap-2 text-gray-600 text-sm">
               <MapPin className="w-4 h-4 text-gray-500" />
-              {`Gò Vấp • ${formatVNTime(now)} • ${formatVNDate(now)}`}
+              {branchName 
+                ? `${branchName} • ${formatVNTime(now)} • ${formatVNDate(now)}`
+                : `${formatVNTime(now)} • ${formatVNDate(now)}`
+              }
             </span>
             
             {/* Notification */}

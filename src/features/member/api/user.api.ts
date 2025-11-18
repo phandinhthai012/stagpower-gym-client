@@ -169,4 +169,28 @@ export const userApi = {
     const response = await apiClient.get(API_ENDPOINTS.USER.GET_MEMBERS_WITH_ACTIVE_PT_SUBSCRIPTIONS);
     return response.data.data;
   },
+
+  // Lấy danh sách tất cả admins
+  getAllAdmins: async (): Promise<User[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.USER.GET_ALL_ADMINS);
+    return response.data.data;
+  },
+
+  // Lấy danh sách admins chưa được gán branch
+  getAdminsWithoutBranch: async (): Promise<User[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.USER.GET_ADMINS_WITHOUT_BRANCH);
+    return response.data.data;
+  },
+
+  // Lấy danh sách staffs theo branch ID
+  getStaffsByBranchId: async (branchId: string): Promise<User[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.USER.GET_STAFFS_BY_BRANCH_ID(branchId));
+    return response.data.data;
+  },
+
+  // Lấy danh sách staffs chưa được gán branch
+  getStaffsWithoutBranch: async (): Promise<User[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.USER.GET_STAFFS_WITHOUT_BRANCH);
+    return response.data.data;
+  },
 };

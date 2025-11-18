@@ -39,6 +39,10 @@ export const API_ENDPOINTS = {
 
        GET_MEMBERS_WITH_ACTIVE_SUBSCRIPTIONS: `${API_PREFIX}/user/members/active-subscriptions`,
        GET_MEMBERS_WITH_ACTIVE_PT_SUBSCRIPTIONS: `${API_PREFIX}/user/members/active-pt-subscriptions`,
+       GET_ALL_ADMINS: `${API_PREFIX}/user/admins`,
+       GET_ADMINS_WITHOUT_BRANCH: `${API_PREFIX}/user/admins/without-branch`,
+       GET_STAFFS_BY_BRANCH_ID: (branchId: string) => `${API_PREFIX}/user/staffs/branch/${branchId}`,
+       GET_STAFFS_WITHOUT_BRANCH: `${API_PREFIX}/user/staffs/without-branch`,
     },
     HEALTH_INFO: {
         GET_ALL_HEALTH_INFOS: `${API_PREFIX}/health-info`,

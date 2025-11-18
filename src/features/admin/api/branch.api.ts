@@ -7,7 +7,14 @@ export interface Branch {
   address: string;
   phone: string;
   email: string;
-  managerId: string;
+  managerId?: string;
+  adminId?: string | {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    role: string;
+  };
   status: 'Active' | 'Maintenance' | 'Closed';
   openTime: string;        // ✅ Thêm
   closeTime: string; 
@@ -21,7 +28,10 @@ export interface CreateBranchRequest {
   phone: string;
   email: string;
   managerId?: string;
+  adminId?: string;
   status?: 'Active' | 'Maintenance' | 'Closed';
+  openTime?: string;
+  closeTime?: string;
 }
 
 export interface UpdateBranchRequest {
@@ -30,7 +40,10 @@ export interface UpdateBranchRequest {
   phone?: string;
   email?: string;
   managerId?: string;
+  adminId?: string | null;
   status?: 'Active' | 'Maintenance' | 'Closed';
+  openTime?: string;
+  closeTime?: string;
 }
 
 // API functions

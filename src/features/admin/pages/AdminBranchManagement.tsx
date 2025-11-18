@@ -34,12 +34,16 @@ import { LoadingSpinner } from '../../../components/common';
 import { useBranches, useCreateBranch, useUpdateBranch, useChangeBranchStatus } from '../hooks';
 import { ModalCreateBranch } from '../components/branch-management/ModalCreateBranch';
 import { ModelEditBranch } from '../components/branch-management/ModelEditBranch';
+import { ModalBranchDetail } from '../components/branch-management/ModalBranchDetail';
+import { ModalBranchStaff } from '../components/branch-management/ModalBranchStaff';
 
 export function AdminBranchManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showStaffModal, setShowStaffModal] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<any>(null);
   const [newBranch, setNewBranch] = useState({
     name: '',
@@ -129,11 +133,18 @@ export function AdminBranchManagement() {
   };
 
   const handleViewBranchDetails = (branch: any) => {
-    alert(`Xem chi tiết chi nhánh: ${branch.name}`);
+    setSelectedBranch(branch);
+    setShowDetailModal(true);
+  };
+
+  const handleEditFromDetail = () => {
+    setShowDetailModal(false);
+    setShowEditModal(true);
   };
 
   const handleManageStaff = (branch: any) => {
-    alert(`Quản lý nhân viên chi nhánh: ${branch.name}`);
+    setSelectedBranch(branch);
+    setShowStaffModal(true);
   };
 
   const handleDeactivateBranch = (branch: any) => {
@@ -437,6 +448,23 @@ export function AdminBranchManagement() {
           setSelectedBranch(null);
         }}
         onSubmit={handleEditBranchSubmit}
+      />
+      <ModalBranchDetail
+        isOpen={showDetailModal}
+        branchData={selectedBranch}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedBranch(null);
+        }}
+        onEdit={handleEditFromDetail}
+      />
+      <ModalBranchStaff
+        isOpen={showStaffModal}
+        branchData={selectedBranch}
+        onClose={() => {
+          setShowStaffModal(false);
+          setSelectedBranch(null);
+        }}
       />
       {/* Confirmation Dialog */}
       {confirmDialog.isOpen && (
