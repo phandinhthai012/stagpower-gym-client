@@ -6,6 +6,7 @@ import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Edit, X } from 'lucide-react';
 import { Branch } from "../../api/branch.api";
+import { useScrollLock } from '../../../../hooks/useScrollLock';
 
 interface ModalEditBranchProps {
     isOpen: boolean;
@@ -24,6 +25,11 @@ interface ValidationErrors {
 }
 
 export const ModelEditBranch = ({ isOpen, branchData, onClose, onSubmit }: ModalEditBranchProps) => {
+    // Lock scroll when modal is open
+    useScrollLock(isOpen, {
+        preserveScrollPosition: true
+    });
+
     const [editBranch, setEditBranch] = useState<Branch>({
         _id: '',
         name: '',

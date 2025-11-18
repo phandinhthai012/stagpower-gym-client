@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
-import { SelectContent, SelectItem, SelectTrigger, SelectValue, SelectWithScrollLock } from '../../../components/ui/select';
+import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select } from '../../../components/ui/select';
 import { Badge } from '../../../components/ui/badge';
 import { 
   Users, 
@@ -212,36 +212,36 @@ export function AdminStaffPTManagement() {
               />
             </div>
             
-            <SelectWithScrollLock value={roleFilter} onValueChange={(value) => {
+            <Select value={roleFilter} onValueChange={(value) => {
               setRoleFilter(value as 'all' | 'trainer' | 'staff' | 'admin');
               setPage(1);
-            }} lockScroll={true}>
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn vai trò" />
               </SelectTrigger>
-              <SelectContent lockScroll={true}>
+              <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="trainer">PT</SelectItem>
                 <SelectItem value="staff">Nhân viên</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
-            </SelectWithScrollLock>
+            </Select>
 
-            <SelectWithScrollLock value={statusFilter} onValueChange={(value) => {
+            <Select value={statusFilter} onValueChange={(value) => {
               setStatusFilter(value as 'all' | 'active' | 'inactive' | 'pending' | 'banned');
               setPage(1);
-            }} lockScroll={true}>
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn trạng thái" />
               </SelectTrigger>
-              <SelectContent lockScroll={true}>
+              <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="active">Hoạt động</SelectItem>
                 <SelectItem value="inactive">Không hoạt động</SelectItem>
                 <SelectItem value="pending">Chờ duyệt</SelectItem>
                 <SelectItem value="banned">Bị khóa</SelectItem>
               </SelectContent>
-            </SelectWithScrollLock>
+            </Select>
 
             <Button variant="outline" onClick={handleResetFilters}>
               Đặt lại

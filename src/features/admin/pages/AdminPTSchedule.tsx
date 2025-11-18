@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { Input } from '../../../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Calendar as CalendarComponent, ModalDaySchedules } from '../../../components/ui';
 import { 
   Calendar,
@@ -226,21 +227,25 @@ export function AdminPTSchedule() {
                   />
                 </div>
                 
-                <select 
+                <Select 
                   value={statusFilter} 
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value as 'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow');
+                  onValueChange={(value) => {
+                    setStatusFilter(value as 'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow');
                     setPage(1);
                   }}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="all">Tất cả trạng thái</option>
-                  <option value="Confirmed">Đã xác nhận</option>
-                  <option value="Pending">Chờ xác nhận</option>
-                  <option value="Completed">Hoàn thành</option>
-                  <option value="Cancelled">Đã hủy</option>
-                  <option value="NoShow">Vắng mặt</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                    <SelectItem value="Confirmed">Đã xác nhận</SelectItem>
+                    <SelectItem value="Pending">Chờ xác nhận</SelectItem>
+                    <SelectItem value="Completed">Hoàn thành</SelectItem>
+                    <SelectItem value="Cancelled">Đã hủy</SelectItem>
+                    <SelectItem value="NoShow">Vắng mặt</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>

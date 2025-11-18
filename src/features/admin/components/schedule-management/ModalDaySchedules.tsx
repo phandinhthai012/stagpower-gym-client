@@ -12,6 +12,7 @@ import {
   FileText
 } from 'lucide-react';
 import { ScheduleWithDetails } from '../../types/schedule.types';
+import { useScrollLock } from '../../../../hooks/useScrollLock';
 
 interface ModalDaySchedulesProps {
   isOpen: boolean;
@@ -21,6 +22,11 @@ interface ModalDaySchedulesProps {
 }
 
 export function ModalDaySchedules({ isOpen, onClose, date, schedules }: ModalDaySchedulesProps) {
+  // Lock scroll when modal is open
+  useScrollLock(isOpen, {
+    preserveScrollPosition: true
+  });
+
   if (!isOpen || !date) return null;
 
   const formatDate = (date: Date) => {

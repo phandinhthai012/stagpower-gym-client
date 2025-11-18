@@ -142,6 +142,29 @@ export const userApi = {
     return response.data.data;
   },
 
+  // Lấy danh sách members với phân trang
+  getMembersWithPagination: async (params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    membership_level?: string;
+  }): Promise<{
+    data: User[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      filteredRecords: number;
+    };
+  }> => {
+    const response = await apiClient.get(API_ENDPOINTS.USER.GET_ALL_MEMBERS_WITH_PAGINATION, {
+      params
+    });
+    return response.data.data;
+  },
+
   getMembersWithActivePTSubscriptions: async (): Promise<User[]> => {
     const response = await apiClient.get(API_ENDPOINTS.USER.GET_MEMBERS_WITH_ACTIVE_PT_SUBSCRIPTIONS);
     return response.data.data;

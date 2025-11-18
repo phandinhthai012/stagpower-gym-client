@@ -23,6 +23,9 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 
 export function AdminExerciseManagement() {
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
@@ -166,6 +169,22 @@ export function AdminExerciseManagement() {
     initialSort: { key: 'name', direction: 'asc' }
   });
 
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm, categoryFilter, difficultyFilter, equipmentFilter]);
+
+  // Paginate sorted data
+  const paginatedData = React.useMemo(() => {
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    return sortedData.slice(start, end);
+  }, [sortedData, page, limit]);
+
+  // Pagination info
+  const totalPages = Math.ceil(sortedData.length / limit);
+  const filteredRecords = sortedData.length;
+
   // Reset selected exercises when sort changes
   const handleSort = (key: string) => {
     requestSort(key);
@@ -220,19 +239,25 @@ export function AdminExerciseManagement() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Tìm kiếm bài tập..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+                <Input
+                  placeholder="Tìm kiếm bài tập..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
+                  className="pl-10"
+                />
             </div>
 
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select value={categoryFilter} onValueChange={(value) => {
+              setCategoryFilter(value);
+              setPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn danh mục" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent lockScroll={false}>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Chest">Chest</SelectItem>
                 <SelectItem value="Back">Back</SelectItem>
@@ -247,11 +272,14 @@ export function AdminExerciseManagement() {
               </SelectContent>
             </Select>
 
-            <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+            <Select value={difficultyFilter} onValueChange={(value) => {
+              setDifficultyFilter(value);
+              setPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn độ khó" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent lockScroll={false}>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Beginner">Beginner</SelectItem>
                 <SelectItem value="Intermediate">Intermediate</SelectItem>
@@ -259,11 +287,14 @@ export function AdminExerciseManagement() {
               </SelectContent>
             </Select>
 
-            <Select value={equipmentFilter} onValueChange={setEquipmentFilter}>
+            <Select value={equipmentFilter} onValueChange={(value) => {
+              setEquipmentFilter(value);
+              setPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn thiết bị" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent lockScroll={false}>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Bodyweight">Bodyweight</SelectItem>
                 <SelectItem value="Dumbbell">Dumbbell</SelectItem>
@@ -354,7 +385,7 @@ export function AdminExerciseManagement() {
                 </tr>
               </thead>
               <tbody>
-                {sortedData.map((exercise) => (
+                {paginatedData.map((exercise) => (
                   <tr key={exercise._id} className="border-b hover:bg-gray-50">
                     <td className="p-4">
                       <div>
@@ -424,6 +455,87 @@ export function AdminExerciseManagement() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {filteredRecords > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>
+                  {totalPages > 1 
+                    ? `Hiển thị ${((page - 1) * limit) + 1} - ${Math.min(page * limit, filteredRecords)} trong tổng số ${filteredRecords} kết quả`
+                    : `Hiển thị ${filteredRecords} kết quả`
+                  }
+                </span>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex gap-1 flex-wrap justify-center">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(1)}
+                    disabled={page === 1 || isLoading}
+                    title="Trang đầu"
+                  >
+                    «
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1 || isLoading}
+                    title="Trang trước"
+                  >
+                    ‹
+                  </Button>
+                  
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(pageNum)}
+                        disabled={isLoading}
+                        className={page === pageNum ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages || isLoading}
+                    title="Trang sau"
+                  >
+                    ›
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(totalPages)}
+                    disabled={page === totalPages || isLoading}
+                    title="Trang cuối"
+                  >
+                    »
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

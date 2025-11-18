@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../../components
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
-import { SelectWithScrollLock, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { 
   Save, 
   X, 
@@ -14,6 +14,7 @@ import { useCreateSchedule, useTrainers, useBranches } from '../../hooks';
 import { useMembersWithActivePTSubscriptions } from '../../hooks/useMember';
 import { CreateScheduleRequest } from '../../types/schedule.types';
 import { toast } from 'sonner';
+import { useScrollLock } from '../../../../hooks/useScrollLock';
 
 interface ModalCoachingScheduleProps {
   isOpen: boolean;
@@ -35,6 +36,11 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
   const { data: trainersData } = useTrainers();
   const { data: membersData, isLoading: isLoadingMembers } = useMembersWithActivePTSubscriptions();
   const { data: branchesData } = useBranches();
+
+  // Lock scroll when modal is open
+  useScrollLock(isOpen, {
+    preserveScrollPosition: true
+  });
 
   const trainers = trainersData || [];
   const members = membersData || []; // API trả về array trực tiếp
@@ -152,15 +158,14 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
               <Label htmlFor="trainerId">
                 Chọn PT <span className="text-red-500">*</span>
               </Label>
-              <SelectWithScrollLock
+              <Select
                 value={formData.trainerId}
                 onValueChange={(value) => handleChange('trainerId', value)}
-                lockScroll={true}
               >
                 <SelectTrigger className={errors.trainerId ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Chọn PT" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   {trainers.map((trainer) => (
                     <SelectItem key={trainer._id} value={trainer._id}>
                       {trainer.fullName} - PT
@@ -172,7 +177,7 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </SelectWithScrollLock>
+              </Select>
               <p className="text-xs text-gray-500 mt-1">
                 Chọn Personal Trainer sẽ hướng dẫn buổi tập
               </p>
@@ -185,15 +190,14 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
               <Label htmlFor="memberId">
                 Chọn hội viên <span className="text-red-500">*</span>
               </Label>
-              <SelectWithScrollLock
+              <Select
                 value={formData.memberId}
                 onValueChange={(value) => handleChange('memberId', value)}
-                lockScroll={true}
               >
                 <SelectTrigger className={errors.memberId ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Chọn hội viên" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   {isLoadingMembers ? (
                     <div className="px-2 py-1.5 text-sm text-gray-500">Đang tải...</div>
                   ) : members.length === 0 ? (
@@ -211,7 +215,7 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                     ))
                   )}
                 </SelectContent>
-              </SelectWithScrollLock>
+              </Select>
               <p className="text-xs text-gray-500 mt-1">
                 Chỉ hiển thị hội viên có gói PT hoặc Combo đang active với buổi tập còn lại
               </p>
@@ -224,22 +228,21 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
               <Label htmlFor="branchId">
                 Chi nhánh <span className="text-red-500">*</span>
               </Label>
-              <SelectWithScrollLock
+              <Select
                 value={formData.branchId}
                 onValueChange={(value) => handleChange('branchId', value)}
-                lockScroll={true}
               >
                 <SelectTrigger className={errors.branchId ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Chọn chi nhánh" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   {branches.map((branch) => (
                     <SelectItem key={branch._id} value={branch._id}>
                       {branch.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </SelectWithScrollLock>
+              </Select>
               <p className="text-xs text-gray-500 mt-1">
                 Chọn chi nhánh nơi diễn ra buổi tập
               </p>
@@ -270,20 +273,19 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
 
             <div>
               <Label htmlFor="sessionDuration">Thời lượng buổi tập (phút)</Label>
-              <SelectWithScrollLock
+              <Select
                 value={formData.sessionDuration.toString()}
                 onValueChange={(value) => handleChange('sessionDuration', parseInt(value))}
-                lockScroll={true}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn thời lượng" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   <SelectItem value="60">60 phút</SelectItem>
                   <SelectItem value="90">90 phút</SelectItem>
                   <SelectItem value="120">120 phút</SelectItem>
                 </SelectContent>
-              </SelectWithScrollLock>
+              </Select>
               <p className="text-xs text-gray-500 mt-1">
                 Thời lượng tiêu chuẩn cho buổi tập PT
               </p>

@@ -7,12 +7,18 @@ import { CheckCircle, XCircle, AlertTriangle, Camera, QrCode } from 'lucide-reac
 import { useAdminCheckIn } from '../../hooks/useAdminCheckIn';
 import { useBranches } from '../../hooks/useBranches';
 import { QRScanner } from './QRScanner';
+import { useScrollLock } from '../../../../hooks/useScrollLock';
 interface ModalQRCheckInProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
 export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose }) => {
+    // Lock scroll when modal is open
+    useScrollLock(isOpen, {
+        preserveScrollPosition: true
+    });
+
     const [selectedBranchId, setSelectedBranchId] = useState('');
     const [qrToken, setQrToken] = useState('');
     const [checkInStatus, setCheckInStatus] = useState<'idle' | 'success' | 'error' | 'warning'>('idle');

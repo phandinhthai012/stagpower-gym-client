@@ -39,6 +39,9 @@ import socketService from '../../../services/socket';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function AdminInvoicePayment() {
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [packageFilter, setPackageFilter] = useState('all');
@@ -107,6 +110,22 @@ export function AdminInvoicePayment() {
     data: filteredPayments,
     initialSort: { key: 'createdAt', direction: 'desc' }
   });
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, packageFilter, startDate, endDate, priceFilter]);
+
+  // Paginate sorted data
+  const paginatedData = React.useMemo(() => {
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    return sortedData.slice(start, end);
+  }, [sortedData, page, limit]);
+
+  // Pagination info
+  const totalPages = Math.ceil(sortedData.length / limit);
+  const filteredRecords = sortedData.length;
 
   // Reset selected invoices when filters or sort changes
   React.useEffect(() => {
@@ -201,10 +220,10 @@ export function AdminInvoicePayment() {
   };
 
   const handleSelectAll = () => {
-    if (selectedInvoices.length === sortedData.length) {
+    if (selectedInvoices.length === paginatedData.length) {
       setSelectedInvoices([]);
     } else {
-      setSelectedInvoices(sortedData.map((payment: any) => payment._id));
+      setSelectedInvoices(paginatedData.map((payment: any) => payment._id));
     }
   };
 
@@ -379,7 +398,10 @@ export function AdminInvoicePayment() {
                   id="invoiceSearch"
                   placeholder="Tìm kiếm theo mã hóa đơn, tên hội viên..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-10"
                 />
               </div>
@@ -387,11 +409,14 @@ export function AdminInvoicePayment() {
 
             <div>
               <Label htmlFor="statusFilter">Trạng thái thanh toán</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(value) => {
+                setStatusFilter(value);
+                setPage(1);
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent lockScroll={false}>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="Completed">Đã thanh toán</SelectItem>
                   <SelectItem value="Pending">Chờ thanh toán</SelectItem>
@@ -403,11 +428,14 @@ export function AdminInvoicePayment() {
 
             <div>
               <Label htmlFor="packageFilter">Loại gói</Label>
-              <Select value={packageFilter} onValueChange={setPackageFilter}>
+              <Select value={packageFilter} onValueChange={(value) => {
+                setPackageFilter(value);
+                setPage(1);
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent lockScroll={false}>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="Membership">Gói tập</SelectItem>
                   <SelectItem value="PT">Gói PT</SelectItem>
@@ -422,7 +450,10 @@ export function AdminInvoicePayment() {
                 id="startDate"
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
 
@@ -432,17 +463,23 @@ export function AdminInvoicePayment() {
                 id="endDate"
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
 
             <div>
               <Label htmlFor="priceFilter">Khoảng giá</Label>
-              <Select value={priceFilter} onValueChange={setPriceFilter}>
+              <Select value={priceFilter} onValueChange={(value) => {
+                setPriceFilter(value);
+                setPage(1);
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent lockScroll={false}>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="0-500k">Dưới 500k</SelectItem>
                   <SelectItem value="500k-1M">500k - 1M</SelectItem>
@@ -501,7 +538,7 @@ export function AdminInvoicePayment() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-green-600" />
-            Danh sách hóa đơn ({filteredPayments.length})
+            Danh sách hóa đơn ({filteredRecords})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -512,7 +549,7 @@ export function AdminInvoicePayment() {
                   <NonSortableHeader className="p-3">
                     <input
                       type="checkbox"
-                      checked={selectedInvoices.length === sortedData.length && sortedData.length > 0}
+                      checked={selectedInvoices.length === paginatedData.length && paginatedData.length > 0}
                       onChange={handleSelectAll}
                       className="rounded"
                     />
@@ -585,7 +622,7 @@ export function AdminInvoicePayment() {
                 </tr>
               </thead>
               <tbody>
-                {sortedData.map((payment: any) => (
+                {paginatedData.map((payment: any) => (
                   <tr key={payment._id} className="border-b hover:bg-gray-50">
                     <td className="p-2">
                       <input
@@ -698,6 +735,87 @@ export function AdminInvoicePayment() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {filteredRecords > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>
+                  {totalPages > 1 
+                    ? `Hiển thị ${((page - 1) * limit) + 1} - ${Math.min(page * limit, filteredRecords)} trong tổng số ${filteredRecords} kết quả`
+                    : `Hiển thị ${filteredRecords} kết quả`
+                  }
+                </span>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex gap-1 flex-wrap justify-center">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(1)}
+                    disabled={page === 1 || isLoading}
+                    title="Trang đầu"
+                  >
+                    «
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1 || isLoading}
+                    title="Trang trước"
+                  >
+                    ‹
+                  </Button>
+                  
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(pageNum)}
+                        disabled={isLoading}
+                        className={page === pageNum ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages || isLoading}
+                    title="Trang sau"
+                  >
+                    ›
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(totalPages)}
+                    disabled={page === totalPages || isLoading}
+                    title="Trang cuối"
+                  >
+                    »
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

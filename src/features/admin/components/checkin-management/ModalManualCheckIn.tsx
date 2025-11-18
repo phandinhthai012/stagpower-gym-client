@@ -9,6 +9,7 @@ import { Textarea } from '../../../../components/ui/textarea';
 import { useAdminCheckIn } from '../../hooks/useAdminCheckIn';
 import { useBranches } from '../../hooks/useBranches';
 import { useMembersWithActiveSubscriptions } from '../../hooks/useMember';
+import { useScrollLock } from '../../../../hooks/useScrollLock';
 
 interface ModalManualCheckInProps {
     isOpen: boolean;
@@ -16,6 +17,10 @@ interface ModalManualCheckInProps {
 }
 
 export function ModalManualCheckIn({ isOpen, onClose }: ModalManualCheckInProps) {
+    // Lock scroll when modal is open
+    useScrollLock(isOpen, {
+        preserveScrollPosition: true
+    });
 
     const [selectedMember, setSelectedMember] = useState<any>(null);
     const [selectedBranchId, setSelectedBranchId] = useState('');

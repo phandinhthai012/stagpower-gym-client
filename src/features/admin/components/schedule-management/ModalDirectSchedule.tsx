@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../../components
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
-import { SelectWithScrollLock, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { 
   Save, 
   X, 
@@ -13,6 +13,7 @@ import {
 import { useAllStaffTrainers, useBranches, useCreateSchedule } from '../../hooks';
 import { CreateScheduleRequest } from '../../types/schedule.types';
 import { toast } from 'sonner';
+import { useScrollLock } from '../../../../hooks/useScrollLock';
 
 interface ModalDirectScheduleProps {
   isOpen: boolean;
@@ -33,6 +34,11 @@ export function ModalDirectSchedule({ isOpen, onClose }: ModalDirectScheduleProp
   const createMutation = useCreateSchedule();
   const { data: staffData } = useAllStaffTrainers();
   const { data: branchesData } = useBranches();
+
+  // Lock scroll when modal is open
+  useScrollLock(isOpen, {
+    preserveScrollPosition: true
+  });
 
   const staffList = staffData || [];
   const branches = branchesData || [];
@@ -178,22 +184,21 @@ export function ModalDirectSchedule({ isOpen, onClose }: ModalDirectScheduleProp
               <Label htmlFor="staffId">
                 Chọn PT/Nhân viên <span className="text-red-500">*</span>
               </Label>
-              <SelectWithScrollLock
+              <Select
                 value={formData.staffId}
                 onValueChange={(value) => handleChange('staffId', value)}
-                lockScroll={true}
               >
                 <SelectTrigger className={errors.staffId ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Chọn PT/ nhân viên" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   {staffList.map((staff) => (
                     <SelectItem key={staff._id} value={staff._id}>
                       {staff.fullName} - {staff.role === 'trainer' ? 'PT' : 'Nhân viên'}
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </SelectWithScrollLock>
+              </Select>
               {errors.staffId && (
                 <p className="text-red-500 text-xs mt-1">{errors.staffId}</p>
               )}
@@ -203,22 +208,21 @@ export function ModalDirectSchedule({ isOpen, onClose }: ModalDirectScheduleProp
               <Label htmlFor="branchId">
                 Chi nhánh <span className="text-red-500">*</span>
               </Label>
-              <SelectWithScrollLock
+              <Select
                 value={formData.branchId}
                 onValueChange={(value) => handleChange('branchId', value)}
-                lockScroll={true}
               >
                 <SelectTrigger className={errors.branchId ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Chọn chi nhánh" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   {branches.map((branch) => (
                     <SelectItem key={branch._id} value={branch._id}>
                       {branch.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </SelectWithScrollLock>
+              </Select>
               {errors.branchId && (
                 <p className="text-red-500 text-xs mt-1">{errors.branchId}</p>
               )}
@@ -244,21 +248,20 @@ export function ModalDirectSchedule({ isOpen, onClose }: ModalDirectScheduleProp
               <Label htmlFor="shiftType">
                 Loại ca làm việc <span className="text-red-500">*</span>
               </Label>
-              <SelectWithScrollLock
+              <Select
                 value={formData.shiftType}
                 onValueChange={handleShiftTypeChange}
-                lockScroll={true}
               >
                 <SelectTrigger className={errors.shiftType ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Chọn loại ca" />
                 </SelectTrigger>
-                <SelectContent lockScroll={true}>
+                <SelectContent>
                   <SelectItem value="morning">Ca sáng (06:00 - 14:00)</SelectItem>
                   <SelectItem value="afternoon">Ca chiều (14:00 - 22:00)</SelectItem>
                   <SelectItem value="full">Ca toàn ngày (06:00 - 22:00)</SelectItem>
                   <SelectItem value="custom">Ca bán thời gian (tùy chỉnh)</SelectItem>
                 </SelectContent>
-              </SelectWithScrollLock>
+              </Select>
               {errors.shiftType && (
                 <p className="text-red-500 text-xs mt-1">{errors.shiftType}</p>
               )}

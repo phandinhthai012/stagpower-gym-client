@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Label } from '../../../components/ui/label';
@@ -48,6 +48,29 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Ẩn scrollbar của page khi modal mở
+  useEffect(() => {
+    if (open) {
+      // Lưu scroll position hiện tại
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      
+      return () => {
+        // Khôi phục scroll khi modal đóng
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [open]);
 
   const handleChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

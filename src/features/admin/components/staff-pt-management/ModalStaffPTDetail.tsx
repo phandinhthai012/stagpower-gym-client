@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Badge } from '../../../../components/ui/badge';
@@ -31,6 +31,29 @@ interface StaffPTDetailModalProps {
 export function StaffPTDetailModal({ user, isOpen, onClose, onEdit }: StaffPTDetailModalProps) {
   const { data: branchesData } = useBranches();
   const branches = branchesData || [];
+
+  // Ẩn scrollbar của page khi modal mở
+  useEffect(() => {
+    if (isOpen) {
+      // Lưu scroll position hiện tại
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      
+      return () => {
+        // Khôi phục scroll khi modal đóng
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
 
   if (!isOpen || !user) return null;
 

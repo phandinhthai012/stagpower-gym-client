@@ -28,7 +28,7 @@ import { mockSubscriptions } from '../../../mockdata/subscriptions';
 import { mockCheckIns } from '../../../mockdata/checkIns';
 import { useMembers } from '../../member/hooks/useMembers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSubscriptions, useCheckIns } from '../hooks';
+import { useSubscriptions, useCheckIns, useMembersWithPagination } from '../hooks';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 
@@ -46,15 +46,25 @@ export function AdminMemberManagement({
   onEditMember, 
   onDeleteMember
 }: AdminMemberManagementProps = {}) {
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
-  // Filter members
-  // const members = mockUsers.filter(user => user.role === 'Member');
-  const {data: response, isLoading, isError} = useMembers();
-  const members = response && 'success' in response && response.success ? response.data || [] : [];
+  // Fetch members with pagination
+  const { data: membersData, isLoading, isError } = useMembersWithPagination({
+    page,
+    limit,
+    search: searchTerm || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    membership_level: membershipFilter !== 'all' ? membershipFilter : undefined,
+  });
+
+  const members = membersData?.data || [];
+  const pagination = membersData?.pagination;
   
   // Fetch subscriptions and check-ins
   const {data: subscriptionsResponse, isLoading: isLoadingSubscriptions} = useSubscriptions();
@@ -67,27 +77,14 @@ export function AdminMemberManagement({
     ? checkInsResponse.data || [] 
     : mockCheckIns; // Fallback to mock data if API fails
   
-  // Filter members
-  const filteredMembers = React.useMemo(() => {
-    return members.filter((member: any) => {
-      const matchesSearch = member.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           member.phone.includes(searchTerm);
-      const matchesStatus = statusFilter === 'all' || member.status.toLowerCase() === statusFilter.toLowerCase();
-      
-      // Support both snake_case (mock) and camelCase (API)
-      const membershipLevel = member.memberInfo?.membership_level || member.member_info?.membership_level || 'basic';
-      const matchesMembership = membershipFilter === 'all' || 
-                               (membershipFilter === 'basic' && membershipLevel.toLowerCase() === 'basic') ||
-                               (membershipFilter === 'vip' && membershipLevel.toLowerCase() === 'vip');
-
-      return matchesSearch && matchesStatus && matchesMembership;
-    });
-  }, [members, searchTerm, statusFilter, membershipFilter]);
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, membershipFilter]);
 
   // Sort members - Hook must be called before early returns
   const { sortedData, requestSort, getSortDirection } = useSortableTable({
-    data: filteredMembers,
+    data: members,
     initialSort: { key: 'fullName', direction: 'asc' }
   });
 
@@ -104,15 +101,17 @@ export function AdminMemberManagement({
     return <div className="flex justify-center items-center h-64">Đang tải...</div>;
   }
 
-  if (isError || !response || !('success' in response) || !response.success) {
+  if (isError) {
     return <div className="flex justify-center items-center h-64 text-red-600">
-      {response && 'message' in response ? response.message : 'Có lỗi xảy ra khi tải danh sách thành viên'}
+      Có lỗi xảy ra khi tải danh sách thành viên
     </div>;
   }
 
-  // Calculate statistics
-  const totalMembers = members.length;
-  const activeMembers = members.filter((member: any) => member.status.toLowerCase() === 'active').length;
+  // Calculate statistics from pagination
+  const totalMembers = pagination?.total || 0;
+  // Note: Statistics are calculated from all data, not just current page
+  // For accurate stats, we'd need a separate API endpoint
+  const activeMembers = members.filter((member: any) => member.status?.toLowerCase() === 'active').length;
   const vipMembers = members.filter((member: any) => {
     const level = member.memberInfo?.membership_level || member.member_info?.membership_level || '';
     return level.toLowerCase() === 'vip';
@@ -212,16 +211,22 @@ export function AdminMemberManagement({
               <Input
                 placeholder="Tìm theo tên, email, SĐT..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
                 className="pl-10"
               />
             </div>
             
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(value) => {
+              setStatusFilter(value);
+              setPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Trạng thái" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent lockScroll={false}>
                 <SelectItem value="all">Tất cả trạng thái</SelectItem>
                 <SelectItem value="active">Hoạt động</SelectItem>
                 <SelectItem value="inactive">Không hoạt động</SelectItem>
@@ -229,11 +234,14 @@ export function AdminMemberManagement({
               </SelectContent>
             </Select>
 
-            <Select value={membershipFilter} onValueChange={setMembershipFilter}>
+            <Select value={membershipFilter} onValueChange={(value) => {
+              setMembershipFilter(value);
+              setPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Loại membership" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent lockScroll={false}>
                 <SelectItem value="all">Tất cả loại</SelectItem>
                 <SelectItem value="basic">Basic</SelectItem>
                 <SelectItem value="vip">VIP</SelectItem>
@@ -280,7 +288,7 @@ export function AdminMemberManagement({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-blue-600" />
-            Danh sách hội viên ({members.length})
+            Danh sách hội viên ({pagination?.filteredRecords || members.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -426,6 +434,87 @@ export function AdminMemberManagement({
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {pagination && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>
+                  {pagination.totalPages > 1 
+                    ? `Hiển thị ${((page - 1) * limit) + 1} - ${Math.min(page * limit, pagination.filteredRecords)} trong tổng số ${pagination.filteredRecords} kết quả`
+                    : `Hiển thị ${pagination.filteredRecords} kết quả`
+                  }
+                </span>
+              </div>
+              {pagination.totalPages > 1 && (
+                <div className="flex gap-1 flex-wrap justify-center">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(1)}
+                    disabled={page === 1 || isLoading}
+                    title="Trang đầu"
+                  >
+                    «
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1 || isLoading}
+                    title="Trang trước"
+                  >
+                    ‹
+                  </Button>
+                  
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(pageNum)}
+                        disabled={isLoading}
+                        className={page === pageNum ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                    disabled={page === pagination.totalPages || isLoading}
+                    title="Trang sau"
+                  >
+                    ›
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(pagination.totalPages)}
+                    disabled={page === pagination.totalPages || isLoading}
+                    title="Trang cuối"
+                  >
+                    »
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -35,6 +35,9 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 
 export function AdminDiscountManagement() {
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -152,6 +155,22 @@ export function AdminDiscountManagement() {
     initialSort: { key: 'name', direction: 'asc' }
   });
 
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm, typeFilter, statusFilter]);
+
+  // Paginate sorted data
+  const paginatedData = React.useMemo(() => {
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    return sortedData.slice(start, end);
+  }, [sortedData, page, limit]);
+
+  // Pagination info
+  const totalPages = Math.ceil(sortedData.length / limit);
+  const filteredRecords = sortedData.length;
+
   // Reset selected discounts when filters or sort changes
   React.useEffect(() => {
     setSelectedDiscounts([]);
@@ -172,10 +191,10 @@ export function AdminDiscountManagement() {
   };
 
   const handleSelectAll = () => {
-    if (selectedDiscounts.length === sortedData.length) {
+    if (selectedDiscounts.length === paginatedData.length) {
       setSelectedDiscounts([]);
     } else {
-      setSelectedDiscounts(sortedData.map((discount: Discount) => discount._id));
+      setSelectedDiscounts(paginatedData.map((discount: Discount) => discount._id));
     }
   };
 
@@ -216,19 +235,25 @@ export function AdminDiscountManagement() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Tìm kiếm ưu đãi..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+                <Input
+                  placeholder="Tìm kiếm ưu đãi..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
+                  className="pl-10"
+                />
             </div>
             
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select value={typeFilter} onValueChange={(value) => {
+              setTypeFilter(value);
+              setPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn loại ưu đãi" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent lockScroll={false}>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="HSSV">HSSV</SelectItem>
                 <SelectItem value="VIP">VIP</SelectItem>
@@ -238,11 +263,14 @@ export function AdminDiscountManagement() {
               </SelectContent>
             </Select>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(value) => {
+              setStatusFilter(value);
+              setPage(1);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn trạng thái" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent lockScroll={false}>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Active">Đang hoạt động</SelectItem>
                 <SelectItem value="Inactive">Tạm dừng</SelectItem>
@@ -300,7 +328,7 @@ export function AdminDiscountManagement() {
                   <NonSortableHeader className="p-3">
                     <input
                       type="checkbox"
-                      checked={selectedDiscounts.length === sortedData.length && sortedData.length > 0}
+                      checked={selectedDiscounts.length === paginatedData.length && paginatedData.length > 0}
                       onChange={handleSelectAll}
                       className="rounded"
                     />
@@ -347,7 +375,7 @@ export function AdminDiscountManagement() {
                 </tr>
               </thead>
               <tbody>
-                {sortedData.map((discount) => (
+                {paginatedData.map((discount) => (
                   <tr key={discount._id} className="border-b hover:bg-gray-50">
                     <td className="p-3">
                       <input
@@ -440,6 +468,87 @@ export function AdminDiscountManagement() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {filteredRecords > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>
+                  {totalPages > 1 
+                    ? `Hiển thị ${((page - 1) * limit) + 1} - ${Math.min(page * limit, filteredRecords)} trong tổng số ${filteredRecords} kết quả`
+                    : `Hiển thị ${filteredRecords} kết quả`
+                  }
+                </span>
+              </div>
+              {totalPages > 1 && (
+                <div className="flex gap-1 flex-wrap justify-center">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(1)}
+                    disabled={page === 1 || isLoading}
+                    title="Trang đầu"
+                  >
+                    «
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1 || isLoading}
+                    title="Trang trước"
+                  >
+                    ‹
+                  </Button>
+                  
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(pageNum)}
+                        disabled={isLoading}
+                        className={page === pageNum ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages || isLoading}
+                    title="Trang sau"
+                  >
+                    ›
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPage(totalPages)}
+                    disabled={page === totalPages || isLoading}
+                    title="Trang cuối"
+                  >
+                    »
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

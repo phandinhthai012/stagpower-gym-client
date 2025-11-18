@@ -5,6 +5,7 @@ import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Plus, X } from 'lucide-react';
+import { useScrollLock } from '../../../../hooks/useScrollLock';
 
 interface ModalCreateBranchProps {
     isOpen: boolean;
@@ -21,6 +22,11 @@ interface ValidationErrors {
     closeTime?: string;
 }
 export function ModalCreateBranch({ isOpen, onClose, onSubmit }: ModalCreateBranchProps) {
+    // Lock scroll when modal is open
+    useScrollLock(isOpen, {
+        preserveScrollPosition: true
+    });
+
     const [newBranch, setNewBranch] = useState({
         name: '',
         address: '',

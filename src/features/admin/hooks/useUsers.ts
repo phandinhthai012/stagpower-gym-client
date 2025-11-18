@@ -20,6 +20,21 @@ export const useMembers = () => {
   });
 };
 
+// 2.1 GET - Lấy danh sách members với pagination
+export const useMembersWithPagination = (params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  membership_level?: string;
+}) => {
+  return useQuery({
+    queryKey: ['members', 'paginated', params],
+    queryFn: () => userApi.getMembersWithPagination(params),
+    placeholderData: keepPreviousData,
+  });
+};
+
 // 3. GET - Lấy danh sách staffs
 export const useStaffs = () => {
   return useQuery({
