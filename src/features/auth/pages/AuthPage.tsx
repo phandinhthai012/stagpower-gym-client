@@ -35,8 +35,8 @@ export function AuthPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       // Redirect based on user role
-      const dashboardPath = user.role === 'admin' ? '/admin' :
-        user.role === 'staff' ? '/staff' :
+      const dashboardPath = user.role === 'admin' ? '/admin/dashboard' :
+        user.role === 'staff' ? '/staff/dashboard' :
           user.role === 'trainer' ? '/trainer' :
             '/member';
       navigate(dashboardPath, { replace: true });

@@ -30,6 +30,7 @@ import {
 } from '../types/staff-trainer.types';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export function AdminStaffPTManagement() {
   // State for filters and pagination
@@ -43,6 +44,11 @@ export function AdminStaffPTManagement() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<StaffTrainerUser | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  
+  // Check if current user is staff (limited permissions)
+  const { user } = useAuth();
+  const isStaff = user?.role === 'staff';
+  const isAdmin = user?.role === 'admin';
 
   // Fetch data
   const { data: staffTrainersData, isLoading } = useStaffTrainers({
@@ -183,10 +189,12 @@ export function AdminStaffPTManagement() {
           <h1 className="text-3xl font-bold text-gray-900">Quản lý Nhân viên & PT</h1>
           <p className="text-gray-600 mt-2">Quản lý thông tin nhân viên và huấn luyện viên</p>
         </div>
-        <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700">
-          <UserPlus className="w-4 h-4 mr-2" />
-          Thêm mới
-        </Button>
+        {isAdmin && (
+          <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Thêm mới
+          </Button>
+        )}
       </div>
 
       {/* Search and Filter */}
@@ -420,23 +428,27 @@ export function AdminStaffPTManagement() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => handleEdit(user)}
-                                className="text-blue-600 hover:text-blue-700"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => handleDelete(user._id)}
-                                className="text-red-600 hover:text-red-700"
-                                disabled={changeStatusMutation.isPending}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              {isAdmin && (
+                                <>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => handleEdit(user)}
+                                    className="text-blue-600 hover:text-blue-700"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => handleDelete(user._id)}
+                                    className="text-red-600 hover:text-red-700"
+                                    disabled={changeStatusMutation.isPending}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>

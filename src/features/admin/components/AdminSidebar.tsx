@@ -58,18 +58,21 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
     });
   };
 
+  // Determine base path based on user role
+  const basePath = user?.role === 'staff' ? '/staff' : '/admin';
+  
   const menuItems: MenuItem[] = [
-    { id: 'dashboard', label: 'Bảng Điều Khiển', icon: LayoutDashboard, path: '/admin/dashboard' },
-    { id: 'members', label: 'Quản Lý Hội Viên', icon: Users, path: '/admin/members' },
-    { id: 'access-control', label: 'Kiểm Soát Ra Vào', icon: QrCode, path: '/admin/access-control' },
+    { id: 'dashboard', label: 'Bảng Điều Khiển', icon: LayoutDashboard, path: `${basePath}/dashboard` },
+    { id: 'members', label: 'Quản Lý Hội Viên', icon: Users, path: `${basePath}/members` },
+    { id: 'access-control', label: 'Kiểm Soát Ra Vào', icon: QrCode, path: `${basePath}/access-control` },
     { 
       id: 'staff-pt', 
       label: 'Quản Lý Nhân Viên/PT', 
       icon: Users, 
       hasSubmenu: true,
       subItems: [
-        { id: 'staff-pt-management', label: 'Quản Lý Nhân Viên/PT', icon: Users, path: '/admin/staff-pt-management' },
-        { id: 'schedules', label: 'Lịch làm việc NV/PT', icon: Calendar, path: '/admin/schedules' }
+        { id: 'staff-pt-management', label: 'Quản Lý Nhân Viên/PT', icon: Users, path: `${basePath}/staff-pt-management` },
+        { id: 'schedules', label: 'Lịch làm việc NV/PT', icon: Calendar, path: `${basePath}/schedules` }
       ]
     },
     { 
@@ -78,15 +81,15 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
       icon: Package, 
       hasSubmenu: true,
       subItems: [
-        { id: 'packages', label: 'Quản Lý Gói Tập', icon: Package, path: '/admin/packages' },
-        { id: 'exercises', label: 'Quản Lý Bài Tập', icon: Dumbbell, path: '/admin/exercises' },
-        { id: 'discounts', label: 'Quản Lý Ưu Đãi', icon: Percent, path: '/admin/discounts' }
+        { id: 'packages', label: 'Quản Lý Gói Tập', icon: Package, path: `${basePath}/packages` },
+        { id: 'exercises', label: 'Quản Lý Bài Tập', icon: Dumbbell, path: `${basePath}/exercises` },
+        { id: 'discounts', label: 'Quản Lý Ưu Đãi', icon: Percent, path: `${basePath}/discounts` }
       ]
     },
-    { id: 'reports', label: 'Báo Cáo & Thống Kê', icon: BarChart3, path: '/admin/reports' },
-    { id: 'invoice-payment', label: 'Hóa Đơn & Thanh Toán', icon: DollarSign, path: '/admin/invoice-payment' },
-    { id: 'branch-management', label: 'Quản Lý Chi Nhánh', icon: Building2, path: '/admin/branch-management' },
-    { id: 'settings', label: 'Cài Đặt Tài Khoản', icon: Settings, path: '/admin/settings' },
+    { id: 'reports', label: 'Báo Cáo & Thống Kê', icon: BarChart3, path: `${basePath}/reports` },
+    { id: 'invoice-payment', label: 'Hóa Đơn & Thanh Toán', icon: DollarSign, path: `${basePath}/invoice-payment` },
+    { id: 'branch-management', label: 'Quản Lý Chi Nhánh', icon: Building2, path: `${basePath}/branch-management` },
+    { id: 'settings', label: 'Cài Đặt Tài Khoản', icon: Settings, path: `${basePath}/settings` },
   ];
 
   const isActive = (path: string) => {
@@ -117,7 +120,7 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
               />
               <div className={`hidden md:block transition-all duration-300 ${!sidebarOpen ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'lg:opacity-100 lg:w-auto'}`}>
                 <h2 className="text-sm sm:text-lg font-semibold text-white">StagPower</h2>
-                <p className="text-xs text-blue-200">Admin Dashboard</p>
+                <p className="text-xs text-blue-200">{user?.role === 'staff' ? 'Staff Dashboard' : 'Admin Dashboard'}</p>
               </div>
               
             </div>

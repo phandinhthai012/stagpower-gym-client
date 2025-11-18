@@ -16,7 +16,7 @@ import { MemberSuggestions } from './features/member/pages/MemberSuggestions';
 import { LandingPage } from './features/landing/page/LandingPage';
 import { AdminDashboard, AdminPackageManagementWithModal, AdminAccessControl, AdminMemberManagementWithModal, AdminReports, AdminPTSchedule, AdminStaffPTManagement, AdminInvoicePayment, AdminBranchManagement, AdminExerciseManagement, AdminDiscountManagement, AdminComplaintManagement, AdminAccountSettings } from './features/admin/pages';
 import { AdminLayout } from './features/admin/components';
-import { StaffDashboard } from './features/staff';
+import { StaffLayout } from './features/staff/components/StaffLayout';
 import { TrainerLayout } from './features/personTrainer/components/TrainerLayout';
 import { TrainerDashboardPage } from './features/personTrainer/pages/TrainerDashboardPage';
 import { TrainerMemberManagementPage } from './features/personTrainer/pages/TrainerMemberManagementPage';
@@ -45,7 +45,7 @@ function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute requiredRole="admin" allowStaff={false}>
                 <AdminLayout />
               </ProtectedRoute>
             }
@@ -69,10 +69,25 @@ function App() {
             path="/staff"
             element={
               <ProtectedRoute requiredRole="staff">
-                <StaffDashboard />
+                <StaffLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Navigate to="/staff/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="members" element={<AdminMemberManagementWithModal />} />
+            <Route path="packages" element={<AdminPackageManagementWithModal />} />
+            <Route path="access-control" element={<AdminAccessControl />} />
+            <Route path="reports" element={<AdminReports />} />
+            <Route path="schedules" element={<AdminPTSchedule />} />
+            <Route path="staff-pt-management" element={<AdminStaffPTManagement />} />
+            <Route path="invoice-payment" element={<AdminInvoicePayment />} />
+            <Route path="branch-management" element={<AdminBranchManagement />} />
+            <Route path="discounts" element={<AdminDiscountManagement />} />
+            <Route path="exercises" element={<AdminExerciseManagement />} />
+            <Route path="complaints" element={<AdminComplaintManagement />} />
+            <Route path="settings" element={<AdminAccountSettings />} />
+          </Route>
           <Route
             path="/trainer"
             element={

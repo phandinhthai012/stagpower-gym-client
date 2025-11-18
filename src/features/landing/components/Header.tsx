@@ -122,8 +122,8 @@ export const Header: React.FC = () => {
                 <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   <button
                     onClick={() => {
-                      const dashboardPath = user?.role === 'admin' ? '/admin' :
-                                          user?.role === 'staff' ? '/staff' :
+                      const dashboardPath = user?.role === 'admin' ? '/admin/dashboard' :
+                                          user?.role === 'staff' ? '/staff/dashboard' :
                                           user?.role === 'trainer' ? '/trainer' :
                                           '/member';
                       navigate(dashboardPath);
