@@ -454,87 +454,83 @@ export function AdminStaffPTManagement() {
               )}
 
               {/* Pagination */}
-              {pagination && pagination.totalPages > 1 && (
+              {pagination && (
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <span>
-                      Hiển thị {((page - 1) * limit) + 1} - {Math.min(page * limit, pagination.filteredRecords)} trong tổng số {pagination.filteredRecords} kết quả
+                      {pagination.totalPages > 1 
+                        ? `Hiển thị ${((page - 1) * limit) + 1} - ${Math.min(page * limit, pagination.filteredRecords)} trong tổng số ${pagination.filteredRecords} kết quả`
+                        : `Hiển thị ${pagination.filteredRecords} kết quả`
+                      }
                     </span>
                   </div>
-                  <div className="flex gap-1 flex-wrap justify-center">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setPage(1)}
-                      disabled={page === 1 || isLoading}
-                      title="Trang đầu"
-                    >
-                      «
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={page === 1 || isLoading}
-                      title="Trang trước"
-                    >
-                      ‹
-                    </Button>
-                    
-                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (pagination.totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (page <= 3) {
-                        pageNum = i + 1;
-                      } else if (page >= pagination.totalPages - 2) {
-                        pageNum = pagination.totalPages - 4 + i;
-                      } else {
-                        pageNum = page - 2 + i;
-                      }
+                  {pagination.totalPages > 1 && (
+                    <div className="flex gap-1 flex-wrap justify-center">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setPage(1)}
+                        disabled={page === 1 || isLoading}
+                        title="Trang đầu"
+                      >
+                        «
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1 || isLoading}
+                        title="Trang trước"
+                      >
+                        ‹
+                      </Button>
+                      
+                      {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= pagination.totalPages - 2) {
+                          pageNum = pagination.totalPages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
 
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage(pageNum)}
-                          disabled={isLoading}
-                          className={page === pageNum ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            disabled={isLoading}
+                            className={page === pageNum ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
 
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
-                      disabled={page === pagination.totalPages || isLoading}
-                      title="Trang sau"
-                    >
-                      ›
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setPage(pagination.totalPages)}
-                      disabled={page === pagination.totalPages || isLoading}
-                      title="Trang cuối"
-                    >
-                      »
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
-              {/* Show pagination info even when there's only 1 page */}
-              {pagination && pagination.totalPages === 1 && (
-                <div className="flex justify-center items-center mt-6 pt-4 border-t">
-                  <div className="text-sm text-gray-600">
-                    Hiển thị {pagination.filteredRecords} kết quả
-                  </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                        disabled={page === pagination.totalPages || isLoading}
+                        title="Trang sau"
+                      >
+                        ›
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setPage(pagination.totalPages)}
+                        disabled={page === pagination.totalPages || isLoading}
+                        title="Trang cuối"
+                      >
+                        »
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </>
