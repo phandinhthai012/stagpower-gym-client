@@ -38,6 +38,7 @@ export const API_ENDPOINTS = {
        GET_ALL_STAFFS_WITH_PAGINATION: `${API_PREFIX}/user/staffs/paginated`,
 
        GET_MEMBERS_WITH_ACTIVE_SUBSCRIPTIONS: `${API_PREFIX}/user/members/active-subscriptions`,
+       GET_MEMBERS_WITH_ACTIVE_PT_SUBSCRIPTIONS: `${API_PREFIX}/user/members/active-pt-subscriptions`,
     },
     HEALTH_INFO: {
         GET_ALL_HEALTH_INFOS: `${API_PREFIX}/health-info`,

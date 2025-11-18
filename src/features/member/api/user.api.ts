@@ -141,4 +141,9 @@ export const userApi = {
     const response = await apiClient.get(API_ENDPOINTS.USER.GET_MEMBERS_WITH_ACTIVE_SUBSCRIPTIONS);
     return response.data.data;
   },
+
+  getMembersWithActivePTSubscriptions: async (): Promise<User[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.USER.GET_MEMBERS_WITH_ACTIVE_PT_SUBSCRIPTIONS);
+    return response.data.data;
+  },
 };

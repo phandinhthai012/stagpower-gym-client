@@ -11,7 +11,7 @@ import {
   Dumbbell
 } from 'lucide-react';
 import { useCreateSchedule, useTrainers, useBranches } from '../../hooks';
-import { useMembers } from '../../hooks/useUsers';
+import { useMembersWithActivePTSubscriptions } from '../../hooks/useMember';
 import { CreateScheduleRequest } from '../../types/schedule.types';
 import { toast } from 'sonner';
 
@@ -33,11 +33,11 @@ interface FormData {
 export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingScheduleProps) {
   const createMutation = useCreateSchedule();
   const { data: trainersData } = useTrainers();
-  const { data: membersData } = useMembers();
+  const { data: membersData, isLoading: isLoadingMembers } = useMembersWithActivePTSubscriptions();
   const { data: branchesData } = useBranches();
 
   const trainers = trainersData || [];
-  const members = membersData?.data || [];
+  const members = membersData || []; // API trả về array trực tiếp
   const branches = branchesData || [];
 
   const [formData, setFormData] = useState<FormData>({
@@ -194,20 +194,26 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                   <SelectValue placeholder="Chọn hội viên" />
                 </SelectTrigger>
                 <SelectContent lockScroll={true}>
-                  {members.map((member) => (
-                    <SelectItem key={member._id} value={member._id}>
-                      {member.fullName}
-                      {member.memberInfo && (
-                        <span className="text-xs text-gray-500">
-                          {' '}({member.memberInfo.membership_level.toUpperCase()})
-                        </span>
-                      )}
-                    </SelectItem>
-                  ))}
+                  {isLoadingMembers ? (
+                    <div className="px-2 py-1.5 text-sm text-gray-500">Đang tải...</div>
+                  ) : members.length === 0 ? (
+                    <div className="px-2 py-1.5 text-sm text-gray-500">Không có hội viên nào có gói PT active</div>
+                  ) : (
+                    members.map((member) => (
+                      <SelectItem key={member._id} value={member._id}>
+                        {member.fullName}
+                        {member.memberInfo && (
+                          <span className="text-xs text-gray-500">
+                            {' '}({member.memberInfo.membership_level.toUpperCase()})
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </SelectWithScrollLock>
               <p className="text-xs text-gray-500 mt-1">
-                Chọn hội viên sẽ được hướng dẫn tập luyện
+                Chỉ hiển thị hội viên có gói PT hoặc Combo đang active với buổi tập còn lại
               </p>
               {errors.memberId && (
                 <p className="text-red-500 text-xs mt-1">{errors.memberId}</p>
