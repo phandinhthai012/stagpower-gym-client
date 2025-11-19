@@ -280,7 +280,7 @@ export function AdminBranchManagement() {
               <Plus className="w-4 h-4 mr-2" />
               Thêm chi nhánh mới
             </Button>
-            <Button variant="outline" onClick={handleExportData}>
+            {/* <Button variant="outline" onClick={handleExportData}>
               <Download className="w-4 h-4 mr-2" />
               Xuất dữ liệu
             </Button>
@@ -291,7 +291,7 @@ export function AdminBranchManagement() {
             <Button variant="outline" onClick={handleShowMap}>
               <Map className="w-4 h-4 mr-2" />
               Xem bản đồ
-            </Button>
+            </Button> */}
           </div>
         </CardContent>
       </Card>

@@ -38,6 +38,7 @@ export function AdminExerciseManagement() {
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
+  const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
   // API hooks
   const { data: exercises = [], isLoading, error } = useExercises();
   const deleteExerciseMutation = useDeleteExercise();
@@ -185,9 +186,31 @@ export function AdminExerciseManagement() {
   const totalPages = Math.ceil(sortedData.length / limit);
   const filteredRecords = sortedData.length;
 
+  // Reset selected exercises when filters or sort changes
+  React.useEffect(() => {
+    setSelectedExercises([]);
+  }, [searchTerm, categoryFilter, difficultyFilter, equipmentFilter]);
+
   // Reset selected exercises when sort changes
   const handleSort = (key: string) => {
+    setSelectedExercises([]);
     requestSort(key);
+  };
+
+  const handleSelectExercise = (exerciseId: string) => {
+    setSelectedExercises(prev =>
+      prev.includes(exerciseId)
+        ? prev.filter(id => id !== exerciseId)
+        : [...prev, exerciseId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedExercises.length === paginatedData.length && paginatedData.length > 0) {
+      setSelectedExercises([]);
+    } else {
+      setSelectedExercises(paginatedData.map((exercise: Exercise) => exercise._id));
+    }
   };
 
   if (isLoading) {
@@ -311,6 +334,29 @@ export function AdminExerciseManagement() {
         </CardContent>
       </Card>
 
+      {/* Bulk Actions */}
+      {selectedExercises.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">
+                Đã chọn {selectedExercises.length} bài tập
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Dumbbell className="w-4 h-4 mr-2" />
+                  Kích hoạt
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Xóa
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Exercise Management Table */}
       <Card>
         <CardHeader>
@@ -326,6 +372,14 @@ export function AdminExerciseManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
+                  <NonSortableHeader className="p-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedExercises.length === paginatedData.length && paginatedData.length > 0}
+                      onChange={handleSelectAll}
+                      className="rounded"
+                    />
+                  </NonSortableHeader>
                   <SortableTableHeader
                     label="Tên bài tập"
                     sortKey="name"
@@ -387,6 +441,14 @@ export function AdminExerciseManagement() {
               <tbody>
                 {paginatedData.map((exercise) => (
                   <tr key={exercise._id} className="border-b hover:bg-gray-50">
+                    <td className="p-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedExercises.includes(exercise._id)}
+                        onChange={() => handleSelectExercise(exercise._id)}
+                        className="rounded"
+                      />
+                    </td>
                     <td className="p-4">
                       <div>
                         <div className="font-semibold">{exercise.name}</div>
