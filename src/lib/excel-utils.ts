@@ -1379,3 +1379,178 @@ export const exportPackageReportToExcel = (
   }
 };
 
+export interface PaymentsExportData {
+  payments: any[];
+  title?: string;
+}
+
+export const exportPaymentsToExcel = (
+  data: PaymentsExportData
+): void => {
+  const { payments, title = 'Danh sách hóa đơn' } = data;
+
+  // Helper functions
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('vi-VN');
+  };
+
+  const formatDateTime = (dateString: string | undefined): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return `${date.toLocaleDateString('vi-VN')} ${date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  };
+
+  const getStatusText = (status: string | undefined): string => {
+    switch (status) {
+      case 'Completed':
+        return 'Đã thanh toán';
+      case 'Pending':
+        return 'Chờ thanh toán';
+      case 'Failed':
+        return 'Thất bại';
+      case 'Refunded':
+        return 'Đã hoàn tiền';
+      case 'Cancelled':
+        return 'Đã hủy';
+      default:
+        return status || 'N/A';
+    }
+  };
+
+  const getPaymentMethodText = (method: string | undefined): string => {
+    switch (method) {
+      case 'Cash':
+      case 'cash':
+        return 'Tiền mặt';
+      case 'Card':
+      case 'card':
+        return 'Thẻ';
+      case 'Momo':
+      case 'momo':
+        return 'Ví MoMo';
+      case 'ZaloPay':
+      case 'zalopay':
+        return 'Ví ZaloPay';
+      case 'BankTransfer':
+      case 'banktransfer':
+      case 'bank_transfer':
+        return 'Chuyển khoản';
+      case 'VNPay':
+      case 'vnpay':
+        return 'VNPay';
+      default:
+        return method || 'N/A';
+    }
+  };
+
+  const getPaymentTypeText = (type: string | undefined): string => {
+    switch (type) {
+      case 'NEW_SUBSCRIPTION':
+        return 'Đăng ký gói mới';
+      case 'RENEWAL':
+        return 'Gia hạn gói tập';
+      case 'PT_PURCHASE':
+        return 'Mua buổi tập PT';
+      default:
+        return type || 'Khác';
+    }
+  };
+
+  // Create workbook
+  const wb = XLSX.utils.book_new();
+
+  // Main data sheet
+  const paymentData = payments.map((payment: any) => ({
+    'Mã hóa đơn': payment.invoiceNumber || `#${payment._id?.slice(-8).toUpperCase() || ''}`,
+    'Mã giao dịch': payment.transactionId || payment.transaction_id || '',
+    'Hội viên': payment.memberId?.fullName || payment.memberName || 'N/A',
+    'Email': payment.memberId?.email || payment.memberEmail || '',
+    'Số điện thoại': payment.memberId?.phone || payment.memberPhone || '',
+    'Gói dịch vụ': payment.subscriptionId?.packageId?.name || payment.packageName || 'N/A',
+    'Loại gói': payment.subscriptionId?.packageId?.type || 'N/A',
+    'Loại thanh toán': getPaymentTypeText(payment.paymentType || payment.payment_type),
+    'Phương thức thanh toán': getPaymentMethodText(payment.paymentMethod || payment.payment_method),
+    'Số tiền': payment.amount || 0,
+    'Giá gốc': payment.subscriptionId?.packageId?.price || payment.originalAmount || payment.original_amount || '',
+    'Giảm giá': payment.subscriptionId?.packageId?.price && payment.amount
+      ? (payment.subscriptionId.packageId.price - payment.amount)
+      : payment.discountAmount || payment.discount_amount || '',
+    'Ngày tạo': formatDateTime(payment.createdAt || payment.created_at),
+    'Ngày thanh toán': formatDateTime(payment.paymentDate || payment.payment_date),
+    'Trạng thái': getStatusText(payment.paymentStatus || payment.status),
+    'Ghi chú': payment.notes || payment.note || '',
+  }));
+
+  if (paymentData.length > 0) {
+    const ws = XLSX.utils.json_to_sheet(paymentData);
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 15 }, // Mã hóa đơn
+      { wch: 20 }, // Mã giao dịch
+      { wch: 25 }, // Hội viên
+      { wch: 30 }, // Email
+      { wch: 15 }, // Số điện thoại
+      { wch: 25 }, // Gói dịch vụ
+      { wch: 15 }, // Loại gói
+      { wch: 18 }, // Loại thanh toán
+      { wch: 20 }, // Phương thức thanh toán
+      { wch: 15 }, // Số tiền
+      { wch: 15 }, // Giá gốc
+      { wch: 15 }, // Giảm giá
+      { wch: 20 }, // Ngày tạo
+      { wch: 20 }, // Ngày thanh toán
+      { wch: 15 }, // Trạng thái
+      { wch: 30 }, // Ghi chú
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Danh sách hóa đơn');
+  }
+
+  // Summary sheet
+  const totalAmount = payments
+    .filter((p: any) => (p.paymentStatus || p.status) === 'Completed')
+    .reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+
+  const totalTransactions = payments.length;
+  const completedTransactions = payments.filter((p: any) => (p.paymentStatus || p.status) === 'Completed').length;
+  const pendingTransactions = payments.filter((p: any) => (p.paymentStatus || p.status) === 'Pending').length;
+  const failedTransactions = payments.filter((p: any) => (p.paymentStatus || p.status) === 'Failed').length;
+
+  const summaryData = [
+    { 'Chỉ số': 'Tổng số giao dịch', 'Giá trị': totalTransactions },
+    { 'Chỉ số': 'Đã thanh toán', 'Giá trị': completedTransactions },
+    { 'Chỉ số': 'Chờ thanh toán', 'Giá trị': pendingTransactions },
+    { 'Chỉ số': 'Thất bại', 'Giá trị': failedTransactions },
+    { 'Chỉ số': 'Tổng doanh thu', 'Giá trị': totalAmount },
+    { 'Chỉ số': 'Doanh thu trung bình', 'Giá trị': completedTransactions > 0 ? Math.round(totalAmount / completedTransactions) : 0 },
+  ];
+
+  const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+  wsSummary['!cols'] = [
+    { wch: 25 },
+    { wch: 20 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Tổng hợp');
+
+  // Generate filename
+  const dateStr = new Date().toISOString().split('T')[0];
+  const fileName = `BaoCaoHoaDon-${dateStr}.xlsx`;
+  
+  // Write file
+  try {
+    XLSX.writeFile(wb, fileName);
+  } catch (error) {
+    console.error('Error exporting payments:', error);
+    throw new Error('Không thể xuất báo cáo hóa đơn');
+  }
+};
+

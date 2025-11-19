@@ -37,6 +37,9 @@ import { useSortableTable } from '../../../hooks/useSortableTable';
 import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 import socketService from '../../../services/socket';
 import { useQueryClient } from '@tanstack/react-query';
+import { generateInvoicePDF } from '../../../lib/pdf-utils';
+import { exportPaymentsToExcel } from '../../../lib/excel-utils';
+import { toast } from 'sonner';
 
 export function AdminInvoicePayment() {
   // Pagination state
@@ -258,8 +261,34 @@ export function AdminInvoicePayment() {
     }
   };
 
-  const handlePrintInvoice = (payment: Payment) => {
-    window.print();
+  const handlePrintInvoice = async (payment: Payment) => {
+    try {
+      // Map payment data to InvoiceData format
+      const invoiceData = {
+        invoiceNumber: (payment as any).invoiceNumber || `#${payment._id.slice(-8).toUpperCase()}`,
+        transactionId: (payment as any).transactionId || (payment as any).transaction_id,
+        paymentDate: (payment as any).paymentDate || payment.createdAt || new Date().toISOString(),
+        paymentStatus: (payment as any).paymentStatus || (payment as any).status || 'pending',
+        paymentMethod: (payment as any).paymentMethod || (payment as any).payment_method || 'cash',
+        paymentType: (payment as any).paymentType || (payment as any).payment_type,
+        packageName: (payment as any).subscriptionId?.packageId?.name || 'Gói tập',
+        amount: payment.amount || 0,
+        originalAmount: (payment as any).subscriptionId?.packageId?.price,
+        discountAmount: (payment as any).subscriptionId?.packageId?.price && payment.amount
+          ? (payment as any).subscriptionId?.packageId?.price - payment.amount
+          : undefined,
+        memberName: (payment as any).memberId?.fullName || 'Khách hàng',
+        memberEmail: (payment as any).memberId?.email,
+        memberPhone: (payment as any).memberId?.phone,
+        notes: (payment as any).notes || (payment as any).note,
+      };
+
+      await generateInvoicePDF(invoiceData);
+      toast.success('Đã tải hóa đơn PDF thành công');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Có lỗi xảy ra khi tạo PDF');
+    }
   };
 
   const handleBulkSendReminders = async () => {
@@ -284,6 +313,25 @@ export function AdminInvoicePayment() {
       });
     } catch (error) {
       console.error('Error exporting payments:', error);
+    }
+  };
+
+  const handleExportToExcel = () => {
+    try {
+      if (sortedData.length === 0) {
+        toast.error('Không có dữ liệu để xuất báo cáo');
+        return;
+      }
+
+      exportPaymentsToExcel({
+        payments: sortedData,
+        title: 'Danh sách hóa đơn'
+      });
+      
+      toast.success('Đã xuất báo cáo Excel thành công');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('Có lỗi xảy ra khi xuất báo cáo Excel');
     }
   };
 
@@ -360,13 +408,21 @@ export function AdminInvoicePayment() {
               <Plus className="w-4 h-4 mr-2" />
               Tạo hóa đơn mới
             </Button>
-            <Button
+            {/* <Button
               variant="outline"
               onClick={handleExportInvoices}
               disabled={exportInvoicesMutation.isPending}
             >
               <Download className="w-4 h-4 mr-2" />
               {exportInvoicesMutation.isPending ? 'Đang xuất...' : 'Xuất báo cáo'}
+            </Button> */}
+            <Button
+              variant="outline"
+              onClick={handleExportToExcel}
+              disabled={sortedData.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Xuất Excel
             </Button>
             <Button
               variant="outline"
