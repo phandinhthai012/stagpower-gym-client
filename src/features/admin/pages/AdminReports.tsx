@@ -24,12 +24,37 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { usePackageStats, useTopActiveMembers, useRevenueStats, usePeakHours } from '../hooks/useReports';
+import { usePayments } from '../../member/hooks/usePayments';
+import { exportRevenueReportToExcel, exportMemberReportToExcel, exportAttendanceReportToExcel, exportPackageReportToExcel } from '../../../lib/excel-utils';
+import { useMembers } from '../../member/hooks/useMembers';
+import { useSubscriptions } from '../hooks/useSubscriptions';
+import { useCheckIns } from '../hooks/useCheckIns';
+import { useAllSchedules } from '../hooks/useSchedules';
+import { usePackages } from '../hooks/usePackages';
+import { toast } from 'sonner';
 
 export function AdminReports() {
   const { data: packageStats, isLoading: isLoadingPackageStats } = usePackageStats();
   const { data: topMembers, isLoading: isLoadingTopMembers } = useTopActiveMembers(10);
   const { data: revenueStats, isLoading: isLoadingRevenueStats } = useRevenueStats();
   const { data: peakHours, isLoading: isLoadingPeakHours } = usePeakHours();
+  const { data: paymentsResponse } = usePayments();
+  const payments = paymentsResponse?.data || [];
+  const { data: membersResponse } = useMembers();
+  const { data: subscriptionsResponse } = useSubscriptions();
+  const { data: checkInsResponse } = useCheckIns();
+  
+  const members = (membersResponse && 'success' in membersResponse && membersResponse.success)
+    ? membersResponse.data || []
+    : Array.isArray(membersResponse) ? membersResponse : [];
+  const subscriptions = subscriptionsResponse?.data || [];
+  const checkIns = checkInsResponse?.data || [];
+  const { data: schedulesResponse } = useAllSchedules();
+  const schedules = Array.isArray(schedulesResponse) 
+    ? schedulesResponse 
+    : (schedulesResponse as any)?.data || [];
+  const { data: packagesResponse } = usePackages();
+  const packages = packagesResponse?.data || [];
   
   // Tooltip state for donut chart
   const [hoveredPackage, setHoveredPackage] = useState<any>(null);
@@ -47,6 +72,19 @@ export function AdminReports() {
   // Export report modal state
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<string>('');
+  // Get first and last day of current month
+  const getFirstDayOfMonth = () => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  };
+
+  const getLastDayOfMonth = () => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  };
+
+  const [dateRange1From, setDateRange1From] = useState<string>(getFirstDayOfMonth());
+  const [dateRange1To, setDateRange1To] = useState<string>(getLastDayOfMonth());
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -70,6 +108,124 @@ export function AdminReports() {
   const totalSold = packageStats?.packageStats.reduce((sum: number, pkg: any) => sum + pkg.count, 0) || 1;
   const totalRevenue = packageStats?.packageStats.reduce((sum: number, pkg: any) => sum + pkg.revenue, 0) || 0;
 
+  // Handle export package report
+  const handleExportPackageReport = () => {
+    try {
+      // Validate date range if provided
+      if (dateRange1From && dateRange1To) {
+        if (new Date(dateRange1From) > new Date(dateRange1To)) {
+          toast.error('Ngày bắt đầu phải nhỏ hơn ngày kết thúc');
+          return;
+        }
+      }
+
+      exportPackageReportToExcel({
+        packages,
+        subscriptions,
+        payments,
+        members,
+        dateRange: dateRange1From && dateRange1To ? {
+          from: dateRange1From,
+          to: dateRange1To,
+        } : undefined,
+      });
+      toast.success('Đã xuất báo cáo gói dịch vụ thành công');
+      setIsExportModalOpen(false);
+    } catch (error) {
+      console.error('Error exporting package report:', error);
+      toast.error('Có lỗi xảy ra khi xuất báo cáo');
+    }
+  };
+
+  // Handle export attendance report
+  const handleExportAttendanceReport = () => {
+    try {
+      // Validate date range
+      if (!dateRange1From || !dateRange1To) {
+        toast.error('Vui lòng chọn khoảng thời gian');
+        return;
+      }
+
+      if (new Date(dateRange1From) > new Date(dateRange1To)) {
+        toast.error('Ngày bắt đầu phải nhỏ hơn ngày kết thúc');
+        return;
+      }
+
+      exportAttendanceReportToExcel({
+        checkIns,
+        schedules,
+        members,
+        dateRange1: {
+          from: dateRange1From,
+          to: dateRange1To,
+        },
+      });
+      toast.success('Đã xuất báo cáo tham gia thành công');
+      setIsExportModalOpen(false);
+    } catch (error) {
+      console.error('Error exporting attendance report:', error);
+      toast.error('Có lỗi xảy ra khi xuất báo cáo');
+    }
+  };
+
+  // Handle export member report
+  const handleExportMemberReport = () => {
+    try {
+      // Validate date range if provided
+      if (dateRange1From && dateRange1To) {
+        if (new Date(dateRange1From) > new Date(dateRange1To)) {
+          toast.error('Ngày bắt đầu phải nhỏ hơn ngày kết thúc');
+          return;
+        }
+      }
+
+      exportMemberReportToExcel({
+        members,
+        subscriptions,
+        checkIns,
+        payments,
+        dateRange: dateRange1From && dateRange1To ? {
+          from: dateRange1From,
+          to: dateRange1To,
+        } : undefined,
+      });
+      toast.success('Đã xuất báo cáo hội viên thành công');
+      setIsExportModalOpen(false);
+    } catch (error) {
+      console.error('Error exporting member report:', error);
+      toast.error('Có lỗi xảy ra khi xuất báo cáo');
+    }
+  };
+
+  // Handle export revenue report
+  const handleExportRevenueReport = () => {
+    try {
+      // Validate date range
+      if (!dateRange1From || !dateRange1To) {
+        toast.error('Vui lòng chọn khoảng thời gian');
+        return;
+      }
+
+      if (new Date(dateRange1From) > new Date(dateRange1To)) {
+        toast.error('Ngày bắt đầu phải nhỏ hơn ngày kết thúc');
+        return;
+      }
+
+      exportRevenueReportToExcel({
+        payments,
+        dateRange1: {
+          from: dateRange1From,
+          to: dateRange1To,
+        },
+      });
+      toast.success('Đã xuất báo cáo doanh thu thành công');
+      setIsExportModalOpen(false);
+    } catch (error) {
+      console.error('Error exporting revenue report:', error);
+      toast.error('Có lỗi xảy ra khi xuất báo cáo');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Title */}
@@ -79,7 +235,14 @@ export function AdminReports() {
           <p className="text-gray-600 mt-1">Tổng quan hiệu suất và doanh thu</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setSelectedReportType('revenue');
+              setIsExportModalOpen(true);
+            }}
+          >
             <Download className="w-4 h-4 mr-2" />
             Xuất báo cáo
           </Button>
@@ -897,79 +1060,55 @@ export function AdminReports() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <Button 
-              variant="outline" 
-              className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-300"
-              onClick={() => {
-                setSelectedReportType('revenue');
-                setIsExportModalOpen(true);
-              }}
-            >
-              <DollarSign className="w-8 h-8 text-blue-600" />
-              <span className="text-xs font-medium">Báo cáo doanh thu</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-green-50 hover:border-green-300"
-              onClick={() => {
-                setSelectedReportType('member');
-                setIsExportModalOpen(true);
-              }}
-            >
-              <Users className="w-8 h-8 text-green-600" />
-              <span className="text-xs font-medium">Báo cáo hội viên</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:border-purple-300"
-              onClick={() => {
-                setSelectedReportType('attendance');
-                setIsExportModalOpen(true);
-              }}
-            >
-              <CheckSquare className="w-8 h-8 text-purple-600" />
-              <span className="text-xs font-medium">Báo cáo tham gia</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-300"
-              onClick={() => {
-                setSelectedReportType('package');
-                setIsExportModalOpen(true);
-              }}
-            >
-              <Package className="w-8 h-8 text-orange-600" />
-              <span className="text-xs font-medium">Báo cáo gói dịch vụ</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-indigo-50 hover:border-indigo-300"
-              onClick={() => {
-                setSelectedReportType('summary');
-                setIsExportModalOpen(true);
-              }}
-            >
-              <FileText className="w-8 h-8 text-indigo-600" />
-              <span className="text-xs font-medium">Báo cáo tổng hợp</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-gray-100 hover:border-gray-400"
-              onClick={() => {
-                setSelectedReportType('custom');
-                setIsExportModalOpen(true);
-              }}
-            >
-              <Settings className="w-8 h-8 text-gray-600" />
-              <span className="text-xs font-medium">Báo cáo tùy chỉnh</span>
-            </Button>
-          </div>
+                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                   <Button 
+                     variant="outline" 
+                     className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-300"
+                     onClick={() => {
+                       setSelectedReportType('revenue');
+                       setIsExportModalOpen(true);
+                     }}
+                   >
+                     <DollarSign className="w-8 h-8 text-blue-600" />
+                     <span className="text-xs font-medium">Báo cáo doanh thu</span>
+                   </Button>
+                   
+                   <Button 
+                     variant="outline" 
+                     className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-green-50 hover:border-green-300"
+                     onClick={() => {
+                       setSelectedReportType('member');
+                       setIsExportModalOpen(true);
+                     }}
+                   >
+                     <Users className="w-8 h-8 text-green-600" />
+                     <span className="text-xs font-medium">Báo cáo hội viên</span>
+                   </Button>
+                   
+                   <Button 
+                     variant="outline" 
+                     className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:border-purple-300"
+                     onClick={() => {
+                       setSelectedReportType('attendance');
+                       setIsExportModalOpen(true);
+                     }}
+                   >
+                     <CheckSquare className="w-8 h-8 text-purple-600" />
+                     <span className="text-xs font-medium">Báo cáo tham gia</span>
+                   </Button>
+                   
+                   <Button 
+                     variant="outline" 
+                     className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-300"
+                     onClick={() => {
+                       setSelectedReportType('package');
+                       setIsExportModalOpen(true);
+                     }}
+                   >
+                     <Package className="w-8 h-8 text-orange-600" />
+                     <span className="text-xs font-medium">Báo cáo gói dịch vụ</span>
+                   </Button>
+                 </div>
         </CardContent>
       </Card>
 
@@ -1067,14 +1206,12 @@ export function AdminReports() {
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold">
-                    {selectedReportType === 'revenue' && 'Xuất báo cáo doanh thu'}
-                    {selectedReportType === 'member' && 'Xuất báo cáo hội viên'}
-                    {selectedReportType === 'attendance' && 'Xuất báo cáo tham gia'}
-                    {selectedReportType === 'package' && 'Xuất báo cáo gói dịch vụ'}
-                    {selectedReportType === 'summary' && 'Xuất báo cáo tổng hợp'}
-                    {selectedReportType === 'custom' && 'Xuất báo cáo tùy chỉnh'}
-                  </h2>
+                    <h2 className="text-xl font-bold">
+                      {selectedReportType === 'revenue' && 'Xuất báo cáo doanh thu'}
+                      {selectedReportType === 'member' && 'Xuất báo cáo hội viên'}
+                      {selectedReportType === 'attendance' && 'Xuất báo cáo tham gia'}
+                      {selectedReportType === 'package' && 'Xuất báo cáo gói dịch vụ'}
+                    </h2>
                   <p className="text-blue-100 text-sm mt-1">
                     Chọn thông tin để xuất báo cáo
                   </p>
@@ -1093,72 +1230,29 @@ export function AdminReports() {
               {/* Date Range */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Khoảng thời gian
+                  Khoảng thời gian <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Từ ngày</label>
                     <input
                       type="date"
+                      value={dateRange1From}
+                      onChange={(e) => setDateRange1From(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      defaultValue={new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]}
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">Đến ngày</label>
                     <input
                       type="date"
+                      value={dateRange1To}
+                      onChange={(e) => setDateRange1To(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      defaultValue={new Date().toISOString().split('T')[0]}
                     />
                   </div>
                 </div>
               </div>
-
-              {/* Format */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Định dạng file
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button className="px-4 py-2 border-2 border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 font-medium">
-                    PDF
-                  </button>
-                  <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                    Excel
-                  </button>
-                  <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                    CSV
-                  </button>
-                </div>
-              </div>
-
-              {/* Additional Options for Custom Report */}
-              {selectedReportType === 'custom' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Chọn nội dung báo cáo
-                  </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" defaultChecked />
-                      <span className="text-sm">Thống kê doanh thu</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" defaultChecked />
-                      <span className="text-sm">Danh sách hội viên</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
-                      <span className="text-sm">Lịch sử check-in</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
-                      <span className="text-sm">Thống kê gói dịch vụ</span>
-                    </label>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Footer */}
@@ -1172,9 +1266,18 @@ export function AdminReports() {
               <Button
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => {
-                  // TODO: Implement export logic
-                  alert('Chức năng xuất báo cáo sẽ được triển khai sau');
-                  setIsExportModalOpen(false);
+                  if (selectedReportType === 'revenue') {
+                    handleExportRevenueReport();
+                  } else if (selectedReportType === 'member') {
+                    handleExportMemberReport();
+                  } else if (selectedReportType === 'attendance') {
+                    handleExportAttendanceReport();
+                  } else if (selectedReportType === 'package') {
+                    handleExportPackageReport();
+                  } else {
+                    toast.info('Chức năng xuất báo cáo này sẽ được triển khai sau');
+                    setIsExportModalOpen(false);
+                  }
                 }}
               >
                 <Download className="w-4 h-4 mr-2" />
