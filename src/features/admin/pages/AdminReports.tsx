@@ -349,244 +349,331 @@ export function AdminReports() {
                   </div>
                 )}
 
-            <div className="flex gap-2">
-                  <Button variant="ghost" size="sm">
-                    <Download className="w-4 h-4" />
-              </Button>
-                  <Button variant="ghost" size="sm">
-                    <Printer className="w-4 h-4" />
-              </Button>
-                </div>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="h-80 relative">
               {viewMode === 'year' ? (
-                /* Year View - Monthly Revenue */
-                <svg 
-                  className="w-full h-full" 
-                  viewBox="0 0 600 300"
-                  onMouseLeave={() => setHoveredRevenuePoint(null)}
-                >
-                {/* Y-axis labels */}
-                <text x="10" y="30" className="text-xs fill-gray-500">15M</text>
-                <text x="10" y="90" className="text-xs fill-gray-500">10M</text>
-                <text x="10" y="150" className="text-xs fill-gray-500">5M</text>
-                <text x="10" y="210" className="text-xs fill-gray-500">0M</text>
-                
-                {/* Grid lines */}
-                <line x1="50" y1="30" x2="580" y2="30" stroke="#e5e7eb" strokeWidth="1" />
-                <line x1="50" y1="90" x2="580" y2="90" stroke="#e5e7eb" strokeWidth="1" />
-                <line x1="50" y1="150" x2="580" y2="150" stroke="#e5e7eb" strokeWidth="1" />
-                <line x1="50" y1="210" x2="580" y2="210" stroke="#e5e7eb" strokeWidth="1" />
-                
-                {/* Revenue line */}
-                {revenueStats?.monthlyRevenue && (
-                  <>
-                    <polyline
-                      points={revenueStats.monthlyRevenue.map((data: any, i: number) => {
-                        const x = 50 + (i * 44);
-                        const y = 210 - (data.revenue / 15 * 180);
-                        return `${x},${y}`;
-                      }).join(' ')}
-                      fill="none"
-                      stroke="#3b82f6"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    {/* Data points */}
-                    {revenueStats.monthlyRevenue.map((data: any, i: number) => {
-                      const x = 50 + (i * 44);
-                      const y = 210 - (data.revenue / 15 * 180);
-                      return (
-                        <g key={i}>
-                          <circle
-                            cx={x}
-                            cy={y}
-                            r="6"
-                            fill="#3b82f6"
-                            stroke="white"
-                            strokeWidth="2"
-                            className="cursor-pointer transition-all"
-                            style={{ transition: 'all 0.2s' }}
-                            onClick={() => {
-                              setSelectedMonth(i + 1);
-                              setViewMode('month');
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.setAttribute('r', '8');
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              setHoveredRevenuePoint({
-                                month: data.month,
-                                revenue: data.revenue * 1000000,
-                                type: 'month'
-                              });
-                              setRevenueTooltipPosition({
-                                x: rect.left + rect.width / 2,
-                                y: rect.top - 10
-                              });
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.setAttribute('r', '6');
-                              setHoveredRevenuePoint(null);
-                            }}
+                (() => {
+                  // Calculate max revenue from actual data
+                  const monthlyRevenues = revenueStats?.monthlyRevenue || [];
+                  const maxMonthlyRevenue = monthlyRevenues.length > 0
+                    ? Math.max(...monthlyRevenues.map((data: any) => data.revenue || 0))
+                    : 1;
+                  const maxRevenue = maxMonthlyRevenue * 1.2 || 1; // Add 20% padding
+                  
+                  // Create Y-axis labels based on actual data
+                  const yAxisLabels = [];
+                  const yAxisPositions = [];
+                  const numLabels = 4; // 4 labels on Y-axis
+                  
+                  for (let i = 0; i < numLabels; i++) {
+                    const value = (maxRevenue / (numLabels - 1)) * (numLabels - 1 - i);
+                    const yPos = 30 + (i * 60); // 30, 90, 150, 210
+                    yAxisLabels.push(value);
+                    yAxisPositions.push(yPos);
+                  }
+                  
+                  // Format Y-axis label
+                  const formatYLabel = (value: number): string => {
+                    if (value >= 1000) {
+                      return (value / 1000).toFixed(1) + 'B';
+                    } else if (value >= 1) {
+                      return value.toFixed(1) + 'M';
+                    } else if (value >= 0.001) {
+                      return (value * 1000).toFixed(0) + 'K';
+                    }
+                    return value.toFixed(0);
+                  };
+                  
+                  return (
+                    <svg 
+                      className="w-full h-full" 
+                      viewBox="0 0 600 300"
+                      onMouseLeave={() => setHoveredRevenuePoint(null)}
+                    >
+                      {/* Y-axis labels - dynamic based on actual data */}
+                      {yAxisLabels.map((label, i) => (
+                        <text key={i} x="10" y={yAxisPositions[i]} className="text-xs fill-gray-500">
+                          {formatYLabel(label)}
+                        </text>
+                      ))}
+                      
+                      {/* Grid lines */}
+                      {yAxisPositions.map((yPos, i) => (
+                        <line 
+                          key={i}
+                          x1="50" 
+                          y1={yPos} 
+                          x2="580" 
+                          y2={yPos} 
+                          stroke="#e5e7eb" 
+                          strokeWidth="1" 
+                        />
+                      ))}
+                      
+                      {/* Revenue line */}
+                      {revenueStats?.monthlyRevenue && (
+                        <>
+                          <polyline
+                            points={revenueStats.monthlyRevenue.map((data: any, i: number) => {
+                              const x = 50 + (i * 44);
+                              const y = 210 - ((data.revenue || 0) / maxRevenue * 180);
+                              return `${x},${y}`;
+                            }).join(' ')}
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           />
-                        </g>
-                      );
-                    })}
-                  </>
-                )}
-                
-                {/* X-axis labels */}
-                {revenueStats?.monthlyRevenue.map((data: any, i: number) => (
-                  <text
-                    key={i}
-                    x={50 + (i * 44)}
-                    y="240"
-                    className="text-xs fill-gray-500 cursor-pointer hover:fill-blue-600"
-                    textAnchor="middle"
-                    onClick={() => {
-                      setSelectedMonth(i + 1);
-                      setViewMode('month');
-                    }}
-                  >
-                    {data.month}
-                  </text>
-                ))}
-              </svg>
+                          {/* Data points */}
+                          {revenueStats.monthlyRevenue.map((data: any, i: number) => {
+                            const x = 50 + (i * 44);
+                            const y = 210 - ((data.revenue || 0) / maxRevenue * 180);
+                            return (
+                              <g key={i}>
+                                <circle
+                                  cx={x}
+                                  cy={y}
+                                  r="6"
+                                  fill="#3b82f6"
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  className="cursor-pointer transition-all"
+                                  style={{ transition: 'all 0.2s' }}
+                                  onClick={() => {
+                                    setSelectedMonth(i + 1);
+                                    setViewMode('month');
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.setAttribute('r', '8');
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setHoveredRevenuePoint({
+                                      month: data.month,
+                                      revenue: data.revenue * 1000000,
+                                      type: 'month'
+                                    });
+                                    setRevenueTooltipPosition({
+                                      x: rect.left + rect.width / 2,
+                                      y: rect.top - 10
+                                    });
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.setAttribute('r', '6');
+                                    setHoveredRevenuePoint(null);
+                                  }}
+                                />
+                              </g>
+                            );
+                          })}
+                        </>
+                      )}
+                      
+                      {/* X-axis labels */}
+                      {revenueStats?.monthlyRevenue.map((data: any, i: number) => (
+                        <text
+                          key={i}
+                          x={50 + (i * 44)}
+                          y="240"
+                          className="text-xs fill-gray-500 cursor-pointer hover:fill-blue-600"
+                          textAnchor="middle"
+                          onClick={() => {
+                            setSelectedMonth(i + 1);
+                            setViewMode('month');
+                          }}
+                        >
+                          {data.month}
+                        </text>
+                      ))}
+                    </svg>
+                  );
+                })()
               ) : (
-                /* Month View - Daily Revenue */
-                <svg 
-                  className="w-full h-full" 
-                  viewBox="0 0 600 300"
-                  onMouseLeave={() => setHoveredRevenuePoint(null)}
-                >
-                  {/* Y-axis labels */}
-                  <text x="10" y="30" className="text-xs fill-gray-500">3M</text>
-                  <text x="10" y="90" className="text-xs fill-gray-500">2M</text>
-                  <text x="10" y="150" className="text-xs fill-gray-500">1M</text>
-                  <text x="10" y="210" className="text-xs fill-gray-500">0</text>
+                (() => {
+                  const daysInMonth = new Date(selectedYear, selectedMonth || 0, 0).getDate();
                   
-                  {/* Grid lines */}
-                  <line x1="50" y1="30" x2="580" y2="30" stroke="#e5e7eb" strokeWidth="1" />
-                  <line x1="50" y1="90" x2="580" y2="90" stroke="#e5e7eb" strokeWidth="1" />
-                  <line x1="50" y1="150" x2="580" y2="150" stroke="#e5e7eb" strokeWidth="1" />
-                  <line x1="50" y1="210" x2="580" y2="210" stroke="#e5e7eb" strokeWidth="1" />
+                  // Calculate actual daily revenue from payments
+                  const dailyRevenueMap: Record<number, number> = {};
                   
-                  {/* Generate daily revenue data for the selected month */}
-                  {(() => {
-                    const daysInMonth = new Date(selectedYear, selectedMonth || 0, 0).getDate();
-                    const monthRevenue = revenueStats?.monthlyRevenue[selectedMonth! - 1]?.revenue || 0;
-                    
-                    // Generate daily data (simulated - distribute monthly revenue across days)
-                    const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
-                      // Simulate variation in daily revenue
-                      const baseRevenue = monthRevenue / daysInMonth;
-                      const variation = (Math.random() - 0.5) * 0.4; // ±20% variation
-                      return {
-                        day: i + 1,
-                        revenue: baseRevenue * (1 + variation)
-                      };
-                    });
-                    
-                    const maxRevenue = Math.max(...dailyData.map(d => d.revenue)) * 1.2 || 3;
-                    const spacing = 530 / daysInMonth;
-                    
-                    return (
-                      <>
-                        {/* Revenue line */}
-                        <polyline
-                          points={dailyData.map((data, i) => {
-                            const x = 50 + (i * spacing);
-                            const y = 210 - (data.revenue / maxRevenue * 180);
-                            return `${x},${y}`;
-                          }).join(' ')}
-                          fill="none"
-                          stroke="#10b981"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                  // Initialize all days with 0
+                  for (let day = 1; day <= daysInMonth; day++) {
+                    dailyRevenueMap[day] = 0;
+                  }
+                  
+                  // Filter payments for the selected month and year
+                  const monthPayments = payments.filter((payment: any) => {
+                    const paymentDate = new Date(payment.paymentDate || payment.createdAt || payment.payment_date);
+                    return paymentDate.getFullYear() === selectedYear &&
+                           paymentDate.getMonth() === (selectedMonth! - 1) &&
+                           (payment.paymentStatus || payment.status) === 'Completed';
+                  });
+                  
+                  // Group payments by day
+                  monthPayments.forEach((payment: any) => {
+                    const paymentDate = new Date(payment.paymentDate || payment.createdAt || payment.payment_date);
+                    const day = paymentDate.getDate();
+                    if (day >= 1 && day <= daysInMonth) {
+                      dailyRevenueMap[day] = (dailyRevenueMap[day] || 0) + (payment.amount || 0);
+                    }
+                  });
+                  
+                  // Convert to array format
+                  const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
+                    const day = i + 1;
+                    return {
+                      day,
+                      revenue: (dailyRevenueMap[day] || 0) / 1000000 // Convert to millions for display
+                    };
+                  });
+                  
+                  // Calculate max revenue and create Y-axis scale
+                  const maxRevenue = Math.max(...dailyData.map(d => d.revenue), 0.1) * 1.2 || 1;
+                  const spacing = 530 / daysInMonth;
+                  
+                  // Create Y-axis labels based on actual data
+                  const yAxisLabels = [];
+                  const yAxisPositions = [];
+                  const numLabels = 4; // 4 labels on Y-axis
+                  
+                  for (let i = 0; i < numLabels; i++) {
+                    const value = (maxRevenue / (numLabels - 1)) * (numLabels - 1 - i);
+                    const yPos = 30 + (i * 60); // 30, 90, 150, 210
+                    yAxisLabels.push(value);
+                    yAxisPositions.push(yPos);
+                  }
+                  
+                  // Format Y-axis label
+                  const formatYLabel = (value: number): string => {
+                    if (value >= 1000) {
+                      return (value / 1000).toFixed(1) + 'B';
+                    } else if (value >= 1) {
+                      return value.toFixed(1) + 'M';
+                    } else if (value >= 0.001) {
+                      return (value * 1000).toFixed(0) + 'K';
+                    }
+                    return value.toFixed(0);
+                  };
+                  
+                  return (
+                    <svg 
+                      className="w-full h-full" 
+                      viewBox="0 0 600 300"
+                      onMouseLeave={() => setHoveredRevenuePoint(null)}
+                    >
+                      {/* Y-axis labels - dynamic based on actual data */}
+                      {yAxisLabels.map((label, i) => (
+                        <text key={i} x="10" y={yAxisPositions[i]} className="text-xs fill-gray-500">
+                          {formatYLabel(label)}
+                        </text>
+                      ))}
+                      
+                      {/* Grid lines */}
+                      {yAxisPositions.map((yPos, i) => (
+                        <line 
+                          key={i}
+                          x1="50" 
+                          y1={yPos} 
+                          x2="580" 
+                          y2={yPos} 
+                          stroke="#e5e7eb" 
+                          strokeWidth="1" 
                         />
-                        
-                        {/* Area fill */}
-                        <polygon
-                          points={`50,210 ${dailyData.map((data, i) => {
-                            const x = 50 + (i * spacing);
-                            const y = 210 - (data.revenue / maxRevenue * 180);
-                            return `${x},${y}`;
-                          }).join(' ')} ${50 + ((daysInMonth - 1) * spacing)},210`}
-                          fill="url(#gradient)"
-                          opacity="0.3"
-                        />
-                        
-                        {/* Gradient definition */}
-                        <defs>
-                          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
-                          </linearGradient>
-                        </defs>
-                        
-                        {/* Data points - show every 5th day to avoid crowding */}
-                        {dailyData.map((data, i) => {
-                          if ((i + 1) % 5 !== 0 && i !== 0 && i !== daysInMonth - 1) return null;
+                      ))}
+                      
+                      {/* Revenue line */}
+                      <polyline
+                        points={dailyData.map((data, i) => {
                           const x = 50 + (i * spacing);
                           const y = 210 - (data.revenue / maxRevenue * 180);
-                          return (
-                            <g key={i}>
-                              <circle
-                                cx={x}
-                                cy={y}
-                                r="4"
-                                fill="#10b981"
-                                stroke="white"
-                                strokeWidth="2"
-                                className="cursor-pointer transition-all"
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.setAttribute('r', '6');
-                                  const rect = e.currentTarget.getBoundingClientRect();
-                                  setHoveredRevenuePoint({
-                                    day: data.day,
-                                    revenue: data.revenue * 1000000,
-                                    month: selectedMonth,
-                                    year: selectedYear,
-                                    type: 'day'
-                                  });
-                                  setRevenueTooltipPosition({
-                                    x: rect.left + rect.width / 2,
-                                    y: rect.top - 10
-                                  });
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.setAttribute('r', '4');
-                                  setHoveredRevenuePoint(null);
-                                }}
-                              />
-                            </g>
-                          );
-                        })}
-                        
-                        {/* X-axis labels - show every 5th day */}
-                        {dailyData.map((data, i) => {
-                          if ((i + 1) % 5 !== 0 && i !== 0 && i !== daysInMonth - 1) return null;
-                          return (
-                            <text
-                              key={i}
-                              x={50 + (i * spacing)}
-                              y="240"
-                              className="text-xs fill-gray-500"
-                              textAnchor="middle"
-                            >
-                              {data.day}
-                            </text>
-                          );
-                        })}
-                      </>
-                    );
-                  })()}
-                </svg>
+                          return `${x},${y}`;
+                        }).join(' ')}
+                        fill="none"
+                        stroke="#10b981"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      
+                      {/* Area fill */}
+                      <polygon
+                        points={`50,210 ${dailyData.map((data, i) => {
+                          const x = 50 + (i * spacing);
+                          const y = 210 - (data.revenue / maxRevenue * 180);
+                          return `${x},${y}`;
+                        }).join(' ')} ${50 + ((daysInMonth - 1) * spacing)},210`}
+                        fill="url(#gradient)"
+                        opacity="0.3"
+                      />
+                      
+                      {/* Gradient definition */}
+                      <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+                          <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
+                        </linearGradient>
+                      </defs>
+                      
+                      {/* Data points - show all days */}
+                      {dailyData.map((data, i) => {
+                        const x = 50 + (i * spacing);
+                        const y = 210 - (data.revenue / maxRevenue * 180);
+                        return (
+                          <g key={i}>
+                            <circle
+                              cx={x}
+                              cy={y}
+                              r="3"
+                              fill="#10b981"
+                              stroke="white"
+                              strokeWidth="1.5"
+                              className="cursor-pointer transition-all"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.setAttribute('r', '5');
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                // Calculate actual revenue in VND (convert back from millions)
+                                const actualRevenue = data.revenue * 1000000;
+                                setHoveredRevenuePoint({
+                                  day: data.day,
+                                  revenue: actualRevenue,
+                                  month: selectedMonth,
+                                  year: selectedYear,
+                                  type: 'day'
+                                });
+                                setRevenueTooltipPosition({
+                                  x: rect.left + rect.width / 2,
+                                  y: rect.top - 10
+                                });
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.setAttribute('r', '3');
+                                setHoveredRevenuePoint(null);
+                              }}
+                            />
+                          </g>
+                        );
+                      })}
+                      
+                      {/* X-axis labels - show all days */}
+                      {dailyData.map((data, i) => {
+                        const x = 50 + (i * spacing);
+                        return (
+                          <text
+                            key={i}
+                            x={x}
+                            y="240"
+                            className="text-xs fill-gray-500"
+                            textAnchor="middle"
+                            style={{ fontSize: '9px' }}
+                          >
+                            {data.day}
+                          </text>
+                        );
+                      })}
+                    </svg>
+                  );
+                })()
               )}
               
           </div>
@@ -601,9 +688,6 @@ export function AdminReports() {
                 <PieChart className="w-5 h-5 text-purple-600" />
                 Phân bố gói dịch vụ
               </CardTitle>
-              <Button variant="ghost" size="sm">
-                <Download className="w-4 h-4" />
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
