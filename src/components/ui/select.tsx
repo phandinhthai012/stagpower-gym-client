@@ -73,6 +73,9 @@ const SelectContent = React.forwardRef<
     lockScroll?: boolean;
   }
 >(({ className, children, position = 'popper', lockScroll = false, ...props }, ref) => {
+  // Note: lockScroll prop is not used here because SelectContent doesn't have direct access to open state
+  // Use SelectWithScrollLock wrapper component if you need scroll locking functionality
+  // Or handle scroll locking at the Select Root level using onOpenChange callback
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content

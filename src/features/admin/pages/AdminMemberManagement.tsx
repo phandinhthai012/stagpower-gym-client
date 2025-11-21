@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -81,6 +81,64 @@ export function AdminMemberManagement({
   React.useEffect(() => {
     setPage(1);
   }, [searchTerm, statusFilter, membershipFilter]);
+
+  // Track dropdown open state to prevent unnecessary scroll unlock
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Prevent scroll lock when dropdowns are open (only when dropdown is actually open)
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    let rafId: number;
+    let lastCheck = 0;
+    const preventScrollLock = () => {
+      const now = Date.now();
+      // Throttle to prevent flickering - only check every 100ms
+      if (now - lastCheck < 100) {
+        if (isDropdownOpen) {
+          rafId = requestAnimationFrame(preventScrollLock);
+        }
+        return;
+      }
+      lastCheck = now;
+
+      // Check if body has fixed position (indicating scroll lock)
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        // Remove data-scroll-locked attribute if present
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      }
+      // Also check for data-scroll-locked attribute
+      if (document.body.hasAttribute('data-scroll-locked')) {
+        document.body.removeAttribute('data-scroll-locked');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      // Continue checking only if dropdown is still open
+      if (isDropdownOpen) {
+        rafId = requestAnimationFrame(preventScrollLock);
+      }
+    };
+
+    // Start checking
+    rafId = requestAnimationFrame(preventScrollLock);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isDropdownOpen]);
 
   // Sort members - Hook must be called before early returns
   const { sortedData, requestSort, getSortDirection } = useSortableTable({
@@ -219,14 +277,43 @@ export function AdminMemberManagement({
               />
             </div>
             
-            <Select value={statusFilter} onValueChange={(value) => {
-              setStatusFilter(value);
-              setPage(1);
-            }}>
+            <Select 
+              value={statusFilter} 
+              onValueChange={(value) => {
+                setStatusFilter(value);
+                setPage(1);
+              }}
+              onOpenChange={(open) => {
+                setIsDropdownOpen(open);
+                // Prevent scroll lock when dropdown opens/closes
+                // Use requestAnimationFrame to ensure this runs after Radix UI's scroll lock
+                requestAnimationFrame(() => {
+                  // Restore scroll styles to prevent lock
+                  if (document.body.style.position === 'fixed') {
+                    const scrollY = document.body.style.top;
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.width = '';
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    // Remove data-scroll-locked attribute if present
+                    document.body.removeAttribute('data-scroll-locked');
+                    if (scrollY) {
+                      const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                      window.scrollTo(0, y);
+                    }
+                  } else {
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    document.body.removeAttribute('data-scroll-locked');
+                  }
+                });
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Trạng thái" />
               </SelectTrigger>
-              <SelectContent lockScroll={false}>
+              <SelectContent>
                 <SelectItem value="all">Tất cả trạng thái</SelectItem>
                 <SelectItem value="active">Hoạt động</SelectItem>
                 <SelectItem value="inactive">Không hoạt động</SelectItem>
@@ -234,14 +321,43 @@ export function AdminMemberManagement({
               </SelectContent>
             </Select>
 
-            <Select value={membershipFilter} onValueChange={(value) => {
-              setMembershipFilter(value);
-              setPage(1);
-            }}>
+            <Select 
+              value={membershipFilter} 
+              onValueChange={(value) => {
+                setMembershipFilter(value);
+                setPage(1);
+              }}
+              onOpenChange={(open) => {
+                setIsDropdownOpen(open);
+                // Prevent scroll lock when dropdown opens/closes
+                // Use requestAnimationFrame to ensure this runs after Radix UI's scroll lock
+                requestAnimationFrame(() => {
+                  // Restore scroll styles to prevent lock
+                  if (document.body.style.position === 'fixed') {
+                    const scrollY = document.body.style.top;
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.width = '';
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    // Remove data-scroll-locked attribute if present
+                    document.body.removeAttribute('data-scroll-locked');
+                    if (scrollY) {
+                      const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                      window.scrollTo(0, y);
+                    }
+                  } else {
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    document.body.removeAttribute('data-scroll-locked');
+                  }
+                });
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Loại membership" />
               </SelectTrigger>
-              <SelectContent lockScroll={false}>
+              <SelectContent>
                 <SelectItem value="all">Tất cả loại</SelectItem>
                 <SelectItem value="basic">Basic</SelectItem>
                 <SelectItem value="vip">VIP</SelectItem>
