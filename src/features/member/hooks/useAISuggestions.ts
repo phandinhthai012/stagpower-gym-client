@@ -102,3 +102,31 @@ export const useAISuggestionsById = (AISuggestionID: string) => {
         enabled: !!AISuggestionID,
     })
 }
+
+export const useUpdateAISuggestion = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: Partial<import('../api/aiSuggestion.api').AISuggestion> }) => {
+            try {
+                const response = await aiSuggestionApi.updateAISuggestion(id, data);
+                return response;
+            } catch (error: any) {
+                console.error('API Error:', error);
+                // Extract error message from response
+                const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi cập nhật gợi ý';
+                throw new Error(errorMessage);
+            }
+        },
+        onSuccess: (response) => {
+            queryClient.invalidateQueries({ queryKey: queryKey.MEMBER_SUGGESTIONS(response.memberId) });
+            queryClient.invalidateQueries({ queryKey: queryKey.SUGGESTION_BY_ID(response._id) });
+            toast.success('Cập nhật gợi ý thành công');
+        },
+        onError: (error: any) => {
+            console.error('Update suggestion error:', error);
+            const errorMessage = error?.message || error?.response?.data?.message || 'Có lỗi xảy ra khi cập nhật gợi ý';
+            toast.error(errorMessage);
+        },
+    });
+}

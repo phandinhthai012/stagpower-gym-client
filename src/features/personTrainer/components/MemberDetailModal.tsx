@@ -19,11 +19,20 @@ import {
   Package,
   Award,
   BarChart3,
+  Sparkles,
+  Edit,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { useMemberDetail } from '../hooks/useTrainerMembers';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { HealthInfoSection } from '../../../features/admin/components/member-management/HealthInfoSection';
+import { useAISuggestions, useUpdateAISuggestion } from '../../../features/member/hooks/useAISuggestions';
+import { AISuggestion } from '../../../features/member/api/aiSuggestion.api';
+import { Textarea } from '../../../components/ui/textarea';
+import { Label } from '../../../components/ui/label';
+import { Input } from '../../../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 
 interface MemberDetailModalProps {
   memberId: string;
@@ -33,7 +42,11 @@ interface MemberDetailModalProps {
 
 export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: MemberDetailModalProps) {
   const { data, isLoading, error } = useMemberDetail(memberId);
-  const [activeTab, setActiveTab] = useState<'info' | 'schedules' | 'health' | 'achievements'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'schedules' | 'health' | 'achievements' | 'suggestions'>('info');
+  const { data: aiSuggestions, isLoading: isLoadingSuggestions } = useAISuggestions(memberId);
+  const updateSuggestion = useUpdateAISuggestion();
+  const [editingSuggestion, setEditingSuggestion] = useState<AISuggestion | null>(null);
+  const [editForm, setEditForm] = useState<Partial<AISuggestion>>({});
 
   // Calculate achievements
   const achievements = useMemo(() => {
@@ -118,34 +131,34 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
 
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 bg">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col bg-white">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <Card className="w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col bg-white m-2 sm:m-0">
         {/* Header */}
-        <CardHeader className="border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
+        <CardHeader className="border-b border-gray-200 flex-shrink-0 p-4 sm:p-6">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-lg sm:text-xl font-bold flex-shrink-0">
                 {data.fullName.split(' ').map(n => n[0]).join('').substring(0, 2)}
               </div>
-              <div>
-                <CardTitle className="text-2xl">{data.fullName}</CardTitle>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-lg sm:text-2xl truncate">{data.fullName}</CardTitle>
                 <Badge className={getStatusColor(data.status)}>
                   {getStatusText(data.status)}
                 </Badge>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button variant="ghost" size="sm" onClick={onClose} className="flex-shrink-0">
               <X className="w-5 h-5" />
             </Button>
           </div>
         </CardHeader>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 flex-shrink-0">
-          <div className="flex">
+        <div className="border-b border-gray-200 flex-shrink-0 overflow-x-auto">
+          <div className="flex min-w-max sm:min-w-0">
             <button
               onClick={() => setActiveTab('info')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-base font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'info'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -155,7 +168,7 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
             </button>
             <button
               onClick={() => setActiveTab('schedules')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-base font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'schedules'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -165,7 +178,7 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
             </button>
             <button
               onClick={() => setActiveTab('health')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-base font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'health'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -175,7 +188,7 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
             </button>
             <button
               onClick={() => setActiveTab('achievements')}
-              className={`px-6 py-3 font-medium transition-colors ${
+              className={`px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-base font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'achievements'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -183,45 +196,55 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
             >
               Thành tích ({achievements.length})
             </button>
+            <button
+              onClick={() => setActiveTab('suggestions')}
+              className={`px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-base font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'suggestions'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Gợi ý AI ({aiSuggestions?.length || 0})
+            </button>
           </div>
         </div>
 
         {/* Content */}
         <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
-          <div className="overflow-y-auto p-6" style={{ height: '500px' }}>
+          <div className="overflow-y-auto p-4 sm:p-6" style={{ maxHeight: 'calc(95vh - 200px)' }}>
             {/* Info Tab */}
             {activeTab === 'info' && (
               <div className="space-y-6">
               {/* Contact Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  <Mail className="w-5 h-5 text-gray-600" />
-                  <div>
-                    <div className="text-sm text-gray-600">Email</div>
-                    <div className="font-medium">{data.email}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs sm:text-sm text-gray-600">Email</div>
+                    <div className="font-medium text-sm sm:text-base truncate">{data.email}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  <Phone className="w-5 h-5 text-gray-600" />
-                  <div>
-                    <div className="text-sm text-gray-600">Số điện thoại</div>
-                    <div className="font-medium">{data.phone}</div>
+                <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs sm:text-sm text-gray-600">Số điện thoại</div>
+                    <div className="font-medium text-sm sm:text-base">{data.phone}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  <Calendar className="w-5 h-5 text-gray-600" />
-                  <div>
-                    <div className="text-sm text-gray-600">Ngày tham gia</div>
-                    <div className="font-medium">
+                <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs sm:text-sm text-gray-600">Ngày tham gia</div>
+                    <div className="font-medium text-sm sm:text-base">
                       {format(new Date(data.joinDate), 'dd/MM/yyyy', { locale: vi })}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  <User className="w-5 h-5 text-gray-600" />
-                  <div>
-                    <div className="text-sm text-gray-600">Loại thành viên</div>
-                    <div className="font-medium">
+                <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs sm:text-sm text-gray-600">Loại thành viên</div>
+                    <div className="font-medium text-sm sm:text-base">
                       {data.memberInfo?.membership_level === 'vip' ? 'VIP' : 'Basic'}
                     </div>
                   </div>
@@ -237,17 +260,17 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
                   </h3>
                   <div className="space-y-3">
                     {data.activeSubscriptions.map((sub: any) => (
-                      <div key={sub._id} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-semibold text-blue-900">{sub.type}</div>
-                            <div className="text-sm text-blue-700">
+                      <div key={sub._id} className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-sm sm:text-base text-blue-900">{sub.type}</div>
+                            <div className="text-xs sm:text-sm text-blue-700">
                               {sub.type === 'PT' || sub.type === 'Combo' 
                                 ? `${sub.ptsessionsRemaining || 0} buổi còn lại / ${(sub.ptsessionsUsed || 0) + (sub.ptsessionsRemaining || 0)} buổi`
                                 : sub.membershipType}
                             </div>
                           </div>
-                          <div className="text-sm text-blue-700">
+                          <div className="text-xs sm:text-sm text-blue-700">
                             Hết hạn: {format(new Date(sub.endDate), 'dd/MM/yyyy', { locale: vi })}
                           </div>
                         </div>
@@ -260,9 +283,9 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
               {/* Notes */}
               {data.memberInfo?.notes && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Ghi chú</h3>
-                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <p className="text-gray-700">{data.memberInfo.notes}</p>
+                  <h3 className="text-base sm:text-lg font-semibold mb-3">Ghi chú</h3>
+                  <div className="p-3 sm:p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm sm:text-base text-gray-700">{data.memberInfo.notes}</p>
                   </div>
                 </div>
               )}
@@ -278,16 +301,16 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
                   .map((schedule: any) => (
                     <div
                       key={schedule._id}
-                      className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                      className="p-3 sm:p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-5 h-5 text-gray-600" />
-                          <div>
-                            <div className="font-semibold">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-sm sm:text-base">
                               {format(new Date(schedule.dateTime), 'EEEE, dd/MM/yyyy', { locale: vi })}
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-xs sm:text-sm text-gray-600">
                               {format(new Date(schedule.dateTime), 'HH:mm', { locale: vi })} - {schedule.durationMinutes} phút
                             </div>
                           </div>
@@ -300,7 +323,7 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
                         </Badge>
                       </div>
                       {schedule.notes && (
-                        <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                        <div className="mt-2 text-xs sm:text-sm text-gray-600 bg-gray-50 p-2 rounded">
                           {schedule.notes}
                         </div>
                       )}
@@ -330,9 +353,9 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
             <div className="space-y-6">
               {achievements.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {achievements.map((achievement, idx) => (
-                      <div key={idx} className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+                      <div key={idx} className="p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
                         <div className="flex items-center gap-3">
                           <div className="text-3xl">{achievement.icon}</div>
                           <div className="flex-1">
@@ -346,12 +369,12 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
                   </div>
 
                   {/* Progress Summary */}
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                  <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                       Tổng quan tiến độ
                     </h3>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-blue-600">
                           {data.schedules?.filter((s: any) => s.status === 'Completed').length || 0}
@@ -383,13 +406,174 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
               )}
             </div>
           )}
+
+          {/* AI Suggestions Tab */}
+          {activeTab === 'suggestions' && (
+            <div className="space-y-4">
+              {isLoadingSuggestions ? (
+                <div className="text-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-500">Đang tải gợi ý...</p>
+                </div>
+              ) : aiSuggestions && aiSuggestions.length > 0 ? (
+                aiSuggestions
+                  .sort((a, b) => new Date(b.recommendationDate).getTime() - new Date(a.recommendationDate).getTime())
+                  .map((suggestion: AISuggestion) => (
+                    <Card key={suggestion._id} className="border border-gray-200">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+                              <h3 className="font-semibold text-base sm:text-lg">{suggestion.goal}</h3>
+                              <Badge variant="outline" className={suggestion.status === 'Accepted' ? 'bg-green-50 text-green-700' : ''}>
+                                {suggestion.status === 'Pending' ? 'Chờ xử lý' :
+                                 suggestion.status === 'Accepted' ? 'Đã chấp nhận' :
+                                 suggestion.status === 'Completed' ? 'Hoàn thành' :
+                                 suggestion.status === 'Cancelled' ? 'Đã hủy' : 'Đã lưu trữ'}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-2">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                <span>{format(new Date(suggestion.recommendationDate), 'dd/MM/yyyy', { locale: vi })}</span>
+                              </div>
+                              {suggestion.workoutDuration && (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                  <span>{suggestion.workoutDuration} phút</span>
+                                </div>
+                              )}
+                              {suggestion.exercises && suggestion.exercises.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Activity className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                  <span>{suggestion.exercises.length} bài tập</span>
+                                </div>
+                              )}
+                            </div>
+                            {suggestion.trainerNotes && (
+                              <div className="mt-2 p-2 bg-blue-50 rounded text-xs sm:text-sm text-gray-700">
+                                <strong>Ghi chú của PT:</strong> {suggestion.trainerNotes}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingSuggestion(suggestion);
+                              setEditForm({
+                                trainerNotes: suggestion.trainerNotes || '',
+                                status: suggestion.status || 'Pending',
+                              });
+                            }}
+                            className="w-full sm:w-auto flex-shrink-0"
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Sửa
+                          </Button>
+                        </div>
+                        {suggestion.exercises && suggestion.exercises.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            <h4 className="font-medium text-sm text-gray-700">Bài tập:</h4>
+                            <div className="space-y-1">
+                              {suggestion.exercises.slice(0, 3).map((exercise, idx) => (
+                                <div key={idx} className="text-sm text-gray-600">
+                                  • {exercise.name} - {exercise.sets} sets x {exercise.reps} reps
+                                </div>
+                              ))}
+                              {suggestion.exercises.length > 3 && (
+                                <div className="text-sm text-gray-500">... và {suggestion.exercises.length - 3} bài tập khác</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {suggestion.dietPlan && (
+                          <div className="mt-4 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                              <UtensilsCrossed className="w-4 h-4 sm:w-5 sm:h-5 text-green-700 flex-shrink-0" />
+                              <h4 className="font-medium text-sm sm:text-base text-green-900">Kế hoạch dinh dưỡng</h4>
+                            </div>
+                            
+                            {suggestion.dietPlan.dailyCalories && (
+                              <div className="mb-3">
+                                <div className="text-xs text-green-700 mb-1">Tổng calo/ngày:</div>
+                                <div className="text-sm font-semibold text-green-900">{suggestion.dietPlan.dailyCalories} kcal</div>
+                              </div>
+                            )}
+                            
+                            {suggestion.dietPlan.macros && (
+                              <div className="mb-3 grid grid-cols-3 gap-2 text-xs sm:text-sm">
+                                <div className="bg-white p-2 rounded">
+                                  <div className="text-green-600">Protein</div>
+                                  <div className="font-semibold">{suggestion.dietPlan.macros.protein || 0}g</div>
+                                </div>
+                                <div className="bg-white p-2 rounded">
+                                  <div className="text-green-600">Carbs</div>
+                                  <div className="font-semibold">{suggestion.dietPlan.macros.carbs || 0}g</div>
+                                </div>
+                                <div className="bg-white p-2 rounded">
+                                  <div className="text-green-600">Fat</div>
+                                  <div className="font-semibold">{suggestion.dietPlan.macros.fat || 0}g</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {suggestion.dietPlan.mealTimes && suggestion.dietPlan.mealTimes.length > 0 && (
+                              <div className="space-y-1">
+                                <div className="text-xs text-green-700 mb-2">Lịch ăn trong ngày:</div>
+                                {suggestion.dietPlan.mealTimes.map((meal: any, idx: number) => (
+                                  <div key={idx} className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs bg-white p-2 rounded gap-1 sm:gap-0">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="w-3 h-3 text-green-600 flex-shrink-0" />
+                                      <span className="font-medium text-green-900">{meal.time}</span>
+                                      <span className="text-gray-600">- {meal.mealName}</span>
+                                    </div>
+                                    {meal.suggestedCalories && (
+                                      <span className="text-green-700 font-semibold sm:ml-auto">{meal.suggestedCalories} kcal</span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {suggestion.dietPlan.notes && (
+                              <div className="mt-3 pt-3 border-t border-green-200">
+                                <div className="text-xs text-green-700 mb-1">Ghi chú:</div>
+                                <div className="text-xs text-gray-700">{suggestion.dietPlan.notes}</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {suggestion.nutrition && !suggestion.dietPlan && (
+                          <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <div className="flex items-center gap-2 mb-2">
+                              <UtensilsCrossed className="w-4 h-4 text-green-700" />
+                              <h4 className="font-medium text-sm text-green-900">Dinh dưỡng</h4>
+                            </div>
+                            <p className="text-sm text-gray-700">{suggestion.nutrition}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Chưa có gợi ý AI nào</p>
+                </div>
+              )}
+            </div>
+          )}
           </div>
         </CardContent>
 
         {/* Footer Actions */}
-        <div className="border-t border-gray-200 p-4 flex-shrink-0">
-          <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={onClose}>
+        <div className="border-t border-gray-200 p-3 sm:p-4 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
+            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
               Đóng
             </Button>
             {onCreateSchedule && (
@@ -398,15 +582,141 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
                   onCreateSchedule(memberId);
                   onClose();
                 }}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               >
                 <Calendar className="w-4 h-4 mr-2" />
-                Tạo lịch tập mới
+                <span className="hidden sm:inline">Tạo lịch tập mới</span>
+                <span className="sm:hidden">Tạo lịch</span>
               </Button>
             )}
           </div>
         </div>
       </Card>
+
+      {/* Edit Suggestion Dialog */}
+      {editingSuggestion && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-2 sm:p-4">
+          <Card className="w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col bg-white m-2 sm:m-0">
+            <CardHeader className="border-b border-gray-200 flex-shrink-0 p-4 sm:p-6">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-lg sm:text-xl">Chỉnh sửa gợi ý AI</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setEditingSuggestion(null);
+                  setEditForm({});
+                }} className="flex-shrink-0">
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">Mục tiêu</Label>
+                  <p className="text-gray-700 mt-1">{editingSuggestion.goal}</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="trainerNotes" className="text-sm font-medium">Ghi chú của PT</Label>
+                  <Textarea
+                    id="trainerNotes"
+                    value={editForm.trainerNotes || ''}
+                    onChange={(e) => setEditForm({ ...editForm, trainerNotes: e.target.value })}
+                    placeholder="Nhập ghi chú của bạn về gợi ý này (tùy chọn)..."
+                    className="mt-1 min-h-[100px]"
+                    maxLength={2000}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {(editForm.trainerNotes || '').length}/2000 ký tự
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="status" className="text-sm font-medium">Trạng thái</Label>
+                  <Select
+                    value={editForm.status || editingSuggestion?.status || 'Pending'}
+                    onValueChange={(value) => setEditForm({ ...editForm, status: value as any })}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pending">Chờ xử lý</SelectItem>
+                      <SelectItem value="Accepted">Đã chấp nhận</SelectItem>
+                      <SelectItem value="Completed">Hoàn thành</SelectItem>
+                      <SelectItem value="Cancelled">Đã hủy</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {editingSuggestion.exercises && editingSuggestion.exercises.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Bài tập ({editingSuggestion.exercises.length})</Label>
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto border rounded-lg p-3">
+                      {editingSuggestion.exercises.map((exercise, idx) => (
+                        <div key={idx} className="text-sm text-gray-700 p-2 bg-gray-50 rounded">
+                          <strong>{exercise.name}</strong> - {exercise.sets} sets x {exercise.reps} reps
+                          {exercise.restTime > 0 && ` (nghỉ ${exercise.restTime}s)`}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {editingSuggestion.notes && (
+                  <div>
+                    <Label className="text-sm font-medium">Ghi chú gốc</Label>
+                    <p className="text-gray-600 text-sm mt-1">{editingSuggestion.notes}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+            <div className="border-t border-gray-200 p-3 sm:p-4 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingSuggestion(null);
+                    setEditForm({});
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!editingSuggestion) return;
+                    try {
+                      await updateSuggestion.mutateAsync({
+                        id: editingSuggestion._id,
+                        data: {
+                          trainerNotes: editForm.trainerNotes || '',
+                          status: editForm.status || editingSuggestion.status,
+                        }
+                      });
+                      setEditingSuggestion(null);
+                      setEditForm({});
+                    } catch (error: any) {
+                      console.error('Error updating suggestion:', error);
+                      // Error is already handled by the hook's onError
+                    }
+                  }}
+                  disabled={updateSuggestion.isPending}
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+                >
+                  {updateSuggestion.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang lưu...
+                    </>
+                  ) : (
+                    'Lưu thay đổi'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

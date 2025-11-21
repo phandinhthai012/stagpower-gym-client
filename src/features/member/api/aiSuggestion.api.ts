@@ -44,6 +44,8 @@ export interface AISuggestion {
     notes?: string;
     status: 'Pending' | 'Accepted' | 'Completed' | 'Cancelled' | 'Archived';
     message?: string;
+    trainerId?: string;
+    trainerNotes?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -95,6 +97,12 @@ export const aiSuggestionApi = {
     // Generate nutrition only
     generateNutritionSuggestion: async (data: GenerateSuggestionRequest): Promise<AISuggestion> => {
         const response = await apiClient.post(API_ENDPOINTS.AI_SUGGESTION.GENERATE_NUTRITION_ONLY, data);
+        return response.data.data;
+    },
+    
+    // Update AI Suggestion (for PT to edit)
+    updateAISuggestion: async (id: string, data: Partial<AISuggestion>): Promise<AISuggestion> => {
+        const response = await apiClient.put(API_ENDPOINTS.AI_SUGGESTION.UPDATE_AI_SUGGESTION(id), data);
         return response.data.data;
     },
 }

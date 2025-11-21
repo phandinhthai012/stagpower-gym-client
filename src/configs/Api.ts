@@ -157,6 +157,7 @@ export const API_ENDPOINTS = {
         CREATE_AI_SUGGESTION: `${API_PREFIX}/ai-suggestions`,
         GET_AI_SUGGESTION_BY_MEMBERID: (memberId: string) => `${API_PREFIX}/ai-suggestions/member/${memberId}`,
         GET_AI_SUGGESTION_BY_ID: (aiSuggestionId: string) => `${API_PREFIX}/ai-suggestions/${aiSuggestionId}`,
+        UPDATE_AI_SUGGESTION: (aiSuggestionId: string) => `${API_PREFIX}/ai-suggestions/${aiSuggestionId}`,
         DELETE_AI_SUGGESTION: (aiSuggestionId: string) => `${API_PREFIX}/ai-suggestions/${aiSuggestionId}`,
         // GENERATE_AI_SUGGESTION: `${API_PREFIX}/ai-suggestions/suggestion/generate`,
         // GENERATE_NUTRITION_SUGGESTION: `${API_PREFIX}/ai-suggestions/suggestion/nutrition`,
