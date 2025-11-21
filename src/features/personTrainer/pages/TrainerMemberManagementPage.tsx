@@ -15,7 +15,8 @@ import {
   Calendar,
   Mail,
   Phone as PhoneIcon,
-  Award
+  Award,
+  RotateCcw
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTrainerMembers } from '../hooks/useTrainerMembers';
@@ -143,6 +144,13 @@ export function TrainerMemberManagementPage() {
     }
   };
 
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('');
+    setPackageFilter('');
+    setGoalFilter('');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -170,49 +178,57 @@ export function TrainerMemberManagementPage() {
           <CardTitle className="text-2xl sm:text-xl">Bộ lọc & Tìm kiếm</CardTitle>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
-          <div className="flex flex-col gap-3 sm:gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
+            <div className="flex-1 relative min-w-0">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Tìm kiếm theo tên hoặc email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 sm:pl-11 text-base sm:text-sm h-11 sm:h-10"
+                className="pl-8 text-sm h-9"
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+              className="px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-9 min-w-[140px]"
             >
               <option value="">Tất cả trạng thái</option>
               <option value="active">Hoạt động</option>
               <option value="inactive">Không hoạt động</option>
-                <option value="pending">Chờ kích hoạt</option>
-                <option value="banned">Đã khóa</option>
+              <option value="pending">Chờ kích hoạt</option>
+              <option value="banned">Đã khóa</option>
             </select>
             <select
               value={packageFilter}
               onChange={(e) => setPackageFilter(e.target.value)}
-                className="px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+              className="px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-9 min-w-[130px]"
             >
               <option value="">Tất cả gói tập</option>
               <option value="pt">PT cá nhân</option>
               <option value="combo">Combo</option>
               <option value="membership">Membership</option>
             </select>
-              <select
-                value={goalFilter}
-                onChange={(e) => setGoalFilter(e.target.value)}
-                className="px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
-              >
-                <option value="">Tất cả mục tiêu</option>
-                <option value="WeightLoss">Giảm cân</option>
-                <option value="MuscleGain">Tăng cơ</option>
-                <option value="Health">Sức khỏe</option>
-              </select>
-            </div>
+            <select
+              value={goalFilter}
+              onChange={(e) => setGoalFilter(e.target.value)}
+              className="px-2 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-9 min-w-[130px]"
+            >
+              <option value="">Tất cả mục tiêu</option>
+              <option value="WeightLoss">Giảm cân</option>
+              <option value="MuscleGain">Tăng cơ</option>
+              <option value="Health">Sức khỏe</option>
+            </select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetFilters}
+              className="h-9 px-3 text-sm whitespace-nowrap"
+              title="Đặt lại bộ lọc"
+            >
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              Đặt lại
+            </Button>
           </div>
         </CardContent>
       </Card>
