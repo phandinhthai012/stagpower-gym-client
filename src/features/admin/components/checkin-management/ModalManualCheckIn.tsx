@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Search } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
@@ -14,9 +14,10 @@ import { useScrollLock } from '../../../../hooks/useScrollLock';
 interface ModalManualCheckInProps {
     isOpen: boolean;
     onClose: () => void;
+    defaultBranchId?: string | null;
 }
 
-export function ModalManualCheckIn({ isOpen, onClose }: ModalManualCheckInProps) {
+export function ModalManualCheckIn({ isOpen, onClose, defaultBranchId }: ModalManualCheckInProps) {
     // Lock scroll when modal is open
     useScrollLock(isOpen, {
         preserveScrollPosition: true
@@ -35,6 +36,22 @@ export function ModalManualCheckIn({ isOpen, onClose }: ModalManualCheckInProps)
 
     const branches = branchesData || [];
     const membersWithActiveSubscriptions = membersWithActiveSubscriptionsData || [];
+
+    // Auto-select branch when modal opens and defaultBranchId is provided
+    useEffect(() => {
+        if (isOpen && defaultBranchId) {
+            // Reset first, then set to ensure it updates
+            setSelectedBranchId('');
+            // Use setTimeout to ensure state update happens after reset
+            const timer = setTimeout(() => {
+                setSelectedBranchId(defaultBranchId);
+            }, 0);
+            return () => clearTimeout(timer);
+        } else if (!isOpen) {
+            // Reset when modal closes
+            setSelectedBranchId('');
+        }
+    }, [isOpen, defaultBranchId]);
 
     // Filter members based on search term
     const filteredMembers = useMemo(() => {
@@ -68,15 +85,15 @@ export function ModalManualCheckIn({ isOpen, onClose }: ModalManualCheckInProps)
             setCheckInStatus('idle');
             setValidationMessage('');
             setSelectedMember(null);
-            setSelectedBranchId('');
+            // Don't reset selectedBranchId, keep it for next time
             setNotes('');
             setMemberSearchTerm('');
         }
     };
 
     const handleClose = () => {
-        setSelectedMember('');
-        setSelectedBranchId('');
+        setSelectedMember(null);
+        setSelectedBranchId(''); // Reset to allow auto-select on next open
         setNotes('');
         setCheckInStatus('idle');
         setValidationMessage('');
@@ -104,6 +121,27 @@ export function ModalManualCheckIn({ isOpen, onClose }: ModalManualCheckInProps)
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    {/* Branch Selection */}
+                    <div className="space-y-2">
+                        <Label htmlFor="branch">Chọn Chi Nhánh *</Label>
+                        <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+                            <SelectTrigger className="h-auto min-h-[2.5rem] [&>span]:line-clamp-none">
+                                <SelectValue placeholder="Chọn chi nhánh..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {branches.filter((branch) => branch.status === 'Active').map((branch) => (
+                                    <SelectItem key={branch._id} value={branch._id}>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-medium">{branch.name}</span>
+                                            <span className="text-sm text-gray-500">•</span>
+                                            <span className="text-sm text-gray-500">{branch.address}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     {/* Member Selection */}
                     <div className="space-y-2">
                         <Label htmlFor="member-search">Tìm kiếm Hội Viên</Label>
@@ -185,23 +223,6 @@ export function ModalManualCheckIn({ isOpen, onClose }: ModalManualCheckInProps)
                             </div>
                         </div>
                     )}
-
-                    {/* Branch Selection */}
-                    <div className="space-y-2">
-                        <Label htmlFor="branch">Chọn Chi Nhánh</Label>
-                        <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Chọn chi nhánh..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {branches.filter((branch) => branch.status === 'Active').map((branch) => (
-                                    <SelectItem key={branch._id} value={branch._id.toString()}>
-                                        {branch.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
 
                     {/* Notes */}
                     <div className="space-y-2">

@@ -50,11 +50,29 @@ export const useAdminCheckIn = () => {
         }
     });
 
+    const adminCheckOutMutation = useMutation({
+        mutationFn: (checkInId: string) => adminCheckInApi.checkOutCheckIn(checkInId),
+        onSuccess: (response) => {
+            const memberId = response?.data?.memberId;
+            queryClient.invalidateQueries({ queryKey: ['checkin-history', memberId] });
+            queryClient.invalidateQueries({ queryKey: ['active-checkin', memberId] });
+            queryClient.invalidateQueries({ queryKey: ['checkin-history'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.checkIns });
+            toast.success('Check-out thành công!');
+        },
+        onError: (error: any) => {
+            toast.error(error?.response?.data?.message || 'Lỗi khi check-out');
+        }
+    });
+
     return {
         adminCheckIn: adminCheckInMutation.mutateAsync,
         isCheckingIn: adminCheckInMutation.isPending,
 
         adminQRCheckIn: adminQRCheckInMutation.mutateAsync,
         isCheckingInQR: adminQRCheckInMutation.isPending,
+
+        adminCheckOut: adminCheckOutMutation.mutateAsync,
+        isCheckingOut: adminCheckOutMutation.isPending,
     };
 };

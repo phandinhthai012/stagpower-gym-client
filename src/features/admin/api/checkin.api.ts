@@ -33,4 +33,9 @@ export const adminCheckInApi = {
         const response = await apiClient.get(`${API_ENDPOINTS.CHECK_IN.GET_ALL_CHECK_INS}`);
         return response.data;
     },
+
+    checkOutCheckIn: async (checkInId: string) => {
+        const response = await apiClient.put(`${API_ENDPOINTS.CHECK_IN.CHECK_OUT_CHECK_IN(checkInId)}`);
+        return response.data;
+    },
 }

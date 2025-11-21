@@ -11,9 +11,10 @@ import { useScrollLock } from '../../../../hooks/useScrollLock';
 interface ModalQRCheckInProps {
     isOpen: boolean;
     onClose: () => void;
+    defaultBranchId?: string | null;
 }
 
-export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose }) => {
+export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose, defaultBranchId }) => {
     // Lock scroll when modal is open
     useScrollLock(isOpen, {
         preserveScrollPosition: true
@@ -31,29 +32,39 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose 
     const { adminQRCheckIn, isCheckingInQR } = useAdminCheckIn();
     const branches = branchesData || [];
 
-    // hàm bất camera
-    const handleQRScan = async () => {
+    // Auto-select branch when modal opens and defaultBranchId is provided
+    useEffect(() => {
+        if (isOpen && defaultBranchId) {
+            setSelectedBranchId(defaultBranchId);
+        }
+    }, [isOpen, defaultBranchId]);
+
+    // Auto-start scanning when modal opens and branch is selected
+    useEffect(() => {
+        if (isOpen && selectedBranchId) {
+            setIsScanning(true);
+            setCheckInStatus('idle');
+            setValidationMessage('');
+            setQrToken('');
+            setCameraError(null);
+        } else if (!isOpen) {
+            setIsScanning(false);
+        }
+    }, [isOpen, selectedBranchId]);
+
+    // Restart scanning
+    const handleRestartScan = () => {
         if (!selectedBranchId) {
             setCheckInStatus('error');
             setValidationMessage('Vui lòng chọn chi nhánh trước khi quét QR');
             return;
         }
 
-        setIsScanning(true); // <-- Chỉ cần bật chế độ quét
+        setIsScanning(true);
         setCheckInStatus('idle');
         setValidationMessage('');
-        setQrToken(''); // Xóa token cũ
+        setQrToken('');
         setCameraError(null);
-
-        // Simulate QR scanning - in real implementation, you would use a QR scanner library
-        // const token = prompt('Nhập token từ QR code (hoặc scan QR code):');
-
-        // if (token) {
-        //     setQrToken(token);
-        //     await processQRCheckIn(token);
-        // }
-
-        // setIsScanning(false);
     };
 
     const handleError = useCallback((error: any) => {
@@ -94,16 +105,9 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose 
     };
 
 
-    const handleManualTokenInput = () => {
-        const token = prompt('Nhập token QR code thủ công:');
-        if (token) {
-            setQrToken(token);
-            processQRCheckIn(token);
-        }
-    };
 
     const handleClose = () => {
-        setSelectedBranchId('');
+        // Don't reset selectedBranchId, let it be set automatically when modal opens next time
         setQrToken('');
         setCheckInStatus('idle');
         setValidationMessage('');
@@ -145,14 +149,15 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose 
                     <div className="space-y-2">
                         <Label htmlFor="branch">Chọn Chi Nhánh *</Label>
                         <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
-                            <SelectTrigger>
+                            <SelectTrigger className="h-auto min-h-[2.5rem] [&>span]:line-clamp-none">
                                 <SelectValue placeholder="Chọn chi nhánh..." />
                             </SelectTrigger>
                             <SelectContent>
                                 {branches.filter(branch => branch.status === 'Active').map((branch) => (
                                     <SelectItem key={branch._id} value={branch._id}>
-                                        <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
                                             <span className="font-medium">{branch.name}</span>
+                                            <span className="text-sm text-gray-500">•</span>
                                             <span className="text-sm text-gray-500">{branch.address}</span>
                                         </div>
                                     </SelectItem>
@@ -234,26 +239,18 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose 
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <Button
-                                onClick={handleQRScan}
-                                disabled={!selectedBranchId || isScanning || isCheckingInQR}
-                                className="flex items-center gap-2"
-                            >
-                                <Camera className="w-4 h-4" />
-                                {isScanning ? 'Đang quét...' : 'Quét QR Code'}
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                onClick={handleManualTokenInput}
-                                disabled={!selectedBranchId || isCheckingInQR}
-                                className="flex items-center gap-2"
-                            >
-                                <QrCode className="w-4 h-4" />
-                                Nhập Token Thủ công
-                            </Button>
-                        </div>
+                        {!isScanning && (
+                            <div className="flex justify-center">
+                                <Button
+                                    onClick={handleRestartScan}
+                                    disabled={!selectedBranchId || isCheckingInQR}
+                                    className="flex items-center gap-2"
+                                >
+                                    <Camera className="w-4 h-4" />
+                                    Bắt đầu quét lại
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Validation Message */}
