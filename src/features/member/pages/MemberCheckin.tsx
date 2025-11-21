@@ -112,7 +112,7 @@ export function MemberCheckin() {
             <div className="flex justify-center">
               <div className="w-full max-w-2xl rounded-2xl border-2 border-dashed border-gray-300 p-4 md:p-8 text-center">
                 {/* QR Code Display */}
-                <div className="mx-auto mb-4 w-full max-w-md flex items-center justify-center min-h-[300px]">
+                <div className="mx-auto mb-4 w-full flex items-center justify-center min-h-[280px] sm:min-h-[400px]">
                   {qrError ? (
                     <div className="text-center w-full p-6">
                       <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-orange-100 rounded-full flex items-center justify-center mb-4">
@@ -145,7 +145,7 @@ export function MemberCheckin() {
                       </div>
                     </div>
                   ) : qrCodeDataUrl ? (
-                    <div className="w-40 h-40 md:w-64 md:h-64 bg-white rounded-xl shadow flex items-center justify-center p-4">
+                    <div className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[420px] lg:h-[420px] bg-white rounded-xl shadow-lg flex items-center justify-center p-3 sm:p-4">
                       <img
                         src={qrCodeDataUrl.toString()}
                         alt="QR Code Check-in"
