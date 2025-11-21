@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { TrainerSidebar } from './TrainerSidebar';
@@ -15,6 +15,7 @@ import {
   Avatar,
   AvatarFallback,
 } from '../../../components/ui';
+import { useMyNotifications } from '../hooks';
 import LogoStagPower from '../../../assets/Logo_StagPower_4x.png';
 
 export function TrainerLayout() {
@@ -70,6 +71,15 @@ export function TrainerLayout() {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+
+  // Get unread notifications count
+  const { data: notificationsResponse } = useMyNotifications();
+  const unreadCount = useMemo(() => {
+    if (!notificationsResponse?.data) return 0;
+    return notificationsResponse.data.filter((notification: any) => 
+      notification.status?.toUpperCase() === 'UNREAD' || notification.status === 'unread'
+    ).length;
+  }, [notificationsResponse]);
 
   const formatVNTime = (date: Date) => {
     let hours = date.getHours();
@@ -163,12 +173,21 @@ export function TrainerLayout() {
                 onClick={() => navigate('/trainer/notifications')}
               >
                 <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 text-[10px] sm:text-xs p-0 flex items-center justify-center"
-                >
-                  3
-                </Badge>
+                {unreadCount > 0 ? (
+                  <Badge 
+                    variant="destructive"
+                    className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 text-[10px] sm:text-xs p-0 flex items-center justify-center bg-red-600 text-white border-red-600"
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Badge>
+                ) : (
+                  <Badge 
+                    variant="outline"
+                    className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 text-[10px] sm:text-xs p-0 flex items-center justify-center bg-white text-gray-600 border-gray-300"
+                  >
+                    0
+                  </Badge>
+                )}
               </Button>
               
               {/* User menu */}
