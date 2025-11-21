@@ -329,13 +329,16 @@ export function AdminAccessControl() {
       </Card>
 
       {/* Hội viên đang tập và Lịch sử check-in gần đây */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Active Check-ins */}
         <Card className="flex flex-col max-h-[600px]">
           <CardHeader className="flex-shrink-0">
             <CardTitle className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-green-600" />
               Hội viên đang tập
+              <Badge variant="outline" className="ml-2">
+                {activeCheckIns.length}
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden flex flex-col min-h-0">
