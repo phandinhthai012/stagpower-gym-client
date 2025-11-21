@@ -595,28 +595,49 @@ export function MemberPayments() {
             <span>Hóa đơn đã thanh toán</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0">
+        <CardContent className="p-4 sm:p-6 pt-0 pb-6 sm:pb-6">
           <div
-            className="overflow-x-auto"
+            className="overflow-x-scroll payment-table-scroll pb-2"
             style={{
               scrollbarWidth: 'thin',
-              scrollbarColor: '#9ca3af #f3f4f6'
+              scrollbarColor: '#6b7280 #f3f4f6'
             }}
           >
             <style>{`
+              .payment-table-scroll {
+                overflow-x: scroll !important;
+                overflow-y: hidden !important;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 12px !important;
+                margin-bottom: -4px;
+              }
               .payment-table-scroll::-webkit-scrollbar {
-                height: 8px;
+                height: 16px !important;
+                display: block !important;
+                -webkit-appearance: none;
+                background: #f3f4f6;
               }
               .payment-table-scroll::-webkit-scrollbar-track {
-                background: #f3f4f6;
-                border-radius: 4px;
+                background: #e5e7eb !important;
+                border-radius: 10px;
+                margin: 0 4px;
               }
               .payment-table-scroll::-webkit-scrollbar-thumb {
-                background: #9ca3af;
-                border-radius: 4px;
+                background: #6b7280 !important;
+                border-radius: 10px;
+                border: 2px solid #e5e7eb;
+                min-width: 60px;
               }
               .payment-table-scroll::-webkit-scrollbar-thumb:hover {
-                background: #6b7280;
+                background: #4b5563 !important;
+              }
+              .payment-table-scroll::-webkit-scrollbar-thumb:active {
+                background: #374151 !important;
+              }
+              /* Firefox */
+              .payment-table-scroll {
+                scrollbar-width: auto !important;
+                scrollbar-color: #6b7280 #e5e7eb !important;
               }
             `}</style>
             {memberPayments.length === 0 ? (
@@ -626,18 +647,17 @@ export function MemberPayments() {
                 <p className="text-base sm:text-sm text-gray-500">Bạn chưa có giao dịch thanh toán nào</p>
               </div>
             ) : (
-              <div className="payment-table-scroll">
-                <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+              <table className="min-w-[900px] sm:min-w-full border border-gray-200 rounded-lg overflow-hidden">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-blue-900 border-b">Mã hóa đơn</th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-blue-900 border-b">Ngày thanh toán</th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-blue-900 border-b">Loại</th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-blue-900 border-b">Gói tập</th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-blue-900 border-b">Số tiền</th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-blue-900 border-b">Phương thức</th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-blue-900 border-b">Trạng thái</th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs sm:text-sm font-semibold text-blue-900 border-b">Thao tác</th>
+                      <th className="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold text-blue-900 border-b">Mã hóa đơn</th>
+                      <th className="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold text-blue-900 border-b">Ngày</th>
+                      <th className="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold text-blue-900 border-b hidden sm:table-cell">Loại</th>
+                      <th className="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold text-blue-900 border-b">Gói tập</th>
+                      <th className="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold text-blue-900 border-b">Số tiền</th>
+                      <th className="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold text-blue-900 border-b hidden md:table-cell">Phương thức</th>
+                      <th className="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold text-blue-900 border-b">Trạng thái</th>
+                      <th className="px-1.5 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-sm font-semibold text-blue-900 border-b">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -646,39 +666,39 @@ export function MemberPayments() {
                         key={p.id}
                         onClick={handleRowClick(p.id || p._id, p)}
                       >
-                        <td className="px-2 sm:px-4 py-3">
-                          <div className="font-semibold text-base sm:text-sm text-blue-900">{p.invoice_number || p.id}</div>
+                        <td className="px-1.5 sm:px-4 py-2 sm:py-3">
+                          <div className="font-semibold text-xs sm:text-sm text-blue-900 truncate max-w-[80px] sm:max-w-none">{p.invoice_number || p.id}</div>
                           {p.transaction_id && (
-                            <div className="text-xs text-gray-500">{p.transaction_id}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[80px] sm:max-w-none hidden sm:block">{p.transaction_id}</div>
                           )}
                         </td>
-                        <td className="px-2 sm:px-4 py-3">
-                          <div className="font-medium text-base sm:text-sm">{new Date(p.payment_date).toLocaleDateString('vi-VN')}</div>
-                          <div className="text-xs text-gray-500">{new Date(p.payment_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <td className="px-1.5 sm:px-4 py-2 sm:py-3">
+                          <div className="font-medium text-xs sm:text-sm">{new Date(p.payment_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}</div>
+                          <div className="text-[10px] sm:text-xs text-gray-500">{new Date(p.payment_date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
                         </td>
-                        <td className="px-2 sm:px-4 py-3">
+                        <td className="px-1.5 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">
                           {getPaymentTypeBadge(p.paymentType || (p as any).payment_type)}
                         </td>
-                        <td className="px-2 sm:px-4 py-3">
-                          <div className="font-medium text-base sm:text-sm text-blue-900">{(p as any).package_name || 'Gói tập'}</div>
+                        <td className="px-1.5 sm:px-4 py-2 sm:py-3">
+                          <div className="font-medium text-xs sm:text-sm text-blue-900 truncate max-w-[100px] sm:max-w-none">{(p as any).package_name || 'Gói tập'}</div>
                           {p.original_amount !== p.amount && (
-                            <div className="text-xs text-green-600">Giảm {formatPrice((p.original_amount || 0) - (p.amount || 0))}</div>
+                            <div className="text-[10px] sm:text-xs text-green-600 hidden sm:block">Giảm {formatPrice((p.original_amount || 0) - (p.amount || 0))}</div>
                           )}
                         </td>
-                        <td className="px-2 sm:px-4 py-3">
-                          <div className="font-semibold text-base sm:text-sm">{formatPrice(p.amount)}</div>
+                        <td className="px-1.5 sm:px-4 py-2 sm:py-3">
+                          <div className="font-semibold text-xs sm:text-sm">{formatPrice(p.amount)}</div>
                           {p.original_amount !== p.amount && (
-                            <div className="text-xs text-gray-500 line-through">{formatPrice(p.original_amount)}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500 line-through hidden sm:block">{formatPrice(p.original_amount)}</div>
                           )}
                         </td>
-                        <td className="px-2 sm:px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg sm:text-base">{getPaymentMethodIcon(p.payment_method)}</span>
-                            <span className="text-xs sm:text-sm">{getPaymentMethodName(p.payment_method)}</span>
+                        <td className="px-1.5 sm:px-4 py-2 sm:py-3 hidden md:table-cell">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <span className="text-sm sm:text-base">{getPaymentMethodIcon(p.payment_method)}</span>
+                            <span className="text-[10px] sm:text-sm truncate">{getPaymentMethodName(p.payment_method)}</span>
                           </div>
                         </td>
-                        <td className="px-2 sm:px-4 py-3">
-                          <span className={`px-2 sm:px-3 py-1 rounded-full text-xs ${getStatusColor(p.payment_status)}`}>
+                        <td className="px-1.5 sm:px-4 py-2 sm:py-3">
+                          <span className={`px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs ${getStatusColor(p.payment_status)}`}>
                             {p.payment_status === 'completed' ? 'Hoàn thành' :
                               p.payment_status === 'pending' ? 'Đang chờ' :
                                 p.payment_status === 'failed' ? 'Thất bại' :
@@ -686,7 +706,7 @@ export function MemberPayments() {
                                     p.payment_status || 'N/A'}
                           </span>
                         </td>
-                        <td className="px-2 sm:px-4 py-3">
+                        <td className="px-1.5 sm:px-4 py-2 sm:py-3">
                           <TableActions
                             actions={[
                               {
@@ -713,7 +733,6 @@ export function MemberPayments() {
                     ))}
                   </tbody>
                 </table>
-              </div>
             )}
           </div>
         </CardContent>

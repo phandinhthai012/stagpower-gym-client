@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Label } from '../../../components/ui/label';
@@ -204,9 +205,9 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <Card className="relative w-full max-w-xl bg-white mx-4 z-50">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <Card className="relative w-full max-w-xl bg-white mx-4 z-[10000]">
         {/* Close button */}
         <button
           aria-label="Đóng"
@@ -323,7 +324,7 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-white z-[10001]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 bg-white">
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
@@ -333,12 +334,14 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
               Bạn có chắc muốn hủy đặt lịch? Tất cả thông tin đã nhập sẽ bị mất.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="bg-white">
+          <AlertDialogFooter className="bg-white flex-row gap-2 sm:gap-2">
             <AlertDialogCancel asChild>
-              <Button variant="outline">Không</Button>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-initial text-sm">
+                Không
+              </Button>
             </AlertDialogCancel>
             <AlertDialogAction asChild>
-              <Button variant="outline" onClick={handleClose}>
+              <Button variant="outline" size="sm" onClick={handleClose} className="flex-1 sm:flex-initial text-sm">
                 Xác nhận hủy
               </Button>
             </AlertDialogAction>
@@ -347,4 +350,6 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
       </AlertDialog>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

@@ -203,51 +203,6 @@ export function MemberNotifications() {
         </div>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Bell className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-base sm:text-sm text-gray-600">Tổng thông báo</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Bell className="h-6 w-6 text-red-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.unread}</p>
-                <p className="text-base sm:text-sm text-gray-600">Chưa đọc</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.read}</p>
-                <p className="text-base sm:text-sm text-gray-600">Đã đọc</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2">
         <Button
