@@ -64,6 +64,7 @@ export function AdminAccessControl() {
   const [socketActiveCheckIns, setSocketActiveCheckIns] = useState<CheckIn[]>([]);
   const [socketConnected, setSocketConnected] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Get branch ID from user based on role
@@ -175,6 +176,61 @@ export function AdminAccessControl() {
     };
   }, [queryClient]);
 
+  // Prevent scroll lock when dropdown is open
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    let rafId: number;
+    let lastCheck = 0;
+    const preventScrollLock = () => {
+      const now = Date.now();
+      // Throttle to prevent flickering - only check every 100ms
+      if (now - lastCheck < 100) {
+        if (isDropdownOpen) {
+          rafId = requestAnimationFrame(preventScrollLock);
+        }
+        return;
+      }
+      lastCheck = now;
+
+      // Check if body has fixed position (indicating scroll lock)
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        // Remove data-scroll-locked attribute if present
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      }
+      // Also check for data-scroll-locked attribute
+      if (document.body.hasAttribute('data-scroll-locked')) {
+        document.body.removeAttribute('data-scroll-locked');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      // Continue checking only if dropdown is still open
+      if (isDropdownOpen) {
+        rafId = requestAnimationFrame(preventScrollLock);
+      }
+    };
+
+    // Start checking
+    rafId = requestAnimationFrame(preventScrollLock);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isDropdownOpen]);
+
   const onlineMemberCount = socketOnlineSnapshot?.totalOnlineMembers ?? 0;
 
 
@@ -268,7 +324,36 @@ export function AdminAccessControl() {
             {/* Shared Branch Selection */}
             <div className="flex items-center gap-2">
               <Label htmlFor="shared-branch" className="text-sm font-medium text-gray-700 whitespace-nowrap">Chi nhánh:</Label>
-              <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+              <Select 
+                value={selectedBranchId} 
+                onValueChange={setSelectedBranchId}
+                onOpenChange={(open) => {
+                  setIsDropdownOpen(open);
+                  // Prevent scroll lock when dropdown opens/closes
+                  // Use requestAnimationFrame to ensure this runs after Radix UI's scroll lock
+                  requestAnimationFrame(() => {
+                    // Restore scroll styles to prevent lock
+                    if (document.body.style.position === 'fixed') {
+                      const scrollY = document.body.style.top;
+                      document.body.style.position = '';
+                      document.body.style.top = '';
+                      document.body.style.width = '';
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      // Remove data-scroll-locked attribute if present
+                      document.body.removeAttribute('data-scroll-locked');
+                      if (scrollY) {
+                        const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                        window.scrollTo(0, y);
+                      }
+                    } else {
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                    }
+                  });
+                }}
+              >
                 <SelectTrigger className="w-[400px] h-auto min-h-[2.5rem] [&>span]:line-clamp-none">
                   <SelectValue placeholder="Chọn chi nhánh..." />
                 </SelectTrigger>
