@@ -3,6 +3,16 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../../components/ui/alert-dialog';
 import { 
   Calendar, 
   Clock, 
@@ -24,6 +34,8 @@ import { toast } from 'sonner';
 export function MemberSchedule() {
   const { user } = useAuth();
   const [openCreate, setOpenCreate] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [scheduleToCancel, setScheduleToCancel] = useState<string | null>(null);
 
   // Use real API
   const { data: schedulesData, isLoading, refetch } = useMySchedules();
@@ -120,13 +132,20 @@ export function MemberSchedule() {
       .slice(0, 5);
   }, [schedules]);
 
-  const handleCancelSchedule = async (scheduleId: string) => {
-    if (!confirm('Bạn có chắc muốn hủy lịch này?')) return;
+  const handleCancelClick = (scheduleId: string) => {
+    setScheduleToCancel(scheduleId);
+    setCancelConfirmOpen(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!scheduleToCancel) return;
 
     try {
-      await cancelMutation.mutateAsync(scheduleId);
+      await cancelMutation.mutateAsync(scheduleToCancel);
       toast.success('Đã hủy lịch thành công!');
       refetch();
+      setCancelConfirmOpen(false);
+      setScheduleToCancel(null);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Có lỗi xảy ra khi hủy lịch!');
     }
@@ -298,7 +317,7 @@ export function MemberSchedule() {
                               size="sm" 
                               variant="outline" 
                               className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-300 text-base sm:text-sm"
-                              onClick={() => handleCancelSchedule(schedule._id)}
+                              onClick={() => handleCancelClick(schedule._id)}
                               disabled={cancelMutation.isPending}
                             >
                               <XCircle className="h-3 w-3 mr-1" />
@@ -383,6 +402,44 @@ export function MemberSchedule() {
           refetch();
         }}
       />
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Xác nhận hủy lịch
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc muốn hủy lịch này? Hành động này không thể hoàn tác.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={cancelMutation.isPending}>
+                Không
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={handleCancelConfirm}
+                disabled={cancelMutation.isPending}
+              >
+                {cancelMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Đang hủy...
+                  </>
+                ) : (
+                  'Xác nhận hủy'
+                )}
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

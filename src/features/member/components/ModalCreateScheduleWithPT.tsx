@@ -4,7 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Label } from '../../../components/ui/label';
 import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { X } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../../components/ui/alert-dialog';
+import { X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCreateSchedule, useTrainers } from '../hooks';
 import { useBranches } from '../hooks/useBranches';
@@ -48,6 +58,7 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Ẩn scrollbar của page khi modal mở
   useEffect(() => {
@@ -194,15 +205,13 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/20 backdrop-blur-[2px]">
-      <Card className="relative w-full max-w-xl bg-white mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <Card className="relative w-full max-w-xl bg-white mx-4 z-50">
         {/* Close button */}
         <button
           aria-label="Đóng"
           className="absolute right-3 top-3 rounded-full p-1 text-gray-500 hover:bg-gray-100"
-          onClick={() => {
-            if (confirm('Bạn có chắc muốn hủy đặt lịch?')) handleClose();
-          }}
+          onClick={() => setShowCancelConfirm(true)}
         >
           <X className="h-5 w-5" />
         </button>
@@ -300,9 +309,7 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  if (confirm('Xác nhận hủy đặt lịch?')) handleClose();
-                }}
+                onClick={() => setShowCancelConfirm(true)}
               >
                 Hủy
               </Button>
@@ -313,6 +320,31 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
           </form>
         </CardContent>
       </Card>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 bg-white">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Xác nhận hủy đặt lịch
+            </AlertDialogTitle>
+            <AlertDialogDescription className="bg-white">
+              Bạn có chắc muốn hủy đặt lịch? Tất cả thông tin đã nhập sẽ bị mất.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="bg-white">
+            <AlertDialogCancel asChild>
+              <Button variant="outline">Không</Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button variant="outline" onClick={handleClose}>
+                Xác nhận hủy
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
