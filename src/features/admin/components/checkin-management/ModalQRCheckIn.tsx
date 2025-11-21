@@ -11,16 +11,18 @@ import { useScrollLock } from '../../../../hooks/useScrollLock';
 interface ModalQRCheckInProps {
     isOpen: boolean;
     onClose: () => void;
-    defaultBranchId?: string | null;
+    defaultBranchId?: string | null; // For backward compatibility
+    selectedBranchId?: string; // Shared branch selection from parent
+    embedded?: boolean; // If true, render without overlay
 }
 
-export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose, defaultBranchId }) => {
-    // Lock scroll when modal is open
-    useScrollLock(isOpen, {
+export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose, defaultBranchId, selectedBranchId: propSelectedBranchId, embedded = false }) => {
+    // Lock scroll when modal is open (only if not embedded)
+    useScrollLock(isOpen && !embedded, {
         preserveScrollPosition: true
     });
 
-    const [selectedBranchId, setSelectedBranchId] = useState('');
+    const [internalBranchId, setInternalBranchId] = useState('');
     const [qrToken, setQrToken] = useState('');
     const [checkInStatus, setCheckInStatus] = useState<'idle' | 'success' | 'error' | 'warning'>('idle');
     const [validationMessage, setValidationMessage] = useState('');
@@ -32,12 +34,22 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
     const { adminQRCheckIn, isCheckingInQR } = useAdminCheckIn();
     const branches = branchesData || [];
 
-    // Auto-select branch when modal opens and defaultBranchId is provided
+    // Use propSelectedBranchId if provided (shared selection), otherwise use internal state
+    const selectedBranchId = propSelectedBranchId || internalBranchId;
+
+    // Auto-select branch when modal opens and defaultBranchId is provided (for backward compatibility)
     useEffect(() => {
-        if (isOpen && defaultBranchId) {
-            setSelectedBranchId(defaultBranchId);
+        if (isOpen && defaultBranchId && !propSelectedBranchId) {
+            setInternalBranchId(defaultBranchId);
         }
-    }, [isOpen, defaultBranchId]);
+    }, [isOpen, defaultBranchId, propSelectedBranchId]);
+
+    // Sync internal state with prop when prop changes
+    useEffect(() => {
+        if (propSelectedBranchId) {
+            setInternalBranchId(propSelectedBranchId);
+        }
+    }, [propSelectedBranchId]);
 
     // Auto-start scanning when modal opens and branch is selected
     useEffect(() => {
@@ -65,6 +77,13 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
         setValidationMessage('');
         setQrToken('');
         setCameraError(null);
+    };
+
+    // Handle branch change (only if not using shared selection)
+    const handleBranchChange = (value: string) => {
+        if (!propSelectedBranchId) {
+            setInternalBranchId(value);
+        }
     };
 
     const handleError = useCallback((error: any) => {
@@ -127,48 +146,44 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
     };
 
     if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                        Check-in bằng QR Code
-                    </h2>
-                    <button
-                        onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                        <XCircle className="h-6 w-6" />
-                    </button>
-                </div>
-
+    
+    if (embedded) {
+        return (
+            <div className="w-full flex flex-col h-full">
                 {/* Content */}
-                <div className="p-6 space-y-6 overflow-y-auto flex-1">
-                    {/* Branch Selection */}
-                    <div className="space-y-2">
-                        <Label htmlFor="branch">Chọn Chi Nhánh *</Label>
-                        <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
-                            <SelectTrigger className="h-auto min-h-[2.5rem] [&>span]:line-clamp-none">
-                                <SelectValue placeholder="Chọn chi nhánh..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {branches.filter(branch => branch.status === 'Active').map((branch) => (
-                                    <SelectItem key={branch._id} value={branch._id}>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium">{branch.name}</span>
-                                            <span className="text-sm text-gray-500">•</span>
-                                            <span className="text-sm text-gray-500">{branch.address}</span>
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
+                <div className="space-y-6 overflow-y-auto flex-1">
                     {/* QR Scanner Section */}
                     <div className="space-y-4">
-                        <Label>Quét QR Code</Label>
+                        <div className="flex items-center justify-between">
+                            <Label>Quét QR Code</Label>
+                            <Button
+                                type="button"
+                                variant={isScanning ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                    if (isScanning) {
+                                        setIsScanning(false);
+                                        setCameraError(null);
+                                    } else {
+                                        if (!selectedBranchId) {
+                                            setValidationMessage('Vui lòng chọn chi nhánh trước khi quét QR');
+                                            setCheckInStatus('error');
+                                            return;
+                                        }
+                                        setIsScanning(true);
+                                        setCheckInStatus('idle');
+                                        setValidationMessage('');
+                                        setQrToken('');
+                                        setCameraError(null);
+                                    }
+                                }}
+                                disabled={!selectedBranchId || isCheckingInQR}
+                                className="flex items-center gap-2"
+                            >
+                                <Camera className={`w-4 h-4 ${isScanning ? '' : 'text-gray-500'}`} />
+                                {isScanning ? 'Tắt Camera' : 'Bật Camera'}
+                            </Button>
+                        </div>
 
                         {/* Scanner Area */}
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
@@ -213,7 +228,7 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
                                             <p className="text-sm text-gray-600">
                                                 {qrToken
                                                     ? 'Đang xử lý token...'
-                                                    : 'Nhấn nút "Quét QR Code" bên dưới để bắt đầu'
+                                                    : 'Bật camera để bắt đầu'
                                                 }
                                             </p>
                                         </div>
@@ -237,20 +252,166 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
                             )}
 
                         </div>
+                    </div>
 
-                        {/* Action Buttons */}
-                        {!isScanning && (
-                            <div className="flex justify-center">
-                                <Button
-                                    onClick={handleRestartScan}
-                                    disabled={!selectedBranchId || isCheckingInQR}
-                                    className="flex items-center gap-2"
-                                >
-                                    <Camera className="w-4 h-4" />
-                                    Bắt đầu quét lại
-                                </Button>
+                    {/* Validation Message */}
+                    {validationMessage && (
+                        <div className={`p-2 rounded-lg border ${getValidationMessageColor()}`}>
+                            <div className="flex items-center gap-2">
+                                {checkInStatus === 'success' && <CheckCircle className="w-4 h-4" />}
+                                {checkInStatus === 'error' && <XCircle className="w-4 h-4" />}
+                                {checkInStatus === 'warning' && <AlertTriangle className="w-4 h-4" />}
+                                <span className="text-sm font-medium">{validationMessage}</span>
                             </div>
-                        )}
+                        </div>
+                    )}
+
+                </div>
+            </div>
+        );
+    }
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                        Check-in bằng QR Code
+                    </h2>
+                    <button
+                        onClick={handleClose}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <XCircle className="h-6 w-6" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 space-y-6 overflow-y-auto flex-1">
+                    {/* Branch Selection - Only show if not using shared selection */}
+                    {!propSelectedBranchId && (
+                        <div className="space-y-2">
+                            <Label htmlFor="branch">Chọn Chi Nhánh *</Label>
+                            <Select value={selectedBranchId} onValueChange={handleBranchChange}>
+                            <SelectTrigger className="h-auto min-h-[2.5rem] [&>span]:line-clamp-none">
+                                <SelectValue placeholder="Chọn chi nhánh..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {branches.filter(branch => branch.status === 'Active').map((branch) => (
+                                    <SelectItem key={branch._id} value={branch._id}>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-medium">{branch.name}</span>
+                                            <span className="text-sm text-gray-500">•</span>
+                                            <span className="text-sm text-gray-500">{branch.address}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    )}
+
+                    {/* QR Scanner Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <Label>Quét QR Code</Label>
+                            <Button
+                                type="button"
+                                variant={isScanning ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                    if (isScanning) {
+                                        setIsScanning(false);
+                                        setCameraError(null);
+                                    } else {
+                                        if (!selectedBranchId) {
+                                            setValidationMessage('Vui lòng chọn chi nhánh trước khi quét QR');
+                                            setCheckInStatus('error');
+                                            return;
+                                        }
+                                        setIsScanning(true);
+                                        setCheckInStatus('idle');
+                                        setValidationMessage('');
+                                        setQrToken('');
+                                        setCameraError(null);
+                                    }
+                                }}
+                                disabled={!selectedBranchId || isCheckingInQR}
+                                className="flex items-center gap-2"
+                            >
+                                <Camera className={`w-4 h-4 ${isScanning ? '' : 'text-gray-500'}`} />
+                                {isScanning ? 'Tắt Camera' : 'Bật Camera'}
+                            </Button>
+                        </div>
+
+                        {/* Scanner Area */}
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                            {/* DÙNG LOGIC ĐỂ HIỂN THỊ CAMERA HOẶC ICON */}
+                            {isScanning ? (
+                                // 3a. KHI ĐANG QUÉT: HIỂN THỊ CAMERA
+                                <div className="space-y-4">
+                                    <QRScanner
+                                        isActive={isScanning}
+                                        onScan={(result:string) => {
+                                            // Chỉ xử lý nếu:
+                                            // 1. Không đang trong quá trình gọi API (!isCheckingInQR)
+                                            // 2. Token vừa quét khác token cũ (tránh spam)
+                                            if (!isCheckingInQR && result !== qrToken) {
+                                                setQrToken(result); // Lưu token
+                                                processQRCheckIn(result); // Gửi đi xử lý
+                                            }
+                                        }}
+                                        onError={handleError}
+                                    />
+                                    <div>
+                                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                            Đang quét QR code...
+                                        </h3>
+                                        <p className="text-sm text-gray-600">
+                                            Đưa QR code vào khung hình để quét
+                                        </p>
+                                    </div>
+                                </div>
+                            ) :
+                                (
+                                    // 3b. KHI CHƯA QUÉT: HIỂN THỊ ICON TĨNH
+                                    <div className="space-y-4">
+                                        <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <QrCode className="w-8 h-8 text-blue-600" />
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                                {qrToken ? 'Đã quét xong' : 'Sẵn sàng quét QR code'}
+                                            </h3>
+                                            <p className="text-sm text-gray-600">
+                                                {qrToken
+                                                    ? 'Đang xử lý token...'
+                                                    : 'Bật camera để bắt đầu'
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            {/* Hiển thị token SAU KHI quét xong */}
+                            {qrToken && (
+                                <div className="bg-gray-50 rounded-lg p-3 text-left mt-4">
+                                    <p className="text-sm text-gray-600">Token đã quét:</p>
+                                    <p className="font-mono text-sm break-all">{qrToken}</p>
+                                </div>
+                            )}
+                            {/* Camera Error */}
+                            {cameraError && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-4">
+                                    <div className="flex items-center gap-2">
+                                        <XCircle className="w-4 h-4 text-red-600" />
+                                        <span className="text-sm text-red-800">{cameraError}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
                     </div>
 
                     {/* Validation Message */}

@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
+import { Label } from '../../../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import {
   QrCode,
   Search,
@@ -58,11 +60,10 @@ interface OnlineUsersSnapshot {
 
 export function AdminAccessControl() {
   const { user } = useAuth();
-  const [isModalManualCheckInOpen, setIsModalManualCheckInOpen] = useState(false);
-  const [isModalQRCheckInOpen, setIsModalQRCheckInOpen] = useState(false);
   const [socketOnlineSnapshot, setSocketOnlineSnapshot] = useState<OnlineUsersSnapshot | null>(null);
   const [socketActiveCheckIns, setSocketActiveCheckIns] = useState<CheckIn[]>([]);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
   const queryClient = useQueryClient();
 
   // Get branch ID from user based on role
@@ -93,10 +94,17 @@ export function AdminAccessControl() {
   const { data: response, isLoading, isError } = useAdminManageCheckInList();
   const { adminCheckOut, isCheckingOut } = useAdminCheckIn();
   const { data: branchesData } = useBranches();
+  const branches = branchesData || [];
+
+  // Auto-select branch when userBranchId is available
+  useEffect(() => {
+    if (userBranchId && !selectedBranchId) {
+      setSelectedBranchId(userBranchId);
+    }
+  }, [userBranchId, selectedBranchId]);
   const { data: membersData } = useMembers();
   const { data: membersWithActiveSubscriptionsData } = useMembersWithActiveSubscriptions();
   const checkInsData: CheckIn[] = response?.data || [];
-  const branches = branchesData;
   const members = membersData?.success ? membersData?.data : [];
   const membersWithActiveSubscriptions = membersWithActiveSubscriptionsData;
   // Get active check-ins
@@ -168,20 +176,6 @@ export function AdminAccessControl() {
   }, [queryClient]);
 
   const onlineMemberCount = socketOnlineSnapshot?.totalOnlineMembers ?? 0;
-
-  const handleManualCheckIn = () => {
-    setIsModalManualCheckInOpen(true);
-  };
-  const handleCloseModalManualCheckIn = () => {
-    setIsModalManualCheckInOpen(false);
-  };
-
-  const handleQRCheckIn = () => {
-    setIsModalQRCheckInOpen(true);
-  };
-  const handleCloseModalQRCheckIn = () => {
-    setIsModalQRCheckInOpen(false);
-  };
 
 
   const getStatusColor = (status: string) => {
@@ -257,93 +251,77 @@ export function AdminAccessControl() {
 
   return (
     <div className="space-y-6">
-      {/* Header Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Đang tập hôm nay</p>
-                <p className="text-2xl font-bold text-green-600">{activeCheckIns.length}</p>
-              </div>
-              <Activity className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Hội viên hoạt động</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {socketOnlineSnapshot ? onlineMemberCount : members.length}
-                </p>
-              </div>
-              <Users className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Check-in tuần này</p>
-                <p className="text-2xl font-bold text-purple-600">{totalCheckInInWeek}</p>
-              </div>
-              <Clock className="w-8 h-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Check-in hôm nay</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {checkInsData.filter(ci => {
-                    const today = new Date();
-                    const checkInDate = new Date(ci.checkInTime);
-                    return checkInDate.toDateString() === today.toDateString();
-                  }).length}
-                </p>
-              </div>
-              <MapPin className="w-8 h-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Kiểm soát ra vào */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <QrCode className="w-5 h-5 text-blue-600" />
-            Kiểm soát ra vào
-            <Badge
-              variant={socketConnected ? 'secondary' : 'outline'}
-              className={socketConnected ? 'bg-green-100 text-green-700 border-none' : 'text-gray-500'}
-            >
-              {socketConnected ? 'Socket hoạt động' : 'Socket ngắt kết nối'}
-            </Badge>
-          </CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <CardTitle className="flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-blue-600" />
+              Kiểm soát ra vào
+              <Badge
+                variant={socketConnected ? 'secondary' : 'outline'}
+                className={socketConnected ? 'bg-green-100 text-green-700 border-none' : 'text-gray-500'}
+              >
+                {socketConnected ? 'Socket hoạt động' : 'Socket ngắt kết nối'}
+              </Badge>
+            </CardTitle>
+            {/* Shared Branch Selection */}
+            <div className="flex items-center gap-2">
+              <Label htmlFor="shared-branch" className="text-sm font-medium text-gray-700 whitespace-nowrap">Chi nhánh:</Label>
+              <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+                <SelectTrigger className="w-[400px] h-auto min-h-[2.5rem] [&>span]:line-clamp-none">
+                  <SelectValue placeholder="Chọn chi nhánh..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {branches.filter(branch => branch.status === 'Active').map((branch) => (
+                    <SelectItem key={branch._id} value={branch._id}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{branch.name}</span>
+                        <span className="text-sm text-gray-500">•</span>
+                        <span className="text-sm text-gray-500">{branch.address}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            {/* Search Options */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Check-in hội viên</h4>
-              <div className="grid grid-cols-2 gap-3 max-w-md">
-                <Button variant="outline" className="h-16 flex flex-col items-center gap-2" onClick={handleQRCheckIn}>
-                  <Camera className="w-6 h-6" />
-                  <span className="text-xs">Quét QR Code</span>
-                </Button>
-                <Button variant="outline" className="h-16 flex flex-col items-center gap-2" onClick={handleManualCheckIn}>
-                  <Smartphone className="w-6 h-6" />
-                  <span className="text-xs">Nhập thủ công</span>
-                </Button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* QR Check-in - Embedded */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col h-[550px]">
+              <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-blue-600" />
+                  Check-in bằng QR Code
+                </h3>
+              </div>
+              <div className="p-4 flex-1 overflow-hidden flex flex-col">
+                <ModalQRCheckIn
+                  isOpen={true}
+                  onClose={() => {}}
+                  selectedBranchId={selectedBranchId}
+                  embedded={true}
+                />
+              </div>
+            </div>
+
+            {/* Manual Check-in - Embedded */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col h-[550px]">
+              <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Smartphone className="w-5 h-5 text-blue-600" />
+                  Check-in Thủ Công
+                </h3>
+              </div>
+              <div className="p-4 flex-1 overflow-hidden flex flex-col">
+                <ModalManualCheckIn
+                  isOpen={true}
+                  onClose={() => {}}
+                  selectedBranchId={selectedBranchId}
+                  embedded={true}
+                />
               </div>
             </div>
           </div>
@@ -469,16 +447,6 @@ export function AdminAccessControl() {
         </Card>
       </div>
 
-      <ModalManualCheckIn
-        isOpen={isModalManualCheckInOpen}
-        onClose={handleCloseModalManualCheckIn}
-        defaultBranchId={userBranchId}
-      />
-      <ModalQRCheckIn
-        isOpen={isModalQRCheckInOpen}
-        onClose={handleCloseModalQRCheckIn}
-        defaultBranchId={userBranchId}
-      />
     </div>
   );
 }
