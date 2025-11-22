@@ -1,6 +1,8 @@
 const API_CONFIG = {
     BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
-    TIMEOUT: 10000*60, // 1 minute
+    TIMEOUT: process.env.REACT_APP_API_TIMEOUT 
+        ? parseInt(process.env.REACT_APP_API_TIMEOUT, 10) 
+        : 600000, // 10 minutes default
     HEADERS: {
         'Content-Type': 'application/json',
     },

@@ -78,6 +78,31 @@ Project sử dụng Tailwind CSS với:
 - **TypeScript**: `tsconfig.json` - TypeScript configuration
 - **PostCSS**: `postcss.config.js` - CSS processing
 
+## ⚙️ Environment Variables (.env)
+
+Project sử dụng file `.env` để quản lý các cấu hình API và environment variables.
+
+### Thiết lập nhanh
+
+1. **Copy file template**:
+   ```bash
+   copy .env.example .env
+   ```
+   Hoặc xem file `ENV_SETUP.md` để copy nội dung
+
+2. **File `.env` hiện tại đã có sẵn với giá trị mặc định cho development**
+
+Xem chi tiết: [ENV_SETUP.md](./ENV_SETUP.md)
+
+## 🚀 Deploy miễn phí
+
+Xem hướng dẫn deploy chi tiết: [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+
+**Tóm tắt**: 
+- Frontend: **Vercel** (miễn phí, tốt nhất cho React)
+- Backend: **Render** (free tier) hoặc **Railway** ($5 credit/tháng)
+- Database: **MongoDB Atlas** (free tier)
+
 ## ✨ Tính năng hiện tại
 
 ### 🏠 Landing Page
