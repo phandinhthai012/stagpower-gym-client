@@ -31,6 +31,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSubscriptions, useCheckIns, useMembersWithPagination } from '../hooks';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
+import { exportSelectedMembersToExcel } from '../../../lib/excel-utils';
+import { useSuspendSubscription } from '../../member/hooks/useSubscriptions';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../../components/ui/alert-dialog';
+import { Label } from '../../../components/ui/label';
+import { toast } from 'sonner';
 
 
 interface AdminMemberManagementProps {
@@ -53,6 +67,11 @@ export function AdminMemberManagement({
   const [statusFilter, setStatusFilter] = useState('all');
   const [membershipFilter, setMembershipFilter] = useState('all');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [suspendReason, setSuspendReason] = useState('');
+  const [suspendStartDate, setSuspendStartDate] = useState('');
+  const [suspendEndDate, setSuspendEndDate] = useState('');
+  const [suspendError, setSuspendError] = useState('');
 
   // Fetch members with pagination
   const { data: membersData, isLoading, isError } = useMembersWithPagination({
@@ -76,6 +95,9 @@ export function AdminMemberManagement({
   const checkIns = checkInsResponse && 'success' in checkInsResponse && checkInsResponse.success 
     ? checkInsResponse.data || [] 
     : mockCheckIns; // Fallback to mock data if API fails
+
+  // Suspend subscription mutation
+  const suspendSubscriptionMutation = useSuspendSubscription();
   
   // Reset page when filters change
   React.useEffect(() => {
@@ -84,6 +106,31 @@ export function AdminMemberManagement({
 
   // Track dropdown open state to prevent unnecessary scroll unlock
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Define getMemberStatus before using it
+  const getMemberStatus = (member: any) => {
+    const activeSub = subscriptions.find((sub: any) => {
+      // Handle both ObjectId and string comparison
+      const subMemberId = sub.memberId?._id || sub.memberId;
+      const memberId = member._id;
+      return String(subMemberId) === String(memberId) && sub.status === 'Active';
+    });
+    
+    if (!activeSub) return { status: 'Không có gói', color: 'bg-red-100 text-red-800' };
+    
+    const now = new Date();
+    const endDate = new Date(activeSub.endDate);
+    
+    if (now > endDate) {
+      return { status: 'Hết hạn', color: 'bg-red-100 text-red-800' };
+    }
+    
+    if (activeSub.isSuspended) {
+      return { status: 'Tạm ngưng', color: 'bg-yellow-100 text-yellow-800' };
+    }
+    
+    return { status: 'Đang hoạt động', color: 'bg-green-100 text-green-800' };
+  };
 
   // Prevent scroll lock when dropdowns are open (only when dropdown is actually open)
   useEffect(() => {
@@ -140,9 +187,18 @@ export function AdminMemberManagement({
     };
   }, [isDropdownOpen]);
 
+  // Add computed status field for sorting
+  const membersWithComputedStatus = members.map((member: any) => {
+    const memberStatus = getMemberStatus(member);
+    return {
+      ...member,
+      computedStatus: memberStatus.status, // Add computed status for sorting
+    };
+  });
+
   // Sort members - Hook must be called before early returns
   const { sortedData, requestSort, getSortDirection } = useSortableTable({
-    data: members,
+    data: membersWithComputedStatus,
     initialSort: { key: 'fullName', direction: 'asc' }
   });
 
@@ -207,28 +263,147 @@ export function AdminMemberManagement({
     onDeleteMember?.(memberId);
   };
 
-  const getMemberStatus = (member: any) => {
-    const activeSub = subscriptions.find((sub: any) => {
-      // Handle both ObjectId and string comparison
-      const subMemberId = sub.memberId?._id || sub.memberId;
-      const memberId = member._id;
-      return String(subMemberId) === String(memberId) && sub.status === 'Active';
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setMembershipFilter('all');
+    setPage(1);
+  };
+
+  const handleExportSelected = async () => {
+    if (selectedMembers.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một hội viên để xuất dữ liệu');
+      return;
+    }
+
+    try {
+      toast.loading('Đang tải dữ liệu...', { id: 'export-loading' });
+      
+      // Fetch tất cả members (không filter) để lấy được tất cả members đã chọn từ mọi trang
+      const { userApi } = await import('../../member/api/user.api');
+      
+      // Fetch tất cả members với limit lớn, không filter để lấy tất cả
+      let allMembers: any[] = [];
+      let currentPage = 1;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const response = await userApi.getMembersWithPagination({
+          page: currentPage,
+          limit: 100, // Fetch từng batch 100
+        });
+        
+        const pageMembers = response?.data || [];
+        allMembers.push(...pageMembers);
+        
+        const totalPages = response?.pagination?.totalPages || 1;
+        hasMore = currentPage < totalPages;
+        currentPage++;
+      }
+      
+      // Filter chỉ lấy các members đã chọn
+      const selectedMembersData = allMembers.filter((member: any) => 
+        selectedMembers.includes(member._id)
+      );
+
+      if (selectedMembersData.length === 0) {
+        toast.error('Không tìm thấy dữ liệu của các hội viên đã chọn', { id: 'export-loading' });
+        return;
+      }
+
+      toast.success(`Đã tải ${selectedMembersData.length} hội viên, đang xuất file...`, { id: 'export-loading' });
+      
+      exportSelectedMembersToExcel({
+        members: selectedMembersData,
+        subscriptions,
+        checkIns,
+        payments: [], // You may want to fetch payments if needed
+      });
+
+      toast.success(`Đã xuất dữ liệu của ${selectedMembersData.length} hội viên thành công!`, { id: 'export-loading' });
+    } catch (error) {
+      console.error('Error exporting selected members:', error);
+      toast.error('Có lỗi xảy ra khi xuất dữ liệu', { id: 'export-loading' });
+    }
+  };
+
+  const handleSuspendClick = () => {
+    // Set default dates (today to 30 days from now)
+    const today = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 30);
+    
+    setSuspendStartDate(today.toISOString().split('T')[0]);
+    setSuspendEndDate(endDate.toISOString().split('T')[0]);
+    setSuspendReason('');
+    setSuspendError('');
+    setShowSuspendDialog(true);
+  };
+
+  const handleConfirmSuspend = async () => {
+    // Clear previous error
+    setSuspendError('');
+
+    if (!suspendReason.trim()) {
+      setSuspendError('Vui lòng nhập lý do tạm ngưng');
+      return;
+    }
+
+    if (!suspendStartDate || !suspendEndDate) {
+      setSuspendError('Vui lòng chọn ngày bắt đầu và kết thúc');
+      return;
+    }
+
+    const selectedMembersData = sortedData.filter((member: any) => 
+      selectedMembers.includes(member._id)
+    );
+
+    // Find active subscriptions for selected members
+    const membersToSuspend: Array<{ memberId: string; subscriptionId: string }> = [];
+    
+    selectedMembersData.forEach((member: any) => {
+      const activeSub = subscriptions.find((sub: any) => {
+        const subMemberId = sub.memberId?._id || sub.memberId;
+        const memberId = member._id || member.id;
+        return String(subMemberId) === String(memberId) && sub.status === 'Active';
+      });
+
+      if (activeSub) {
+        membersToSuspend.push({
+          memberId: member._id,
+          subscriptionId: activeSub._id || activeSub.id,
+        });
+      }
     });
-    
-    if (!activeSub) return { status: 'Không có gói', color: 'bg-red-100 text-red-800' };
-    
-    const now = new Date();
-    const endDate = new Date(activeSub.endDate);
-    
-    if (now > endDate) {
-      return { status: 'Hết hạn', color: 'bg-red-100 text-red-800' };
+
+    if (membersToSuspend.length === 0) {
+      setSuspendError('Không tìm thấy gói tập đang hoạt động nào để tạm ngưng');
+      return;
     }
-    
-    if (activeSub.isSuspended) {
-      return { status: 'Tạm ngưng', color: 'bg-yellow-100 text-yellow-800' };
+
+    // Suspend all subscriptions
+    try {
+      const suspendPromises = membersToSuspend.map(({ subscriptionId }) =>
+        suspendSubscriptionMutation.mutateAsync({
+          subscriptionId,
+          data: {
+            startDate: suspendStartDate,
+            endDate: suspendEndDate,
+            reason: suspendReason,
+          },
+        })
+      );
+
+      await Promise.all(suspendPromises);
+      
+      toast.success(`Đã tạm ngưng ${membersToSuspend.length} gói tập thành công!`);
+      setShowSuspendDialog(false);
+      setSelectedMembers([]);
+      setSuspendReason('');
+    } catch (error) {
+      console.error('Error suspending subscriptions:', error);
+      // Error is already handled by mutation
     }
-    
-    return { status: 'Đang hoạt động', color: 'bg-green-100 text-green-800' };
   };
 
   const getLastCheckIn = (memberId: string) => {
@@ -263,8 +438,8 @@ export function AdminMemberManagement({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Tìm theo tên, email, SĐT..."
@@ -277,8 +452,9 @@ export function AdminMemberManagement({
               />
             </div>
             
-            <Select 
-              value={statusFilter} 
+            <div className="w-full md:w-[20%]">
+              <Select 
+                value={statusFilter} 
               onValueChange={(value) => {
                 setStatusFilter(value);
                 setPage(1);
@@ -309,20 +485,22 @@ export function AdminMemberManagement({
                   }
                 });
               }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                <SelectItem value="active">Hoạt động</SelectItem>
-                <SelectItem value="inactive">Không hoạt động</SelectItem>
-                <SelectItem value="suspended">Tạm ngưng</SelectItem>
-              </SelectContent>
-            </Select>
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="active">Hoạt động</SelectItem>
+                  <SelectItem value="inactive">Không hoạt động</SelectItem>
+                  <SelectItem value="suspended">Tạm ngưng</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select 
-              value={membershipFilter} 
+            <div className="w-full md:w-[20%]">
+              <Select 
+                value={membershipFilter} 
               onValueChange={(value) => {
                 setMembershipFilter(value);
                 setPage(1);
@@ -353,20 +531,20 @@ export function AdminMemberManagement({
                   }
                 });
               }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Loại membership" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả loại</SelectItem>
-                <SelectItem value="basic">Basic</SelectItem>
-                <SelectItem value="vip">VIP</SelectItem>
-              </SelectContent>
-            </Select>
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Loại membership" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả loại</SelectItem>
+                  <SelectItem value="basic">Basic</SelectItem>
+                  <SelectItem value="vip">VIP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Button className="w-full" onClick={onCreateMember}>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm hội viên
+            <Button variant="outline" onClick={handleResetFilters} className="w-full md:w-auto">
+              Đặt lại
             </Button>
           </div>
         </CardContent>
@@ -381,18 +559,20 @@ export function AdminMemberManagement({
                 Đã chọn {selectedMembers.length} hội viên
               </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Mail className="w-4 h-4 mr-2" />
-                  Gửi email
-                </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleExportSelected}>
                   <Download className="w-4 h-4 mr-2" />
                   Xuất dữ liệu
                 </Button>
-                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                {/* <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-red-600 hover:text-red-700"
+                  onClick={handleSuspendClick}
+                  disabled={suspendSubscriptionMutation.isPending}
+                >
                   <UserX className="w-4 h-4 mr-2" />
                   Tạm ngưng
-                </Button>
+                </Button> */}
               </div>
             </div>
           </CardContent>
@@ -402,10 +582,16 @@ export function AdminMemberManagement({
       {/* Members Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-600" />
-            Danh sách hội viên ({pagination?.filteredRecords || members.length})
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600" />
+              Danh sách hội viên ({pagination?.filteredRecords || members.length})
+            </CardTitle>
+            <Button onClick={onCreateMember} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm hội viên
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -439,9 +625,9 @@ export function AdminMemberManagement({
                   <NonSortableHeader label="Gói tập" align="left" className="p-3" />
                   <SortableTableHeader
                     label="Trạng thái"
-                    sortKey="status"
-                    currentSortKey={getSortDirection('status') ? 'status' : ''}
-                    sortDirection={getSortDirection('status')}
+                    sortKey="computedStatus"
+                    currentSortKey={getSortDirection('computedStatus') ? 'computedStatus' : ''}
+                    sortDirection={getSortDirection('computedStatus')}
                     onSort={requestSort}
                     align="left"
                     className="p-3"
@@ -633,6 +819,69 @@ export function AdminMemberManagement({
           )}
         </CardContent>
       </Card>
+
+      {/* Suspend Dialog */}
+      <AlertDialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tạm ngưng gói tập</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn tạm ngưng gói tập của {selectedMembers.length} hội viên được chọn?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="suspend-start-date">Ngày bắt đầu tạm ngưng</Label>
+              <Input
+                id="suspend-start-date"
+                type="date"
+                value={suspendStartDate}
+                onChange={(e) => setSuspendStartDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="suspend-end-date">Ngày kết thúc tạm ngưng</Label>
+              <Input
+                id="suspend-end-date"
+                type="date"
+                value={suspendEndDate}
+                onChange={(e) => setSuspendEndDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="suspend-reason">
+                Lý do tạm ngưng {suspendError ? (
+                  <span className="text-red-600 text-sm">{suspendError}</span>
+                ) : (
+                  <span className="text-red-600">*</span>
+                )}
+              </Label>
+              <Input
+                id="suspend-reason"
+                placeholder="Nhập lý do tạm ngưng..."
+                value={suspendReason}
+                onChange={(e) => {
+                  setSuspendReason(e.target.value);
+                  if (suspendError) setSuspendError(''); // Clear error when user types
+                }}
+                className={suspendError ? 'border-red-500' : ''}
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400">
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmSuspend}
+              disabled={suspendSubscriptionMutation.isPending}
+              className="text-white bg-blue-600 hover:bg-blue-700 border-blue-600"
+            >
+              {suspendSubscriptionMutation.isPending ? 'Đang xử lý...' : 'Xác nhận tạm ngưng'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );

@@ -1554,3 +1554,171 @@ export const exportPaymentsToExcel = (
   }
 };
 
+export interface SelectedMembersExportData {
+  members: any[];
+  subscriptions: any[];
+  checkIns: any[];
+  payments?: any[];
+}
+
+export const exportSelectedMembersToExcel = (
+  data: SelectedMembersExportData
+): void => {
+  const { members, subscriptions, checkIns, payments = [] } = data;
+
+  // Helper functions
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('vi-VN');
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  };
+
+  // Create workbook
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Danh sách hội viên được chọn
+  const memberData = members.map((member: any) => {
+    // Find active subscription
+    const activeSub = subscriptions.find((sub: any) => {
+      const subMemberId = sub.memberId?._id || sub.memberId;
+      const memberId = member._id || member.id;
+      return String(subMemberId) === String(memberId) && sub.status === 'Active';
+    });
+
+    // Count check-ins
+    const memberCheckIns = checkIns.filter((ci: any) => {
+      const ciMemberId = ci.memberId?._id || ci.memberId;
+      const memberId = member._id || member.id;
+      return String(ciMemberId) === String(memberId);
+    });
+
+    // Calculate total workout time
+    const totalWorkoutTime = memberCheckIns
+      .filter((ci: any) => {
+        const checkInTime = ci.checkInTime || ci.check_in_time;
+        const checkOutTime = ci.checkOutTime || ci.check_out_time;
+        return checkInTime && checkOutTime;
+      })
+      .reduce((sum: number, ci: any) => {
+        const checkInTime = new Date(ci.checkInTime || ci.check_in_time).getTime();
+        const checkOutTime = new Date(ci.checkOutTime || ci.check_out_time).getTime();
+        return sum + Math.round((checkOutTime - checkInTime) / (1000 * 60));
+      }, 0);
+
+    // Get member status
+    let memberStatus = 'Không có gói';
+    if (activeSub) {
+      const now = new Date();
+      const endDate = new Date(activeSub.endDate || activeSub.end_date);
+      if (now > endDate) {
+        memberStatus = 'Hết hạn';
+      } else if (activeSub.isSuspended) {
+        memberStatus = 'Tạm ngưng';
+      } else {
+        memberStatus = 'Đang hoạt động';
+      }
+    }
+
+    // Calculate total spending
+    const memberPayments = payments.filter((p: any) => {
+      const pMemberId = p.memberId?._id || p.memberId;
+      const memberId = member._id || member.id;
+      return String(pMemberId) === String(memberId) && (p.paymentStatus || p.status) === 'Completed';
+    });
+
+    const totalSpending = memberPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+
+    return {
+      'Mã hội viên': member.uid || member._id || '',
+      'Họ tên': member.fullName || '',
+      'Email': member.email || '',
+      'Số điện thoại': member.phone || '',
+      'Giới tính': member.gender === 'male' ? 'Nam' : member.gender === 'female' ? 'Nữ' : member.gender || '',
+      'Ngày sinh': formatDate(member.dateOfBirth || member.date_of_birth),
+      'CCCD': member.cccd || '',
+      'Ngày đăng ký': formatDate(member.createdAt || member.created_at || member.joinDate),
+      'Trạng thái': memberStatus,
+      'Cấp độ': member.memberInfo?.membership_level || member.member_info?.membership_level || '',
+      'Học sinh/Sinh viên': (member.memberInfo?.is_hssv || member.member_info?.is_hssv || member.memberInfo?.is_student) ? 'Có' : 'Không',
+      'Gói hiện tại': activeSub?.packageId?.name || activeSub?.type || 'Không có',
+      'Ngày bắt đầu gói': formatDate(activeSub?.startDate || activeSub?.start_date),
+      'Ngày hết hạn': formatDate(activeSub?.endDate || activeSub?.end_date),
+      'Số lần check-in': memberCheckIns.length,
+      'Tổng thời gian tập (phút)': totalWorkoutTime,
+      'Tổng thời gian tập (giờ)': Math.round((totalWorkoutTime / 60) * 10) / 10,
+      'Tổng chi tiêu': totalSpending,
+      'Số giao dịch': memberPayments.length,
+    };
+  });
+
+  if (memberData.length > 0) {
+    const ws1 = XLSX.utils.json_to_sheet(memberData);
+    ws1['!cols'] = [
+      { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 15 },
+      { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 15 },
+      { wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 20 },
+      { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 },
+      { wch: 15 }, { wch: 15 }, { wch: 12 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Danh sach hoi vien');
+  }
+
+  // Sheet 2: Tổng hợp
+  const totalMembers = members.length;
+  const activeMembers = members.filter((m: any) => {
+    const activeSub = subscriptions.find((sub: any) => {
+      const subMemberId = sub.memberId?._id || sub.memberId;
+      const memberId = m._id || m.id;
+      return String(subMemberId) === String(memberId) && sub.status === 'Active';
+    });
+    if (!activeSub) return false;
+    const now = new Date();
+    const endDate = new Date(activeSub.endDate || activeSub.end_date);
+    return now <= endDate && !activeSub.isSuspended;
+  }).length;
+
+  const totalCheckIns = checkIns.filter((ci: any) => {
+    const ciMemberId = ci.memberId?._id || ci.memberId;
+    return members.some((m: any) => String(m._id || m.id) === String(ciMemberId));
+  }).length;
+
+  const totalSpending = payments
+    .filter((p: any) => {
+      const pMemberId = p.memberId?._id || p.memberId;
+      return members.some((m: any) => String(m._id || m.id) === String(pMemberId)) && 
+             (p.paymentStatus || p.status) === 'Completed';
+    })
+    .reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+
+  const summaryData = [
+    { 'Chỉ số': 'Tổng số hội viên được chọn', 'Giá trị': totalMembers },
+    { 'Chỉ số': 'Hội viên đang hoạt động', 'Giá trị': activeMembers },
+    { 'Chỉ số': 'Tỷ lệ hoạt động (%)', 'Giá trị': totalMembers > 0 ? ((activeMembers / totalMembers) * 100).toFixed(1) : 0 },
+    { 'Chỉ số': 'Tổng số lần check-in', 'Giá trị': totalCheckIns },
+    { 'Chỉ số': 'Tổng chi tiêu', 'Giá trị': totalSpending },
+    { 'Chỉ số': 'Chi tiêu trung bình/hội viên', 'Giá trị': totalMembers > 0 ? Math.round(totalSpending / totalMembers) : 0 },
+  ];
+
+  const ws2 = XLSX.utils.json_to_sheet(summaryData);
+  ws2['!cols'] = [{ wch: 30 }, { wch: 25 }];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Tong hop');
+
+  // Generate filename
+  const dateStr = new Date().toISOString().split('T')[0];
+  const fileName = `DanhSachHoiVienDuocChon-${dateStr}.xlsx`;
+  
+  // Write file
+  try {
+    XLSX.writeFile(wb, fileName);
+  } catch (error) {
+    console.error('Error exporting selected members:', error);
+    throw new Error('Không thể xuất danh sách hội viên được chọn');
+  }
+};
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -44,6 +44,7 @@ export function AdminStaffPTManagement() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<StaffTrainerUser | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   // Check if current user is staff (limited permissions)
   const { user } = useAuth();
@@ -84,6 +85,61 @@ export function AdminStaffPTManagement() {
   React.useEffect(() => {
     setSelectedUsers([]);
   }, [page]);
+
+  // Prevent scroll lock when dropdowns are open (only when dropdown is actually open)
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    let rafId: number;
+    let lastCheck = 0;
+    const preventScrollLock = () => {
+      const now = Date.now();
+      // Throttle to prevent flickering - only check every 100ms
+      if (now - lastCheck < 100) {
+        if (isDropdownOpen) {
+          rafId = requestAnimationFrame(preventScrollLock);
+        }
+        return;
+      }
+      lastCheck = now;
+
+      // Check if body has fixed position (indicating scroll lock)
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        // Remove data-scroll-locked attribute if present
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      }
+      // Also check for data-scroll-locked attribute
+      if (document.body.hasAttribute('data-scroll-locked')) {
+        document.body.removeAttribute('data-scroll-locked');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      // Continue checking only if dropdown is still open
+      if (isDropdownOpen) {
+        rafId = requestAnimationFrame(preventScrollLock);
+      }
+    };
+
+    // Start checking
+    rafId = requestAnimationFrame(preventScrollLock);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isDropdownOpen]);
 
   // Reset selected users when sort changes
   const handleSort = (key: string) => {
@@ -206,8 +262,8 @@ export function AdminStaffPTManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Tìm kiếm theo tên, email, SĐT"
@@ -220,38 +276,100 @@ export function AdminStaffPTManagement() {
               />
             </div>
             
-            <Select value={roleFilter} onValueChange={(value) => {
-              setRoleFilter(value as 'all' | 'trainer' | 'staff' | 'admin');
-              setPage(1);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn vai trò" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="trainer">PT</SelectItem>
-                <SelectItem value="staff">Nhân viên</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="w-full md:w-[20%]">
+              <Select 
+                value={roleFilter} 
+                onValueChange={(value) => {
+                  setRoleFilter(value as 'all' | 'trainer' | 'staff' | 'admin');
+                  setPage(1);
+                }}
+                onOpenChange={(open) => {
+                  setIsDropdownOpen(open);
+                  // Prevent scroll lock when dropdown opens/closes
+                  // Use requestAnimationFrame to ensure this runs after Radix UI's scroll lock
+                  requestAnimationFrame(() => {
+                    // Restore scroll styles to prevent lock
+                    if (document.body.style.position === 'fixed') {
+                      const scrollY = document.body.style.top;
+                      document.body.style.position = '';
+                      document.body.style.top = '';
+                      document.body.style.width = '';
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      // Remove data-scroll-locked attribute if present
+                      document.body.removeAttribute('data-scroll-locked');
+                      if (scrollY) {
+                        const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                        window.scrollTo(0, y);
+                      }
+                    } else {
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                    }
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn vai trò" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả vai trò</SelectItem>
+                  <SelectItem value="trainer">PT</SelectItem>
+                  <SelectItem value="staff">Nhân viên</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select value={statusFilter} onValueChange={(value) => {
-              setStatusFilter(value as 'all' | 'active' | 'inactive' | 'pending' | 'banned');
-              setPage(1);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn trạng thái" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả</SelectItem>
-                <SelectItem value="active">Hoạt động</SelectItem>
-                <SelectItem value="inactive">Không hoạt động</SelectItem>
-                <SelectItem value="pending">Chờ duyệt</SelectItem>
-                <SelectItem value="banned">Bị khóa</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="w-full md:w-[20%]">
+              <Select 
+                value={statusFilter} 
+                onValueChange={(value) => {
+                  setStatusFilter(value as 'all' | 'active' | 'inactive' | 'pending' | 'banned');
+                  setPage(1);
+                }}
+                onOpenChange={(open) => {
+                  setIsDropdownOpen(open);
+                  // Prevent scroll lock when dropdown opens/closes
+                  // Use requestAnimationFrame to ensure this runs after Radix UI's scroll lock
+                  requestAnimationFrame(() => {
+                    // Restore scroll styles to prevent lock
+                    if (document.body.style.position === 'fixed') {
+                      const scrollY = document.body.style.top;
+                      document.body.style.position = '';
+                      document.body.style.top = '';
+                      document.body.style.width = '';
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      // Remove data-scroll-locked attribute if present
+                      document.body.removeAttribute('data-scroll-locked');
+                      if (scrollY) {
+                        const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                        window.scrollTo(0, y);
+                      }
+                    } else {
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                    }
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="active">Hoạt động</SelectItem>
+                  <SelectItem value="inactive">Không hoạt động</SelectItem>
+                  <SelectItem value="pending">Chờ duyệt</SelectItem>
+                  <SelectItem value="banned">Bị khóa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Button variant="outline" onClick={handleResetFilters}>
+            <Button variant="outline" onClick={handleResetFilters} className="w-full md:w-auto">
               Đặt lại
             </Button>
           </div>
