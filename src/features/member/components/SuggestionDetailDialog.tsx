@@ -3,7 +3,7 @@ import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Separator } from '../../../components/ui/separator';
-import { Dumbbell, UtensilsCrossed, Heart, Activity, Calendar, X, Target, Clock, TrendingUp, FileText } from 'lucide-react';
+import { Dumbbell, UtensilsCrossed, Heart, Activity, Calendar, X, Target, Clock, TrendingUp, FileText, UserCheck } from 'lucide-react';
 import { useAISuggestionsById } from '../hooks/useAISuggestions';
 
 interface SuggestionDetailDialogProps {
@@ -18,7 +18,7 @@ export function SuggestionDetailDialog({
   AISuggestionID
 }: SuggestionDetailDialogProps) {
   const { data: suggestion, isLoading, isError } = useAISuggestionsById(AISuggestionID || '');
-
+  console.log(suggestion);
   if (!open) return null;
 
   const getStatusBadge = (status: string) => {
@@ -314,6 +314,22 @@ export function SuggestionDetailDialog({
                 </div>
                 <p className="text-gray-700 ml-7 bg-gray-50 p-3 rounded-lg whitespace-pre-line">
                   {suggestion.notes}
+                </p>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* Ghi chú từ huấn luyện viên */}
+          {suggestion.trainerNotes && (
+            <>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-purple-600" />
+                  <h3 className="text-lg font-semibold">Ghi chú từ huấn luyện viên</h3>
+                </div>
+                <p className="text-gray-700 ml-7 bg-purple-50 p-3 rounded-lg whitespace-pre-line border border-purple-100">
+                  {suggestion.trainerNotes}
                 </p>
               </div>
               <Separator />
