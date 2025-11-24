@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { LoadingSpinner } from '../../../components/common';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
@@ -55,6 +56,9 @@ export function AdminPackageManagement({
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [membershipTypeFilter, setMembershipTypeFilter] = useState('all');
   const [selectedPackages, setSelectedPackages] = useState<string[]>([]);
+  
+  // Track dropdown open state to prevent scroll lock
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // modal create and view detail package
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -124,6 +128,55 @@ export function AdminPackageManagement({
     setCategoryFilter('all');
     setMembershipTypeFilter('all');
   };
+
+  // Prevent scroll lock when dropdowns are open
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    let rafId: number;
+    let lastCheck = 0;
+    const preventScrollLock = () => {
+      const now = Date.now();
+      if (now - lastCheck < 100) {
+        if (isDropdownOpen) {
+          rafId = requestAnimationFrame(preventScrollLock);
+        }
+        return;
+      }
+      lastCheck = now;
+
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      }
+      if (document.body.hasAttribute('data-scroll-locked')) {
+        document.body.removeAttribute('data-scroll-locked');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      if (isDropdownOpen) {
+        rafId = requestAnimationFrame(preventScrollLock);
+      }
+    };
+
+    rafId = requestAnimationFrame(preventScrollLock);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isDropdownOpen]);
 
   const handleSelectPackage = (packageId: string) => {
     setSelectedPackages(prev =>
@@ -235,7 +288,7 @@ export function AdminPackageManagement({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             {/* Search */}
             <div className="lg:col-span-2">
               <Label htmlFor="search">Tìm kiếm</Label>
@@ -254,82 +307,178 @@ export function AdminPackageManagement({
             {/* Type Filter */}
             <div>
               <Label htmlFor="typeFilter">Loại gói</Label>
-              <select
-                id="typeFilter"
+              <Select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                onValueChange={(value) => setTypeFilter(value)}
+                onOpenChange={(open) => {
+                  setIsDropdownOpen(open);
+                  requestAnimationFrame(() => {
+                    if (document.body.style.position === 'fixed') {
+                      const scrollY = document.body.style.top;
+                      document.body.style.position = '';
+                      document.body.style.top = '';
+                      document.body.style.width = '';
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                      if (scrollY) {
+                        const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                        window.scrollTo(0, y);
+                      }
+                    } else {
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                    }
+                  });
+                }}
               >
-                <option value="all">Tất cả</option>
-                <option value="Membership">Membership</option>
-                <option value="Combo">Combo</option>
-                <option value="PT">PT</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="Membership">Membership</SelectItem>
+                  <SelectItem value="Combo">Combo</SelectItem>
+                  <SelectItem value="PT">PT</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Status Filter */}
             <div>
               <Label htmlFor="statusFilter">Trạng thái</Label>
-              <select
-                id="statusFilter"
+              <Select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                onValueChange={(value) => setStatusFilter(value)}
+                onOpenChange={(open) => {
+                  setIsDropdownOpen(open);
+                  requestAnimationFrame(() => {
+                    if (document.body.style.position === 'fixed') {
+                      const scrollY = document.body.style.top;
+                      document.body.style.position = '';
+                      document.body.style.top = '';
+                      document.body.style.width = '';
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                      if (scrollY) {
+                        const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                        window.scrollTo(0, y);
+                      }
+                    } else {
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                    }
+                  });
+                }}
               >
-                <option value="all">Tất cả</option>
-                <option value="Active">Hoạt động</option>
-                <option value="Inactive">Ngừng hoạt động</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="Active">Hoạt động</SelectItem>
+                  <SelectItem value="Inactive">Ngừng hoạt động</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Category Filter */}
             <div>
               <Label htmlFor="categoryFilter">Thời hạn</Label>
-              <select
-                id="categoryFilter"
+              <Select
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                onValueChange={(value) => setCategoryFilter(value)}
+                onOpenChange={(open) => {
+                  setIsDropdownOpen(open);
+                  requestAnimationFrame(() => {
+                    if (document.body.style.position === 'fixed') {
+                      const scrollY = document.body.style.top;
+                      document.body.style.position = '';
+                      document.body.style.top = '';
+                      document.body.style.width = '';
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                      if (scrollY) {
+                        const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                        window.scrollTo(0, y);
+                      }
+                    } else {
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                    }
+                  });
+                }}
               >
-                <option value="all">Tất cả</option>
-                <option value="ShortTerm">Ngắn hạn</option>
-                <option value="MediumTerm">Trung hạn</option>
-                <option value="LongTerm">Dài hạn</option>
-                <option value="Trial">Gói thử</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="ShortTerm">Ngắn hạn</SelectItem>
+                  <SelectItem value="MediumTerm">Trung hạn</SelectItem>
+                  <SelectItem value="LongTerm">Dài hạn</SelectItem>
+                  <SelectItem value="Trial">Gói thử</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Membership Type Filter */}
+            <div>
+              <Label htmlFor="membershipTypeFilter">Loại Membership</Label>
+              <Select
+                value={membershipTypeFilter}
+                onValueChange={(value) => setMembershipTypeFilter(value)}
+                onOpenChange={(open) => {
+                  setIsDropdownOpen(open);
+                  requestAnimationFrame(() => {
+                    if (document.body.style.position === 'fixed') {
+                      const scrollY = document.body.style.top;
+                      document.body.style.position = '';
+                      document.body.style.top = '';
+                      document.body.style.width = '';
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                      if (scrollY) {
+                        const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                        window.scrollTo(0, y);
+                      }
+                    } else {
+                      document.body.style.overflow = '';
+                      document.documentElement.style.overflow = '';
+                      document.body.removeAttribute('data-scroll-locked');
+                    }
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả</SelectItem>
+                  <SelectItem value="Basic">Basic</SelectItem>
+                  <SelectItem value="VIP">VIP</SelectItem>
+                  <SelectItem value="none">Không có</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Membership Type Filter */}
-          <div className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div>
-                <Label htmlFor="membershipTypeFilter">Loại Membership</Label>
-                <select
-                  id="membershipTypeFilter"
-                  value={membershipTypeFilter}
-                  onChange={(e) => setMembershipTypeFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                >
-                  <option value="all">Tất cả</option>
-                  <option value="Basic">Basic</option>
-                  <option value="VIP">VIP</option>
-                  <option value="none">Không có</option>
-                </select>
-              </div>
-
-              {/* Clear Filters Button */}
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={clearFilters}
-                  className="w-full flex items-center space-x-2"
-                >
-                  <X className="h-4 w-4" />
-                  <span>Xóa bộ lọc</span>
-                </Button>
-              </div>
-            </div>
+          {/* Reset Button */}
+          <div className="mt-4 flex justify-end">
+            <Button
+              variant="outline"
+              onClick={clearFilters}
+              className="w-full md:w-auto"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Đặt lại
+            </Button>
           </div>
 
           {/* Results Count */}

@@ -55,6 +55,9 @@ export function AdminInvoicePayment() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  
+  // Track dropdown open state to prevent scroll lock
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // API hooks
   const { data: paymentsResponse, isLoading, error } = usePayments();
@@ -228,6 +231,65 @@ export function AdminInvoicePayment() {
     } else {
       setSelectedInvoices(paginatedData.map((payment: any) => payment._id));
     }
+  };
+
+  // Prevent scroll lock when dropdowns are open
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    let rafId: number;
+    let lastCheck = 0;
+    const preventScrollLock = () => {
+      const now = Date.now();
+      if (now - lastCheck < 100) {
+        if (isDropdownOpen) {
+          rafId = requestAnimationFrame(preventScrollLock);
+        }
+        return;
+      }
+      lastCheck = now;
+
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      }
+      if (document.body.hasAttribute('data-scroll-locked')) {
+        document.body.removeAttribute('data-scroll-locked');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      if (isDropdownOpen) {
+        rafId = requestAnimationFrame(preventScrollLock);
+      }
+    };
+
+    rafId = requestAnimationFrame(preventScrollLock);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isDropdownOpen]);
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setPackageFilter('all');
+    setStartDate('');
+    setEndDate('');
+    setPriceFilter('all');
+    setPage(1);
   };
 
   const handleCreateInvoice = () => {
@@ -453,7 +515,7 @@ export function AdminInvoicePayment() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="invoiceSearch">Tìm kiếm</Label>
               <div className="relative">
@@ -476,11 +538,34 @@ export function AdminInvoicePayment() {
               <Select value={statusFilter} onValueChange={(value) => {
                 setStatusFilter(value);
                 setPage(1);
-              }}>
+              }}
+              onOpenChange={(open) => {
+                setIsDropdownOpen(open);
+                requestAnimationFrame(() => {
+                  if (document.body.style.position === 'fixed') {
+                    const scrollY = document.body.style.top;
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.width = '';
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    document.body.removeAttribute('data-scroll-locked');
+                    if (scrollY) {
+                      const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                      window.scrollTo(0, y);
+                    }
+                  } else {
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    document.body.removeAttribute('data-scroll-locked');
+                  }
+                });
+              }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
-                <SelectContent lockScroll={false}>
+                <SelectContent>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="Completed">Đã thanh toán</SelectItem>
                   <SelectItem value="Pending">Chờ thanh toán</SelectItem>
@@ -495,11 +580,34 @@ export function AdminInvoicePayment() {
               <Select value={packageFilter} onValueChange={(value) => {
                 setPackageFilter(value);
                 setPage(1);
-              }}>
+              }}
+              onOpenChange={(open) => {
+                setIsDropdownOpen(open);
+                requestAnimationFrame(() => {
+                  if (document.body.style.position === 'fixed') {
+                    const scrollY = document.body.style.top;
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.width = '';
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    document.body.removeAttribute('data-scroll-locked');
+                    if (scrollY) {
+                      const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                      window.scrollTo(0, y);
+                    }
+                  } else {
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    document.body.removeAttribute('data-scroll-locked');
+                  }
+                });
+              }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
-                <SelectContent lockScroll={false}>
+                <SelectContent>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="Membership">Gói tập</SelectItem>
                   <SelectItem value="PT">Gói PT</SelectItem>
@@ -539,11 +647,34 @@ export function AdminInvoicePayment() {
               <Select value={priceFilter} onValueChange={(value) => {
                 setPriceFilter(value);
                 setPage(1);
-              }}>
+              }}
+              onOpenChange={(open) => {
+                setIsDropdownOpen(open);
+                requestAnimationFrame(() => {
+                  if (document.body.style.position === 'fixed') {
+                    const scrollY = document.body.style.top;
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.width = '';
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    document.body.removeAttribute('data-scroll-locked');
+                    if (scrollY) {
+                      const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                      window.scrollTo(0, y);
+                    }
+                  } else {
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
+                    document.body.removeAttribute('data-scroll-locked');
+                  }
+                });
+              }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Tất cả" />
                 </SelectTrigger>
-                <SelectContent lockScroll={false}>
+                <SelectContent>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="0-500k">Dưới 500k</SelectItem>
                   <SelectItem value="500k-1M">500k - 1M</SelectItem>
@@ -551,6 +682,12 @@ export function AdminInvoicePayment() {
                   <SelectItem value="2M+">Trên 2M</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="flex items-end">
+              <Button variant="outline" onClick={handleResetFilters} className="w-full">
+                Đặt lại
+              </Button>
             </div>
           </div>
         </CardContent>

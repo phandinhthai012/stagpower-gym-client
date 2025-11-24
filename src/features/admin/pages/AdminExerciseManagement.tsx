@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -39,6 +39,10 @@ export function AdminExerciseManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
   const [selectedExercises, setSelectedExercises] = useState<string[]>([]);
+  
+  // Track dropdown open state to prevent scroll lock
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
   // API hooks
   const { data: exercises = [], isLoading, error } = useExercises();
   const deleteExerciseMutation = useDeleteExercise();
@@ -213,6 +217,63 @@ export function AdminExerciseManagement() {
     }
   };
 
+  // Prevent scroll lock when dropdowns are open
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    let rafId: number;
+    let lastCheck = 0;
+    const preventScrollLock = () => {
+      const now = Date.now();
+      if (now - lastCheck < 100) {
+        if (isDropdownOpen) {
+          rafId = requestAnimationFrame(preventScrollLock);
+        }
+        return;
+      }
+      lastCheck = now;
+
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      }
+      if (document.body.hasAttribute('data-scroll-locked')) {
+        document.body.removeAttribute('data-scroll-locked');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      if (isDropdownOpen) {
+        rafId = requestAnimationFrame(preventScrollLock);
+      }
+    };
+
+    rafId = requestAnimationFrame(preventScrollLock);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isDropdownOpen]);
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setCategoryFilter('all');
+    setDifficultyFilter('all');
+    setEquipmentFilter('all');
+    setPage(1);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -276,11 +337,34 @@ export function AdminExerciseManagement() {
             <Select value={categoryFilter} onValueChange={(value) => {
               setCategoryFilter(value);
               setPage(1);
-            }}>
+            }}
+            onOpenChange={(open) => {
+              setIsDropdownOpen(open);
+              requestAnimationFrame(() => {
+                if (document.body.style.position === 'fixed') {
+                  const scrollY = document.body.style.top;
+                  document.body.style.position = '';
+                  document.body.style.top = '';
+                  document.body.style.width = '';
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                  if (scrollY) {
+                    const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                    window.scrollTo(0, y);
+                  }
+                } else {
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                }
+              });
+            }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Chọn danh mục" />
               </SelectTrigger>
-              <SelectContent lockScroll={false}>
+              <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Chest">Chest</SelectItem>
                 <SelectItem value="Back">Back</SelectItem>
@@ -298,11 +382,34 @@ export function AdminExerciseManagement() {
             <Select value={difficultyFilter} onValueChange={(value) => {
               setDifficultyFilter(value);
               setPage(1);
-            }}>
+            }}
+            onOpenChange={(open) => {
+              setIsDropdownOpen(open);
+              requestAnimationFrame(() => {
+                if (document.body.style.position === 'fixed') {
+                  const scrollY = document.body.style.top;
+                  document.body.style.position = '';
+                  document.body.style.top = '';
+                  document.body.style.width = '';
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                  if (scrollY) {
+                    const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                    window.scrollTo(0, y);
+                  }
+                } else {
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                }
+              });
+            }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Chọn độ khó" />
               </SelectTrigger>
-              <SelectContent lockScroll={false}>
+              <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Beginner">Beginner</SelectItem>
                 <SelectItem value="Intermediate">Intermediate</SelectItem>
@@ -313,11 +420,34 @@ export function AdminExerciseManagement() {
             <Select value={equipmentFilter} onValueChange={(value) => {
               setEquipmentFilter(value);
               setPage(1);
-            }}>
+            }}
+            onOpenChange={(open) => {
+              setIsDropdownOpen(open);
+              requestAnimationFrame(() => {
+                if (document.body.style.position === 'fixed') {
+                  const scrollY = document.body.style.top;
+                  document.body.style.position = '';
+                  document.body.style.top = '';
+                  document.body.style.width = '';
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                  if (scrollY) {
+                    const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                    window.scrollTo(0, y);
+                  }
+                } else {
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                }
+              });
+            }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Chọn thiết bị" />
               </SelectTrigger>
-              <SelectContent lockScroll={false}>
+              <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Bodyweight">Bodyweight</SelectItem>
                 <SelectItem value="Dumbbell">Dumbbell</SelectItem>
@@ -326,9 +456,8 @@ export function AdminExerciseManagement() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline">
-              <Search className="w-4 h-4 mr-2" />
-              Áp dụng bộ lọc
+            <Button variant="outline" onClick={handleResetFilters}>
+              Đặt lại
             </Button>
           </div>
         </CardContent>

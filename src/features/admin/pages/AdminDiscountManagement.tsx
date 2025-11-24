@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -46,6 +46,9 @@ export function AdminDiscountManagement() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedDiscount, setSelectedDiscount] = useState<Discount | null>(null);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
+  
+  // Track dropdown open state to prevent scroll lock
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // API hooks
   const { data: discounts = [], isLoading, error } = useDiscounts();
@@ -198,6 +201,62 @@ export function AdminDiscountManagement() {
     }
   };
 
+  // Prevent scroll lock when dropdowns are open
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    let rafId: number;
+    let lastCheck = 0;
+    const preventScrollLock = () => {
+      const now = Date.now();
+      if (now - lastCheck < 100) {
+        if (isDropdownOpen) {
+          rafId = requestAnimationFrame(preventScrollLock);
+        }
+        return;
+      }
+      lastCheck = now;
+
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      }
+      if (document.body.hasAttribute('data-scroll-locked')) {
+        document.body.removeAttribute('data-scroll-locked');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      if (isDropdownOpen) {
+        rafId = requestAnimationFrame(preventScrollLock);
+      }
+    };
+
+    rafId = requestAnimationFrame(preventScrollLock);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isDropdownOpen]);
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setTypeFilter('all');
+    setStatusFilter('all');
+    setPage(1);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -232,7 +291,7 @@ export function AdminDiscountManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
@@ -249,11 +308,34 @@ export function AdminDiscountManagement() {
             <Select value={typeFilter} onValueChange={(value) => {
               setTypeFilter(value);
               setPage(1);
-            }}>
+            }}
+            onOpenChange={(open) => {
+              setIsDropdownOpen(open);
+              requestAnimationFrame(() => {
+                if (document.body.style.position === 'fixed') {
+                  const scrollY = document.body.style.top;
+                  document.body.style.position = '';
+                  document.body.style.top = '';
+                  document.body.style.width = '';
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                  if (scrollY) {
+                    const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                    window.scrollTo(0, y);
+                  }
+                } else {
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                }
+              });
+            }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Chọn loại ưu đãi" />
               </SelectTrigger>
-              <SelectContent lockScroll={false}>
+              <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="HSSV">HSSV</SelectItem>
                 <SelectItem value="VIP">VIP</SelectItem>
@@ -266,16 +348,43 @@ export function AdminDiscountManagement() {
             <Select value={statusFilter} onValueChange={(value) => {
               setStatusFilter(value);
               setPage(1);
-            }}>
+            }}
+            onOpenChange={(open) => {
+              setIsDropdownOpen(open);
+              requestAnimationFrame(() => {
+                if (document.body.style.position === 'fixed') {
+                  const scrollY = document.body.style.top;
+                  document.body.style.position = '';
+                  document.body.style.top = '';
+                  document.body.style.width = '';
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                  if (scrollY) {
+                    const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                    window.scrollTo(0, y);
+                  }
+                } else {
+                  document.body.style.overflow = '';
+                  document.documentElement.style.overflow = '';
+                  document.body.removeAttribute('data-scroll-locked');
+                }
+              });
+            }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Chọn trạng thái" />
               </SelectTrigger>
-              <SelectContent lockScroll={false}>
+              <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="Active">Đang hoạt động</SelectItem>
                 <SelectItem value="Inactive">Tạm dừng</SelectItem>
               </SelectContent>
             </Select>
+
+            <Button variant="outline" onClick={handleResetFilters} className="w-full md:w-auto">
+              Đặt lại
+            </Button>
 
             <Button onClick={handleAddDiscount}>
               <Plus className="w-4 h-4 mr-2" />

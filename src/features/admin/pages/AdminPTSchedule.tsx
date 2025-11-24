@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
@@ -37,11 +37,16 @@ export function AdminPTSchedule() {
   
   // Filter states for calendar view
   const [currentFilter, setCurrentFilter] = useState('all');
+  const [calendarTypeFilter, setCalendarTypeFilter] = useState<'all' | 'direct' | 'pt'>('all');
   
   // Filter states for CRUD view
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'direct' | 'pt'>('all');
   const [page, setPage] = useState(1);
+  
+  // Track dropdown open state to prevent scroll lock
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -129,6 +134,93 @@ export function AdminPTSchedule() {
     setShowDaySchedulesModal(true);
   };
 
+  // Prevent scroll lock when dropdowns are open
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    let rafId: number;
+    let lastCheck = 0;
+    const preventScrollLock = () => {
+      const now = Date.now();
+      if (now - lastCheck < 100) {
+        if (isDropdownOpen) {
+          rafId = requestAnimationFrame(preventScrollLock);
+        }
+        return;
+      }
+      lastCheck = now;
+
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      }
+      if (document.body.hasAttribute('data-scroll-locked')) {
+        document.body.removeAttribute('data-scroll-locked');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      if (isDropdownOpen) {
+        rafId = requestAnimationFrame(preventScrollLock);
+      }
+    };
+
+    rafId = requestAnimationFrame(preventScrollLock);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isDropdownOpen]);
+
+  // Filter schedules for calendar view
+  const filteredCalendarSchedules = useMemo(() => {
+    if (!allSchedules) return [];
+    if (calendarTypeFilter === 'all') return allSchedules;
+    return allSchedules.filter(schedule => {
+      if (calendarTypeFilter === 'direct') return isDirectSchedule(schedule);
+      if (calendarTypeFilter === 'pt') return !isDirectSchedule(schedule);
+      return true;
+    });
+  }, [allSchedules, calendarTypeFilter]);
+
+  // Filter schedules for CRUD view
+  const filteredCRUDSchedules = useMemo(() => {
+    if (!allSchedules) return [];
+    return allSchedules.filter(schedule => {
+      const matchesSearch = !searchTerm || 
+        schedule.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getTrainerName(schedule).toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getMemberName(schedule).toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || schedule.status === statusFilter;
+      const matchesType = typeFilter === 'all' || 
+        (typeFilter === 'direct' && isDirectSchedule(schedule)) ||
+        (typeFilter === 'pt' && !isDirectSchedule(schedule));
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [allSchedules, searchTerm, statusFilter, typeFilter]);
+
+  const handleResetCalendarFilters = () => {
+    setCalendarTypeFilter('all');
+  };
+
+  const handleResetCRUDFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+    setPage(1);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -185,20 +277,76 @@ export function AdminPTSchedule() {
 
       {/* TAB 1: Calendar View */}
       {activeTab === 'calendar' && (
-        <CalendarComponent
-          schedules={allSchedules || []}
-          onDayClick={handleDayClick}
-          getScheduleDisplayText={(schedule) => {
-            const time = new Date(schedule.dateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-            const trainerName = getTrainerName(schedule as ScheduleWithDetails);
-            return `${time} - ${trainerName}`;
-          }}
-          getScheduleColor={(schedule) => {
-            return isDirectSchedule(schedule) 
-              ? 'bg-blue-100 text-blue-800' 
-              : 'bg-orange-100 text-orange-800';
-          }}
-        />
+        <div className="space-y-6">
+          {/* Filter for Calendar View */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-purple-600" />
+                Bộ lọc
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Select 
+                  value={calendarTypeFilter} 
+                  onValueChange={(value) => {
+                    setCalendarTypeFilter(value as 'all' | 'direct' | 'pt');
+                  }}
+                  onOpenChange={(open) => {
+                    setIsDropdownOpen(open);
+                    requestAnimationFrame(() => {
+                      if (document.body.style.position === 'fixed') {
+                        const scrollY = document.body.style.top;
+                        document.body.style.position = '';
+                        document.body.style.top = '';
+                        document.body.style.width = '';
+                        document.body.style.overflow = '';
+                        document.documentElement.style.overflow = '';
+                        document.body.removeAttribute('data-scroll-locked');
+                        if (scrollY) {
+                          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                          window.scrollTo(0, y);
+                        }
+                      } else {
+                        document.body.style.overflow = '';
+                        document.documentElement.style.overflow = '';
+                        document.body.removeAttribute('data-scroll-locked');
+                      }
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn loại lịch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="direct">Lịch trực</SelectItem>
+                    <SelectItem value="pt">Lịch PT</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={handleResetCalendarFilters} className="w-full md:w-auto">
+                  Đặt lại
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <CalendarComponent
+            schedules={filteredCalendarSchedules}
+            onDayClick={handleDayClick}
+            getScheduleDisplayText={(schedule) => {
+              const time = new Date(schedule.dateTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+              const trainerName = getTrainerName(schedule as ScheduleWithDetails);
+              return `${time} - ${trainerName}`;
+            }}
+            getScheduleColor={(schedule) => {
+              return isDirectSchedule(schedule) 
+                ? 'bg-blue-100 text-blue-800' 
+                : 'bg-orange-100 text-orange-800';
+            }}
+          />
+        </div>
       )}
 
       {/* TAB 2: CRUD View */}
@@ -213,7 +361,7 @@ export function AdminPTSchedule() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
@@ -233,6 +381,28 @@ export function AdminPTSchedule() {
                     setStatusFilter(value as 'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow');
                     setPage(1);
                   }}
+                  onOpenChange={(open) => {
+                    setIsDropdownOpen(open);
+                    requestAnimationFrame(() => {
+                      if (document.body.style.position === 'fixed') {
+                        const scrollY = document.body.style.top;
+                        document.body.style.position = '';
+                        document.body.style.top = '';
+                        document.body.style.width = '';
+                        document.body.style.overflow = '';
+                        document.documentElement.style.overflow = '';
+                        document.body.removeAttribute('data-scroll-locked');
+                        if (scrollY) {
+                          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                          window.scrollTo(0, y);
+                        }
+                      } else {
+                        document.body.style.overflow = '';
+                        document.documentElement.style.overflow = '';
+                        document.body.removeAttribute('data-scroll-locked');
+                      }
+                    });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Tất cả trạng thái" />
@@ -246,6 +416,49 @@ export function AdminPTSchedule() {
                     <SelectItem value="NoShow">Vắng mặt</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                <Select 
+                  value={typeFilter} 
+                  onValueChange={(value) => {
+                    setTypeFilter(value as 'all' | 'direct' | 'pt');
+                    setPage(1);
+                  }}
+                  onOpenChange={(open) => {
+                    setIsDropdownOpen(open);
+                    requestAnimationFrame(() => {
+                      if (document.body.style.position === 'fixed') {
+                        const scrollY = document.body.style.top;
+                        document.body.style.position = '';
+                        document.body.style.top = '';
+                        document.body.style.width = '';
+                        document.body.style.overflow = '';
+                        document.documentElement.style.overflow = '';
+                        document.body.removeAttribute('data-scroll-locked');
+                        if (scrollY) {
+                          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                          window.scrollTo(0, y);
+                        }
+                      } else {
+                        document.body.style.overflow = '';
+                        document.documentElement.style.overflow = '';
+                        document.body.removeAttribute('data-scroll-locked');
+                      }
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả loại" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả loại</SelectItem>
+                    <SelectItem value="direct">Lịch trực</SelectItem>
+                    <SelectItem value="pt">Lịch PT</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Button variant="outline" onClick={handleResetCRUDFilters} className="w-full md:w-auto">
+                  Đặt lại
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -255,7 +468,7 @@ export function AdminPTSchedule() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
-                Danh sách lịch ({allSchedules?.length || 0})
+                Danh sách lịch ({filteredCRUDSchedules.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -265,8 +478,8 @@ export function AdminPTSchedule() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {(allSchedules || []).length > 0 ? (
-                    (allSchedules || []).map((schedule) => {
+                  {filteredCRUDSchedules.length > 0 ? (
+                    filteredCRUDSchedules.map((schedule) => {
                       const scheduleDate = new Date(schedule.dateTime);
                       const dayOfWeek = scheduleDate.toLocaleDateString('vi-VN', { weekday: 'long' });
                       const dateStr = scheduleDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
