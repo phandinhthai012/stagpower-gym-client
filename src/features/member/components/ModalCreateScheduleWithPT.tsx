@@ -232,7 +232,7 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
                 <SelectTrigger id="trainerId">
                   <SelectValue placeholder="Chọn PT" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10001]">
                   {(trainers || []).map((t) => (
                     <SelectItem key={t._id} value={t._id}>
                       {t.fullName}{t.trainerInfo?.specialty ? ` - ${t.trainerInfo.specialty}` : ''}
@@ -252,7 +252,7 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
                 <SelectTrigger id="branchId">
                   <SelectValue placeholder="Chọn chi nhánh" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10001]">
                   {(branches || []).map((b) => (
                     <SelectItem key={b._id} value={b._id}>
                       {b.name} - {b.address}
