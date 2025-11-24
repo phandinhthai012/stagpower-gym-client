@@ -34,6 +34,20 @@ export function ModalCreateSchedule({ isOpen, onClose }: Props) {
   const { data: branches } = useBranches();
   const createMutation = useCreateSchedule();
 
+  // Filter members to only show those with PT sessions remaining > 0
+  const availableMembers = React.useMemo(() => {
+    if (!members) return [];
+    return members.filter((member: any) => {
+      // Check if member has at least one active subscription with PT sessions remaining > 0
+      const hasAvailableSessions = member.activeSubscriptions?.some((sub: any) => {
+        return (sub.type === 'PT' || sub.type === 'Combo') && 
+               sub.ptsessionsRemaining > 0 &&
+               sub.status === 'Active';
+      });
+      return hasAvailableSessions;
+    });
+  }, [members]);
+
   // Lock scroll when modal is open
   useScrollLock(isOpen, {
     preserveScrollPosition: true
@@ -62,6 +76,16 @@ export function ModalCreateSchedule({ isOpen, onClose }: Props) {
       setErrors({});
     }
   }, [isOpen]);
+
+  // Reset memberId if selected member is no longer available
+  useEffect(() => {
+    if (formData.memberId && availableMembers.length > 0) {
+      const isMemberAvailable = availableMembers.some((m: any) => m._id === formData.memberId);
+      if (!isMemberAvailable) {
+        setFormData(prev => ({ ...prev, memberId: '' }));
+      }
+    }
+  }, [availableMembers, formData.memberId]);
 
   const handleChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -118,18 +142,10 @@ export function ModalCreateSchedule({ isOpen, onClose }: Props) {
       };
 
       await createMutation.mutateAsync(scheduleData);
-      toast.success('Tạo lịch PT thành công!');
       handleClose();
     } catch (error: any) {
       console.error('Error creating schedule:', error?.response?.data || error);
-      const errorMessage = error?.response?.data?.message || 'Có lỗi xảy ra khi tạo lịch!';
-      const errorDetails = error?.response?.data?.data?.errors || [];
-      
-      if (errorDetails.length > 0) {
-        toast.error(`${errorMessage}: ${errorDetails.map((e: any) => e.message).join(', ')}`);
-      } else {
-        toast.error(errorMessage);
-      }
+      // Error toast is handled by useCreateSchedule mutation hook
     }
   };
 
@@ -187,19 +203,29 @@ export function ModalCreateSchedule({ isOpen, onClose }: Props) {
                 <SelectTrigger className={errors.memberId ? 'border-red-500 focus:ring-red-500' : ''}>
                   <SelectValue placeholder="Chọn hội viên cần tạo lịch" />
                 </SelectTrigger>
-                <SelectContent>
-                  {members && members.length > 0 ? (
-                    members.map((member) => (
-                      <SelectItem key={member._id} value={member._id}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{member.fullName}</span>
-                          <span className="text-xs text-gray-500">{member.email}</span>
-                        </div>
-                      </SelectItem>
-                    ))
+                <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[90vw] sm:max-w-none">
+                  {availableMembers && availableMembers.length > 0 ? (
+                    availableMembers.map((member: any) => {
+                      // Get total PT sessions remaining across all subscriptions
+                      const totalSessionsRemaining = member.activeSubscriptions
+                        ?.filter((sub: any) => (sub.type === 'PT' || sub.type === 'Combo') && sub.status === 'Active')
+                        .reduce((sum: number, sub: any) => sum + (sub.ptsessionsRemaining || 0), 0) || 0;
+                      
+                      return (
+                        <SelectItem key={member._id} value={member._id} className="min-w-0">
+                          <div className="flex flex-col min-w-0 w-full">
+                            <span className="font-medium truncate text-sm sm:text-base">{member.fullName}</span>
+                            <span className="text-xs text-gray-500 truncate">{member.email}</span>
+                            <span className="text-xs text-blue-600 font-medium mt-0.5">
+                              Còn {totalSessionsRemaining} buổi PT
+                            </span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })
                   ) : (
                     <SelectItem value="no-members" disabled>
-                      Không có hội viên nào
+                      Không có hội viên nào còn buổi PT
                     </SelectItem>
                   )}
                 </SelectContent>

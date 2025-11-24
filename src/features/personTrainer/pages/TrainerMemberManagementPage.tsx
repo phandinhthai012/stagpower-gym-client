@@ -175,7 +175,7 @@ export function TrainerMemberManagementPage() {
       {/* Filters and Search */}
       <Card className="mb-4 sm:mb-6">
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-2xl sm:text-xl">Bộ lọc & Tìm kiếm</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Bộ lọc & Tìm kiếm</CardTitle>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
@@ -238,15 +238,15 @@ export function TrainerMemberManagementPage() {
         <Card className="mb-4 sm:mb-6">
           <CardContent className="p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-              <span className="text-base sm:text-sm text-gray-600 font-medium">
+              <span className="text-sm sm:text-sm text-gray-600 font-medium">
                 Đã chọn {selectedMembers.length} hội viên
               </span>
               <div className="flex gap-2 flex-col sm:flex-row">
-                <Button variant="outline" size="sm" className="text-base sm:text-sm w-full sm:w-auto">
+                <Button variant="outline" size="sm" className="text-sm sm:text-sm w-full sm:w-auto">
                   <Mail className="w-4 h-4 mr-2" />
                   Gửi thông báo
                 </Button>
-                <Button variant="outline" size="sm" className="text-base sm:text-sm w-full sm:w-auto">
+                <Button variant="outline" size="sm" className="text-sm sm:text-sm w-full sm:w-auto">
                   <Calendar className="w-4 h-4 mr-2" />
                   Tạo lịch nhóm
                 </Button>
@@ -259,7 +259,7 @@ export function TrainerMemberManagementPage() {
       {/* Members Table */}
       <Card>
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="flex items-center text-2xl sm:text-lg">
+          <CardTitle className="flex items-center text-lg sm:text-lg">
             <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg mr-2 sm:mr-3">
               <Users className="w-5 h-5 sm:w-5 sm:h-5 text-blue-600" />
             </div>
@@ -497,14 +497,14 @@ export function TrainerMemberManagementPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-gray-900 text-lg mb-1 truncate">{member.fullName}</div>
+                        <div className="font-semibold text-gray-900 text-sm mb-1 truncate">{member.fullName}</div>
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="text-base text-gray-600 truncate">{member.email}</span>
+                          <span className="text-sm text-gray-600 truncate">{member.email}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <PhoneIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="text-base text-gray-600">{member.phone}</span>
+                          <span className="text-sm text-gray-600">{member.phone}</span>
                         </div>
                       </div>
                     </div>
@@ -518,40 +518,40 @@ export function TrainerMemberManagementPage() {
                     </Button>
                   </div>
 
-                  <div className="space-y-2 text-base">
+                  <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between py-2 border-t border-gray-100">
                       <span className="text-gray-600 font-semibold">Gói tập</span>
                       <div className="text-right">
                         {primaryPackage ? (
                           <>
-                            <Badge className={`${getPackageColor(primaryPackage.type.toLowerCase())} text-base`}>
+                            <Badge className={`${getPackageColor(primaryPackage.type.toLowerCase())} text-xs`}>
                               {getPackageText(primaryPackage.type.toLowerCase())}
                             </Badge>
                             {(primaryPackage.type === 'PT' || primaryPackage.type === 'Combo') && (
-                              <p className="text-base text-gray-500 mt-1">
+                              <p className="text-xs text-gray-500 mt-1">
                                 {primaryPackage.ptsessionsRemaining || 0} buổi
                               </p>
                             )}
                           </>
                         ) : (
-                          <Badge className="bg-gray-100 text-gray-600 text-base">Chưa có</Badge>
+                          <Badge className="bg-gray-100 text-gray-600 text-xs">Chưa có</Badge>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between py-2 border-t border-gray-100">
                       <span className="text-gray-600 font-semibold">Trạng thái</span>
-                      <Badge className={`${getStatusColor(member.status)} text-base`}>{getStatusText(member.status)}</Badge>
+                      <Badge className={`${getStatusColor(member.status)} text-xs`}>{getStatusText(member.status)}</Badge>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 border-t border-gray-100">
                       <span className="text-gray-600 font-semibold">Hoàn thành</span>
-                      <span className="font-bold text-blue-600 text-lg">{member.completedSessions}/{member.totalSessions}</span>
+                      <span className="font-bold text-blue-600 text-sm">{member.completedSessions}/{member.totalSessions}</span>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 border-t border-gray-100">
                       <span className="text-gray-600 font-semibold">Sắp tới</span>
-                      <span className="flex items-center gap-1.5 text-orange-600 font-bold text-lg">
+                      <span className="flex items-center gap-1.5 text-orange-600 font-bold text-sm">
                         <Calendar className="w-4 h-4" />
                         {member.upcomingSessions}
                       </span>
@@ -560,7 +560,7 @@ export function TrainerMemberManagementPage() {
                     <div className="py-2 border-t border-gray-100">
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-gray-600 font-semibold">Tiến độ</span>
-                        <span className="text-green-600 font-bold text-lg">{member.progress}%</span>
+                        <span className="text-green-600 font-bold text-sm">{member.progress}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2.5">
                         <div className="bg-gradient-to-r from-green-500 to-green-600 h-2.5 rounded-full" style={{ width: `${member.progress}%` }} />
@@ -569,12 +569,12 @@ export function TrainerMemberManagementPage() {
                     
                     <div className="flex items-center justify-between py-2 border-t border-gray-100">
                       <span className="text-gray-600 font-semibold">Mục tiêu</span>
-                      <span className="font-semibold text-gray-900 text-base">{getGoalText(member.healthInfo?.goal)}</span>
+                      <span className="font-semibold text-gray-900 text-sm">{getGoalText(member.healthInfo?.goal)}</span>
                     </div>
                     
                     <div className="flex items-center justify-between py-2 border-t border-gray-100">
                       <span className="text-gray-600 font-semibold">Thành tích</span>
-                      <span className="flex items-center gap-1.5 text-purple-700 font-bold text-lg">
+                      <span className="flex items-center gap-1.5 text-purple-700 font-bold text-sm">
                         <Award className="w-4 h-4" />
                         {member.achievements?.length || 0}
                       </span>
@@ -582,7 +582,7 @@ export function TrainerMemberManagementPage() {
                     
                     <div className="flex items-center justify-between py-2 border-t border-gray-100">
                       <span className="text-gray-600 font-semibold">Lần tập cuối</span>
-                      <span className="text-gray-700 font-medium text-base">
+                      <span className="text-gray-700 font-medium text-sm">
                         {member.lastSessionDate
                           ? format(new Date(member.lastSessionDate), 'dd/MM/yyyy', { locale: vi })
                           : 'Chưa có'}
@@ -598,7 +598,7 @@ export function TrainerMemberManagementPage() {
           {sortedData.length === 0 && (
             <div className="text-center py-10 sm:py-12">
               <Users className="w-14 h-14 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500 mb-2 text-base sm:text-base">
+              <p className="text-gray-500 mb-2 text-sm sm:text-base">
                 {searchTerm || statusFilter || packageFilter 
                   ? 'Không tìm thấy hội viên phù hợp'
                   : 'Chưa có hội viên nào'}
@@ -624,14 +624,14 @@ export function TrainerMemberManagementPage() {
           {/* Pagination */}
           {sortedData.length > 0 && (
             <div className="flex justify-between items-center gap-3 sm:gap-4 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
-              <Button variant="outline" size="sm" className="text-base sm:text-sm">
+              <Button variant="outline" size="sm" className="text-sm sm:text-sm">
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Trước
               </Button>
-              <div className="text-base sm:text-sm text-gray-600 text-center font-medium">
+              <div className="text-sm sm:text-sm text-gray-600 text-center font-medium">
                 Hiển thị {sortedData.length} hội viên
               </div>
-              <Button variant="outline" size="sm" className="text-base sm:text-sm">
+              <Button variant="outline" size="sm" className="text-sm sm:text-sm">
                 Sau
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>

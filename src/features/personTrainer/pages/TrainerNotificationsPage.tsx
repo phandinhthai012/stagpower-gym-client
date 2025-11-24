@@ -2,14 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
 import { Separator } from '../../../components/ui/separator';
 import { 
   Bell, 
   AlertTriangle, 
   List,
   Mail,
-  Search,
   CheckCheck,
   Clock,
   AlertCircle,
@@ -24,7 +22,6 @@ import { vi } from 'date-fns/locale';
 
 export function TrainerNotificationsPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
-  const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
 
   // Fetch real data
@@ -67,15 +64,11 @@ export function TrainerNotificationsPage() {
         activeTab === 'all' ||
         (activeTab === 'unread' && notification.status === 'UNREAD');
       
-      const matchesSearch = 
-        notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        notification.message.toLowerCase().includes(searchTerm.toLowerCase());
-      
       const matchesType = !typeFilter || notification.type === typeFilter;
       
-      return matchesTab && matchesSearch && matchesType;
+      return matchesTab && matchesType;
     });
-  }, [notifications, activeTab, searchTerm, typeFilter]);
+  }, [notifications, activeTab, typeFilter]);
 
   const markAsRead = (id: string) => {
     markAsReadMutation.mutate(id);
@@ -121,7 +114,7 @@ export function TrainerNotificationsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">Thông Báo</h1>
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 md:mb-8">Thông Báo</h1>
 
       {/* Tabs Container */}
       <Card>
@@ -135,11 +128,11 @@ export function TrainerNotificationsPage() {
                 key={key}
                 variant={activeTab === key ? 'default' : 'outline'}
                 onClick={() => setActiveTab(key as any)}
-                className="flex items-center gap-2 text-base sm:text-sm h-11 sm:h-10"
+                className="flex items-center gap-2 text-sm sm:text-sm h-10 sm:h-10"
               >
                 <Icon className="w-5 h-5 sm:w-4 sm:h-4" />
                 {label}
-                <Badge variant="secondary" className="ml-1 text-base sm:text-xs">
+                <Badge variant="secondary" className="ml-1 text-xs sm:text-xs">
                   {getTabCount(key)}
                 </Badge>
               </Button>
@@ -147,72 +140,61 @@ export function TrainerNotificationsPage() {
           </div>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
-          {/* Search and Filter */}
-          <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 sm:w-4 sm:h-4" />
-              <Input
-                placeholder="Tìm kiếm thông báo..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-11 sm:pl-10 text-base sm:text-sm h-12 sm:h-10"
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-3 py-2.5 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-base sm:text-sm"
-              >
-                <option value="">Tất cả loại</option>
-                <option value="INFO">Thông tin</option>
-                <option value="WARNING">Cảnh báo</option>
-                <option value="ERROR">Lỗi</option>
-              </select>
-              <Button 
-                onClick={markAllAsRead} 
-                className="bg-green-600 hover:bg-green-700 text-base sm:text-sm w-full sm:w-auto h-12 sm:h-10"
-                disabled={markAllAsReadMutation.isPending || notifications.filter(n => n.status === 'UNREAD').length === 0}
-              >
-                <CheckCheck className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />
-                Đánh dấu tất cả đã đọc
-              </Button>
-            </div>
+          {/* Filter */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="px-3 py-2 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm sm:text-sm"
+            >
+              <option value="">Tất cả loại</option>
+              <option value="INFO">Thông tin</option>
+              <option value="WARNING">Cảnh báo</option>
+              <option value="ERROR">Lỗi</option>
+            </select>
+            <Button 
+              onClick={markAllAsRead} 
+              className="bg-green-600 hover:bg-green-700 text-sm sm:text-sm w-full sm:w-auto h-10 sm:h-10"
+              disabled={markAllAsReadMutation.isPending || notifications.filter(n => n.status === 'UNREAD').length === 0}
+            >
+              <CheckCheck className="w-4 h-4 sm:w-4 sm:h-4 mr-2" />
+              Đánh dấu tất cả đã đọc
+            </Button>
           </div>
 
           {/* Notifications List */}
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-2 sm:space-y-4">
             {filteredNotifications.length > 0 ? (
               filteredNotifications.map((notification, index) => (
                 <div key={notification._id}>
                   <div 
-                    className={`p-4 sm:p-6 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-md ${
+                    className={`p-3 sm:p-6 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-md ${
                       notification.status === 'UNREAD'
                         ? 'bg-yellow-50 border-yellow-200' 
                         : 'bg-gray-50 border-gray-200'
                     }`}
                     onClick={() => notification.status === 'UNREAD' && markAsRead(notification._id)}
                   >
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className={`w-12 h-12 sm:w-12 sm:h-12 ${getNotificationColor(notification.type)} rounded-full flex items-center justify-center text-white flex-shrink-0`}>
+                    <div className="flex items-start gap-2 sm:gap-4">
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 ${getNotificationColor(notification.type)} rounded-full flex items-center justify-center text-white flex-shrink-0`}>
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 mb-2">
-                          <h3 className="font-bold text-gray-900 text-xl sm:text-base">{notification.title}</h3>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <Badge variant="secondary" className="text-base sm:text-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4 mb-1.5 sm:mb-2">
+                          <h3 className="font-bold text-gray-900 text-sm sm:text-base">{notification.title}</h3>
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                            <Badge variant="secondary" className="text-xs sm:text-xs">
                               {getTypeText(notification.type)}
                             </Badge>
                             {notification.status === 'UNREAD' && (
-                              <div className="w-3 h-3 sm:w-2 sm:h-2 bg-orange-500 rounded-full"></div>
+                              <div className="w-2.5 h-2.5 sm:w-2 sm:h-2 bg-orange-500 rounded-full"></div>
                             )}
                           </div>
                         </div>
-                        <p className="text-gray-700 mb-3 text-lg sm:text-sm leading-relaxed">{notification.message}</p>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-                          <div className="flex items-center text-base sm:text-sm text-gray-500">
-                            <Clock className="w-5 h-5 sm:w-4 sm:h-4 mr-2 sm:mr-1.5 flex-shrink-0" />
+                        <p className="text-gray-700 mb-2 sm:mb-3 text-sm sm:text-sm leading-relaxed">{notification.message}</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+                          <div className="flex items-center text-xs sm:text-sm text-gray-500">
+                            <Clock className="w-4 h-4 sm:w-4 sm:h-4 mr-1.5 sm:mr-1.5 flex-shrink-0" />
                             <span>{formatTime(notification.createdAt)}</span>
                           </div>
                           {notification.status === 'UNREAD' && (
@@ -223,10 +205,10 @@ export function TrainerNotificationsPage() {
                                 e.stopPropagation();
                                 markAsRead(notification._id);
                               }}
-                              className="text-base sm:text-sm w-full sm:w-auto h-11 sm:h-9"
+                              className="text-xs sm:text-sm w-full sm:w-auto h-9 sm:h-9"
                               disabled={markAsReadMutation.isPending}
                             >
-                              <CheckCircle className="w-5 h-5 sm:w-4 sm:h-4 mr-2 sm:mr-1" />
+                              <CheckCircle className="w-4 h-4 sm:w-4 sm:h-4 mr-1.5 sm:mr-1" />
                               Đánh dấu đã đọc
                             </Button>
                           )}
@@ -234,14 +216,14 @@ export function TrainerNotificationsPage() {
                       </div>
                     </div>
                   </div>
-                  {index < filteredNotifications.length - 1 && <Separator className="my-3 sm:my-4" />}
+                  {index < filteredNotifications.length - 1 && <Separator className="my-2 sm:my-4" />}
                 </div>
               ))
             ) : (
               <div className="text-center py-10 sm:py-12">
                 <Bell className="w-16 h-16 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl sm:text-lg font-medium text-gray-900 mb-2">Không có thông báo</h3>
-                <p className="text-gray-500 text-lg sm:text-base">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Không có thông báo</h3>
+                <p className="text-gray-500 text-sm sm:text-base">
                   {activeTab === 'all' 
                     ? 'Chưa có thông báo nào'
                     : 'Không có thông báo chưa đọc nào'

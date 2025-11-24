@@ -31,11 +31,12 @@ export const useMembers = () => {
 };
 
 // Get all branches (for dropdown in create schedule)
+// Trainer uses public endpoint since they don't have admin/staff permissions
 export const useBranches = () => {
   return useQuery({
     queryKey: branchQueryKeys.all,
     queryFn: async () => {
-      const response = await apiClient.get(API_ENDPOINTS.BRANCH.GET_ALL_BRANCHES);
+      const response = await apiClient.get(API_ENDPOINTS.BRANCH.GET_ALL_BRANCHES_PUBLIC);
       return response.data.data || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes

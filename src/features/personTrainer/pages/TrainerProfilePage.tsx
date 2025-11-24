@@ -210,7 +210,7 @@ export function TrainerProfilePage() {
 
   return (
     <div>
-      <h1 className="text-3xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">Thông Tin Cá Nhân</h1>
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-4 sm:mb-6 md:mb-8">Thông Tin Cá Nhân</h1>
       
       {/* Profile Header */}
       <Card className="mb-6 sm:mb-8">
@@ -220,16 +220,16 @@ export function TrainerProfilePage() {
               {profile.photo ? (
                 <img src={profile.photo} alt={profile.fullName} className="w-full h-full rounded-full object-cover" />
               ) : (
-                <span className="text-white font-bold text-xl sm:text-2xl">
+                <span className="text-white font-bold text-lg sm:text-2xl">
                   {profile.fullName?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'PT'}
                 </span>
               )}
             </div>
             <div className="flex-1 text-center sm:text-left w-full">
-              <h2 className="text-3xl sm:text-3xl font-bold text-gray-900 mb-2">
+              <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                 {profile.fullName}
               </h2>
-              <p className="text-lg sm:text-lg text-gray-600 mb-2">
+              <p className="text-sm sm:text-lg text-gray-600 mb-2">
                 Personal Trainer - {profile.trainerInfo?.specialty || 'Chuyên gia Fitness'}
               </p>
               <div className="flex justify-center sm:justify-start">
@@ -239,15 +239,15 @@ export function TrainerProfilePage() {
               </div>
               <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-8 mt-4">
                 <div className="text-center">
-                  <div className="text-2xl sm:text-2xl font-bold text-blue-600">{stats?.totalMembers || 0}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600">{stats?.totalMembers || 0}</div>
                   <div className="text-sm sm:text-sm text-gray-500">Hội viên</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl sm:text-2xl font-bold text-yellow-600">{stats?.averageRating || 0}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-yellow-600">{stats?.averageRating || 0}</div>
                   <div className="text-sm sm:text-sm text-gray-500">Đánh giá</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl sm:text-2xl font-bold text-green-600">
+                  <div className="text-lg sm:text-2xl font-bold text-green-600">
                     {profile.trainerInfo?.experience_years || 0}
                   </div>
                   <div className="text-sm sm:text-sm text-gray-500">Năm KN</div>
@@ -265,7 +265,7 @@ export function TrainerProfilePage() {
           <Card>
             <CardHeader className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-                <CardTitle className="flex items-center text-xl sm:text-lg">
+                <CardTitle className="flex items-center text-lg sm:text-lg">
                   <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg mr-2 sm:mr-3">
                     <User className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
@@ -295,19 +295,19 @@ export function TrainerProfilePage() {
             <CardContent className="p-4 sm:p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-base sm:text-sm font-medium text-gray-700">Họ và tên:</label>
+                  <label className="text-sm sm:text-sm font-medium text-gray-700">Họ và tên:</label>
                   {editingSections.personal ? (
                     <Input 
                       value={formData.fullName} 
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     />
                   ) : (
-                    <p className="text-gray-900 font-medium text-lg sm:text-base">{profile.fullName}</p>
+                    <p className="text-gray-900 font-medium text-sm sm:text-base">{profile.fullName}</p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-base sm:text-sm font-medium text-gray-700">Email:</label>
-                  <p className="text-gray-900 font-medium text-lg sm:text-base">{profile.email}</p>
+                  <label className="text-sm sm:text-sm font-medium text-gray-700">Email:</label>
+                  <p className="text-gray-900 font-medium text-sm sm:text-base">{profile.email}</p>
                   <p className="text-sm sm:text-xs text-gray-500">Email không thể thay đổi</p>
                 </div>
                 <div className="space-y-2">
@@ -318,7 +318,7 @@ export function TrainerProfilePage() {
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     />
                   ) : (
-                    <p className="text-gray-900 font-medium">{profile.phone}</p>
+                    <p className="text-gray-900 font-medium text-sm sm:text-base">{profile.phone}</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -330,7 +330,7 @@ export function TrainerProfilePage() {
                       onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                     />
                   ) : (
-                    <p className="text-gray-900 font-medium">
+                    <p className="text-gray-900 font-medium text-sm sm:text-base">
                       {profile.dateOfBirth 
                         ? format(new Date(profile.dateOfBirth), 'dd/MM/yyyy', { locale: vi })
                         : 'Chưa cập nhật'}
@@ -350,7 +350,7 @@ export function TrainerProfilePage() {
                       <option value="other">Khác</option>
                     </select>
                   ) : (
-                    <p className="text-gray-900 font-medium">{getGenderText(profile.gender)}</p>
+                    <p className="text-gray-900 font-medium text-sm sm:text-base">{getGenderText(profile.gender)}</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -362,7 +362,7 @@ export function TrainerProfilePage() {
                       placeholder="12 chữ số"
                     />
                   ) : (
-                    <p className="text-gray-900 font-medium">{profile.cccd || 'Chưa cập nhật'}</p>
+                    <p className="text-gray-900 font-medium text-sm sm:text-base">{profile.cccd || 'Chưa cập nhật'}</p>
                   )}
                 </div>
               </div>
@@ -393,7 +393,7 @@ export function TrainerProfilePage() {
           <Card>
             <CardHeader className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-                <CardTitle className="flex items-center text-xl sm:text-lg">
+                <CardTitle className="flex items-center text-lg sm:text-lg">
                   <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg mr-2 sm:mr-3">
                     <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   </div>
@@ -431,7 +431,7 @@ export function TrainerProfilePage() {
                       placeholder="Ví dụ: Fitness, Yoga, Boxing"
                     />
                   ) : (
-                    <p className="text-gray-900 font-medium">
+                    <p className="text-gray-900 font-medium text-sm sm:text-base">
                       {profile.trainerInfo?.specialty || 'Chưa cập nhật'}
                     </p>
                   )}
@@ -446,14 +446,14 @@ export function TrainerProfilePage() {
                       placeholder="Số năm"
                     />
                   ) : (
-                    <p className="text-gray-900 font-medium">
+                    <p className="text-gray-900 font-medium text-sm sm:text-base">
                       {profile.trainerInfo?.experience_years || 0} năm
                     </p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Ngày tham gia:</label>
-                  <p className="text-gray-900 font-medium">
+                  <p className="text-gray-900 font-medium text-sm sm:text-base">
                     {format(new Date(profile.joinDate), 'dd/MM/yyyy', { locale: vi })}
                   </p>
                 </div>
@@ -491,7 +491,7 @@ export function TrainerProfilePage() {
           <Card>
             <CardHeader className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-                <CardTitle className="flex items-center text-xl sm:text-lg">
+                <CardTitle className="flex items-center text-lg sm:text-lg">
                   <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg mr-2 sm:mr-3">
                     <Award className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                   </div>
@@ -518,7 +518,7 @@ export function TrainerProfilePage() {
                           <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 text-base sm:text-base truncate">{cert}</h4>
+                          <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{cert}</h4>
                           <p className="text-sm sm:text-sm text-gray-600">Chứng chỉ nghề nghiệp</p>
                         </div>
                       </div>
@@ -558,7 +558,7 @@ export function TrainerProfilePage() {
           {/* Working Hours */}
           <Card>
             <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="flex items-center text-xl sm:text-lg">
+              <CardTitle className="flex items-center text-lg sm:text-lg">
                 <div className="p-1.5 sm:p-2 bg-orange-100 rounded-lg mr-2 sm:mr-3">
                   <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
                 </div>
@@ -579,7 +579,7 @@ export function TrainerProfilePage() {
               ) : (
                 <div className="text-center py-6 sm:py-8 text-gray-500">
                   <Clock className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-base sm:text-base">Chưa thiết lập lịch làm việc</p>
+                  <p className="text-sm sm:text-base">Chưa thiết lập lịch làm việc</p>
                 </div>
               )}
             </CardContent>
@@ -588,7 +588,7 @@ export function TrainerProfilePage() {
           {/* Achievements */}
           <Card>
             <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="flex items-center text-xl sm:text-lg">
+              <CardTitle className="flex items-center text-lg sm:text-lg">
                 <div className="p-1.5 sm:p-2 bg-yellow-100 rounded-lg mr-2 sm:mr-3">
                   <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
                 </div>
@@ -611,7 +611,7 @@ export function TrainerProfilePage() {
               ) : (
                 <div className="text-center py-6 sm:py-8 text-gray-500">
                   <Trophy className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-base sm:text-base">Chưa có thành tích nào</p>
+                  <p className="text-sm sm:text-base">Chưa có thành tích nào</p>
                 </div>
               )}
             </CardContent>

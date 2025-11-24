@@ -27,6 +27,7 @@ interface TimelineProps {
   getStatusText: (status: string) => string;
   onActionClick?: (action: string, schedule: Schedule) => void;
   className?: string;
+  showDeleteButton?: boolean;
 }
 
 export function Timeline({
@@ -36,7 +37,8 @@ export function Timeline({
   getStatusColor,
   getStatusText,
   onActionClick,
-  className = ''
+  className = '',
+  showDeleteButton = true
 }: TimelineProps) {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -239,15 +241,17 @@ export function Timeline({
                                   <span className="sm:hidden">✕</span>
                                 </Button>
                               )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-gray-600 border-gray-300 hover:bg-gray-50 text-sm sm:text-sm px-2.5"
-                                onClick={() => onActionClick('delete', schedule)}
-                              >
-                                <span className="hidden sm:inline">Xóa</span>
-                                <span className="sm:hidden">🗑️</span>
-                              </Button>
+                              {showDeleteButton && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-gray-600 border-gray-300 hover:bg-gray-50 text-sm sm:text-sm px-2.5"
+                                  onClick={() => onActionClick('delete', schedule)}
+                                >
+                                  <span className="hidden sm:inline">Xóa</span>
+                                  <span className="sm:hidden">🗑️</span>
+                                </Button>
+                              )}
                             </div>
                           )}
                         </div>

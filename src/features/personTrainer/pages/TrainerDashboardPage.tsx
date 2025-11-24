@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -22,6 +22,7 @@ import { ScheduleWithDetails } from '../types/schedule.types';
 
 export function TrainerDashboardPage() {
   const { user } = useAuth();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
   // Fetch real data from API
   const { data: schedulesData, isLoading: isLoadingSchedules } = useMySchedules();
@@ -56,17 +57,28 @@ export function TrainerDashboardPage() {
       .toUpperCase();
   };
 
-  // Calculate today's schedule
-  const todaySchedule = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  // Calculate schedule for selected date
+  const selectedDateSchedule = useMemo(() => {
+    const dateStart = new Date(selectedDate);
+    dateStart.setHours(0, 0, 0, 0);
+    const dateEnd = new Date(dateStart);
+    dateEnd.setDate(dateEnd.getDate() + 1);
+
+    const isToday = selectedDate.toDateString() === new Date().toDateString();
+    const isTomorrow = selectedDate.toDateString() === new Date(Date.now() + 86400000).toDateString();
+    const isYesterday = selectedDate.toDateString() === new Date(Date.now() - 86400000).toDateString();
+
+    let dateLabel = "Hôm nay";
+    if (isTomorrow) dateLabel = "Ngày mai";
+    else if (isYesterday) dateLabel = "Hôm qua";
+    else if (!isToday) {
+      dateLabel = selectedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' });
+    }
 
     return schedules
       .filter(schedule => {
         const scheduleDate = new Date(schedule.dateTime);
-        return scheduleDate >= today && scheduleDate < tomorrow;
+        return scheduleDate >= dateStart && scheduleDate < dateEnd;
       })
       .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
       .map(schedule => {
@@ -79,7 +91,7 @@ export function TrainerDashboardPage() {
             hour: '2-digit', 
             minute: '2-digit' 
           }),
-          date: "Hôm nay",
+          date: dateLabel,
           member: memberName,
           branch: branchName,
           type: 'PT cá nhân',
@@ -88,7 +100,7 @@ export function TrainerDashboardPage() {
           note: schedule.notes || ''
         };
       });
-  }, [schedules]);
+  }, [schedules, selectedDate]);
 
   // Calculate unique members (from completed sessions)
   const uniqueMembers = useMemo(() => {
@@ -135,7 +147,7 @@ export function TrainerDashboardPage() {
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const totalClients = uniqueMembers.length;
-    const activeSessions = todaySchedule.length;
+    const activeSessions = selectedDateSchedule.length;
     
     const upcomingSessions = schedules.filter(s => 
       new Date(s.dateTime) > now && s.status === 'Confirmed'
@@ -164,7 +176,7 @@ export function TrainerDashboardPage() {
       pendingRequests,
       averageRating: 4.8 // TODO: Implement real rating system
     };
-  }, [schedules, bookingRequests, todaySchedule, uniqueMembers]);
+  }, [schedules, bookingRequests, selectedDateSchedule, uniqueMembers]);
 
   // Show loading state
   if (isLoadingSchedules || isLoadingRequests) {
@@ -187,10 +199,10 @@ export function TrainerDashboardPage() {
                   <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-purple-900 text-base sm:text-base">
+                  <p className="font-semibold text-purple-900 text-sm sm:text-base">
                     Bạn có {stats.pendingRequests} yêu cầu đặt lịch đang chờ xử lý
                   </p>
-                  <p className="text-base sm:text-sm text-purple-700 line-clamp-1">
+                  <p className="text-sm sm:text-sm text-purple-700 line-clamp-1">
                     Xem và xác nhận các yêu cầu mới từ hội viên
                   </p>
                 </div>
@@ -209,20 +221,20 @@ export function TrainerDashboardPage() {
         {/* Today's Schedule */}
         <Card className="lg:col-span-2 hover:shadow-lg transition-shadow">
           <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="flex items-center text-xl sm:text-lg text-blue-900">
+            <CardTitle className="flex items-center text-lg sm:text-lg text-blue-900">
               <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg mr-2 sm:mr-3">
                 <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
               </div>
-              Lịch dạy hôm nay
+              Lịch dạy {selectedDate.toDateString() === new Date().toDateString() ? 'hôm nay' : selectedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'numeric' })}
             </CardTitle>
-            <p className="text-base sm:text-sm text-gray-600">
-              Các buổi tập đã lên lịch cho hôm nay
+            <p className="text-sm sm:text-sm text-gray-600">
+              Các buổi tập đã lên lịch cho {selectedDate.toDateString() === new Date().toDateString() ? 'hôm nay' : selectedDate.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric', year: 'numeric' })}
             </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {todaySchedule.length > 0 ? (
-                todaySchedule.map((session, index) => (
+              {selectedDateSchedule.length > 0 ? (
+                selectedDateSchedule.map((session, index) => (
                   <React.Fragment key={session.id}>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-shadow gap-3 sm:gap-0">
                       <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
@@ -237,8 +249,8 @@ export function TrainerDashboardPage() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="font-semibold text-gray-900 text-lg sm:text-base truncate">{session.member}</h4>
-                          <p className="text-base sm:text-sm text-gray-600">{session.type} - {session.duration}</p>
+                          <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{session.member}</h4>
+                          <p className="text-sm sm:text-sm text-gray-600">{session.type} - {session.duration}</p>
                           <p className="text-sm sm:text-xs text-gray-500 flex items-center mt-0.5 sm:mt-1 truncate">
                             <MapPin className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 flex-shrink-0" />
                             <span className="truncate">{session.branch}</span>
@@ -246,7 +258,7 @@ export function TrainerDashboardPage() {
                         </div>
                       </div>
                       <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0 w-full sm:w-auto">
-                        <p className="text-base sm:text-sm font-semibold text-gray-900 flex-1 sm:flex-none">{session.time}</p>
+                        <p className="text-sm sm:text-sm font-semibold text-gray-900 flex-1 sm:flex-none">{session.time}</p>
                         <Badge 
                           variant={session.status === 'confirmed' ? 'default' : 'secondary'}
                           className={`sm:mt-2 text-sm sm:text-xs ${
@@ -261,31 +273,47 @@ export function TrainerDashboardPage() {
                         </Badge>
                       </div>
                     </div>
-                    {index < todaySchedule.length - 1 && <hr className="my-2 sm:my-3" />}
+                    {index < selectedDateSchedule.length - 1 && <hr className="my-2 sm:my-3" />}
                   </React.Fragment>
                 ))
               ) : (
                 <div className="text-center py-6 sm:py-8 text-gray-500">
                   <Calendar className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
-                  <p className="text-sm sm:text-base">Không có buổi tập nào hôm nay</p>
+                  <p className="text-xs sm:text-base">Không có buổi tập nào {selectedDate.toDateString() === new Date().toDateString() ? 'hôm nay' : 'vào ngày này'}</p>
                 </div>
               )}
             </div>
             <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 mt-4 sm:mt-6">
               <div className="flex gap-2 flex-1 sm:flex-none">
-                <Button variant="outline" className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-none text-base sm:text-sm px-2 sm:px-4">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-none text-sm sm:text-sm px-2 sm:px-4"
+                  onClick={() => {
+                    const prevDate = new Date(selectedDate);
+                    prevDate.setDate(prevDate.getDate() - 1);
+                    setSelectedDate(prevDate);
+                  }}
+                >
                   <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">Hôm qua</span>
                   <span className="sm:hidden">Qua</span>
                 </Button>
-                <Button variant="outline" className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-none text-base sm:text-sm px-2 sm:px-4">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-1 sm:gap-2 flex-1 sm:flex-none text-sm sm:text-sm px-2 sm:px-4"
+                  onClick={() => {
+                    const nextDate = new Date(selectedDate);
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    setSelectedDate(nextDate);
+                  }}
+                >
                   <span className="hidden sm:inline">Ngày mai</span>
                   <span className="sm:hidden">Mai</span>
                   <ChevronRight className="w-4 h-4 sm:w-4 sm:h-4" />
                 </Button>
               </div>
               <Link to="/trainer/schedule" className="w-full sm:w-auto">
-                <Button variant="secondary" className="flex items-center justify-center gap-2 w-full text-base sm:text-sm">
+                <Button variant="secondary" className="flex items-center justify-center gap-2 w-full text-sm sm:text-sm">
                   <CalendarIcon className="w-4 h-4 sm:w-4 sm:h-4" />
                   Xem tất cả
                 </Button>
@@ -297,20 +325,20 @@ export function TrainerDashboardPage() {
         {/* Quick Actions */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="flex items-center text-xl sm:text-lg text-blue-900">
+            <CardTitle className="flex items-center text-lg sm:text-lg text-blue-900">
               <div className="p-1.5 sm:p-2 bg-green-100 rounded-lg mr-2 sm:mr-3">
                 <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
               </div>
               Thao tác nhanh
             </CardTitle>
-            <p className="text-base sm:text-sm text-gray-600">
+            <p className="text-sm sm:text-sm text-gray-600">
               Các hành động thường dùng
             </p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <Link to="/trainer/schedule">
-                <Button variant="outline" className="w-full h-20 sm:h-24 flex flex-col items-center justify-center text-center text-blue-800 hover:bg-blue-50 text-base sm:text-sm">
+                <Button variant="outline" className="w-full h-20 sm:h-24 flex flex-col items-center justify-center text-center text-blue-800 hover:bg-blue-50 text-sm sm:text-sm">
                   <CalendarIcon className="w-6 h-6 sm:w-6 sm:h-6 mb-1 sm:mb-2" />
                   <span>Xem lịch dạy</span>
                 </Button>
@@ -341,13 +369,13 @@ export function TrainerDashboardPage() {
       {/* Recent Members */}
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="flex items-center text-xl sm:text-lg text-blue-900">
+            <CardTitle className="flex items-center text-lg sm:text-lg text-blue-900">
               <div className="p-1.5 sm:p-2 bg-orange-100 rounded-lg mr-2 sm:mr-3">
                 <Users className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
               </div>
               Hội viên gần đây
             </CardTitle>
-            <p className="text-base sm:text-sm text-gray-600">
+            <p className="text-sm sm:text-sm text-gray-600">
               Danh sách các hội viên bạn đã tương tác gần đây
             </p>
         </CardHeader>
@@ -360,8 +388,8 @@ export function TrainerDashboardPage() {
                   {member.avatar}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 text-base sm:text-base truncate">{member.name}</h4>
-                  <p className="text-base sm:text-sm text-gray-600">Buổi tập: {member.sessions}</p>
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{member.name}</h4>
+                  <p className="text-sm sm:text-sm text-gray-600">Buổi tập: {member.sessions}</p>
                   <p className="text-sm sm:text-xs text-gray-500 truncate">Lần cuối: {member.lastSession}</p>
                 </div>
                 <div className="ml-2 flex-shrink-0">
@@ -382,7 +410,7 @@ export function TrainerDashboardPage() {
             ) : (
               <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-6 sm:py-8 text-gray-500">
                 <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-gray-300" />
-                <p className="text-sm sm:text-base">Chưa có hội viên nào</p>
+                <p className="text-xs sm:text-base">Chưa có hội viên nào</p>
               </div>
             )}
           </div>
