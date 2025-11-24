@@ -272,30 +272,6 @@ export function AdminBranchManagement() {
           </CardContent>
         </Card>
       </div>
-      {/* Action Buttons */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-wrap gap-4">
-            <Button onClick={handleAddBranch}>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm chi nhánh mới
-            </Button>
-            {/* <Button variant="outline" onClick={handleExportData}>
-              <Download className="w-4 h-4 mr-2" />
-              Xuất dữ liệu
-            </Button>
-            <Button variant="outline" onClick={handleShowReport}>
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Báo cáo chi nhánh
-            </Button>
-            <Button variant="outline" onClick={handleShowMap}>
-              <Map className="w-4 h-4 mr-2" />
-              Xem bản đồ
-            </Button> */}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Search and Filter */}
       <Card>
         <CardHeader>
@@ -328,11 +304,23 @@ export function AdminBranchManagement() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline">
-              <Search className="w-4 h-4 mr-2" />
-              Áp dụng bộ lọc
+            <Button variant="outline" onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('all');
+            }}>
+              Đặt lại
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Add Branch Button - Below filter */}
+      <Card>
+        <CardContent className="p-6">
+          <Button onClick={handleAddBranch}>
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm chi nhánh mới
+          </Button>
         </CardContent>
       </Card>
 

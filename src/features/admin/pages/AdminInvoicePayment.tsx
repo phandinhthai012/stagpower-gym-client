@@ -38,7 +38,7 @@ import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 import socketService from '../../../services/socket';
 import { useQueryClient } from '@tanstack/react-query';
 import { generateInvoicePDF } from '../../../lib/pdf-utils';
-import { exportPaymentsToExcel } from '../../../lib/excel-utils';
+import { exportPaymentsToExcel, exportSelectedPaymentsToExcel } from '../../../lib/excel-utils';
 import { toast } from 'sonner';
 
 export function AdminInvoicePayment() {
@@ -335,6 +335,48 @@ export function AdminInvoicePayment() {
     }
   };
 
+  const handleExportSelectedPayments = () => {
+    if (selectedInvoices.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một hóa đơn để xuất dữ liệu');
+      return;
+    }
+
+    try {
+      toast.loading('Đang tải dữ liệu...', { id: 'export-selected-loading' });
+      
+      // Lấy tất cả payments đã chọn từ sortedData (tất cả filtered payments, không chỉ trang hiện tại)
+      // sortedData chứa tất cả payments đã được filter và sort, không bị giới hạn bởi pagination
+      // Điều này đảm bảo lấy được tất cả payments đã chọn từ mọi trang
+      const selectedPayments = sortedData.filter((payment: any) => 
+        selectedInvoices.includes(payment._id)
+      );
+
+      // Validation: Kiểm tra số lượng payments tìm được có khớp với số lượng đã chọn không
+      if (selectedPayments.length === 0) {
+        toast.error('Không tìm thấy dữ liệu của các hóa đơn đã chọn', { id: 'export-selected-loading' });
+        return;
+      }
+
+      // Cảnh báo nếu số lượng không khớp (có thể do filter thay đổi sau khi chọn)
+      if (selectedPayments.length !== selectedInvoices.length) {
+        console.warn(`Số lượng payments tìm được (${selectedPayments.length}) không khớp với số lượng đã chọn (${selectedInvoices.length})`);
+        toast.warning(`Chỉ tìm thấy ${selectedPayments.length}/${selectedInvoices.length} hóa đơn. Có thể do bộ lọc đã thay đổi.`, { id: 'export-selected-loading' });
+      }
+
+      toast.success(`Đã tải ${selectedPayments.length} hóa đơn, đang xuất file...`, { id: 'export-selected-loading' });
+      
+      exportSelectedPaymentsToExcel({
+        payments: selectedPayments,
+        title: 'Danh sách hóa đơn được chọn'
+      });
+
+      toast.success(`Đã xuất dữ liệu của ${selectedPayments.length} hóa đơn thành công!`, { id: 'export-selected-loading' });
+    } catch (error) {
+      console.error('Error exporting selected payments:', error);
+      toast.error('Có lỗi xảy ra khi xuất dữ liệu', { id: 'export-selected-loading' });
+    }
+  };
+
   if (isLoading && !isRealtimeLoading) {
     return <div className="flex justify-center items-center h-64">Đang tải...</div>;
   }
@@ -400,41 +442,7 @@ export function AdminInvoicePayment() {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-wrap gap-4">
-            <Button onClick={handleCreateInvoice}>
-              <Plus className="w-4 h-4 mr-2" />
-              Tạo hóa đơn mới
-            </Button>
-            {/* <Button
-              variant="outline"
-              onClick={handleExportInvoices}
-              disabled={exportInvoicesMutation.isPending}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {exportInvoicesMutation.isPending ? 'Đang xuất...' : 'Xuất báo cáo'}
-            </Button> */}
-            <Button
-              variant="outline"
-              onClick={handleExportToExcel}
-              disabled={sortedData.length === 0}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Xuất Excel
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleBulkSendReminders}
-              disabled={selectedInvoices.length === 0 || bulkSendRemindersMutation.isPending}
-            >
-              <Bell className="w-4 h-4 mr-2" />
-              {bulkSendRemindersMutation.isPending ? 'Đang gửi...' : 'Gửi nhắc nhở hàng loạt'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Action Buttons - Moved below table */}
 
       {/* Filters and Search */}
       <Card>
@@ -569,19 +577,10 @@ export function AdminInvoicePayment() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleExportInvoices}
-                  disabled={exportInvoicesMutation.isPending}
+                  onClick={handleExportSelectedPayments}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Xuất dữ liệu
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Xóa hàng loạt
+                  Xuất dữ liệu được chọn
                 </Button>
               </div>
             </div>
@@ -592,10 +591,26 @@ export function AdminInvoicePayment() {
       {/* Invoice Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-green-600" />
-            Danh sách hóa đơn ({filteredRecords})
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-green-600" />
+              Danh sách hóa đơn ({filteredRecords})
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button onClick={handleCreateInvoice}>
+                <Plus className="w-4 h-4 mr-2" />
+                Tạo hóa đơn mới
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExportToExcel}
+                disabled={sortedData.length === 0}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Xuất toàn bộ hóa đơn
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

@@ -280,21 +280,21 @@ export function StaffPTDetailModal({ user, isOpen, onClose, onEdit }: StaffPTDet
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">
-                    {user.role === 'trainer' ? '15' : '8'}
+                    {user.role === 'trainer' ? (trainerInfo?.experience_years || 'N/A') : (staffInfo?.position ? 'N/A' : 'N/A')}
                   </div>
                   <p className="text-sm text-gray-600">
-                    {user.role === 'trainer' ? 'Hội viên phụ trách' : 'Năm kinh nghiệm'}
+                    {user.role === 'trainer' ? 'Năm kinh nghiệm' : 'Vị trí'}
                   </p>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">
-                    {user.role === 'trainer' ? '4.8' : '4.9'}
+                    N/A
                   </div>
                   <p className="text-sm text-gray-600">Đánh giá trung bình</p>
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
                   <div className="text-2xl font-bold text-orange-600">
-                    {user.role === 'trainer' ? '120' : '45'}
+                    N/A
                   </div>
                   <p className="text-sm text-gray-600">
                     {user.role === 'trainer' ? 'Buổi tập tháng này' : 'Giờ làm việc/tuần'}
@@ -313,23 +313,9 @@ export function StaffPTDetailModal({ user, isOpen, onClose, onEdit }: StaffPTDet
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { action: 'Hoàn thành buổi tập', time: '2 giờ trước', type: 'success' },
-                  { action: 'Cập nhật thông tin hội viên', time: '1 ngày trước', type: 'info' },
-                  { action: 'Tạo lịch tập mới', time: '2 ngày trước', type: 'info' },
-                  { action: 'Đánh giá hội viên', time: '3 ngày trước', type: 'success' },
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className={`w-2 h-2 rounded-full ${
-                      activity.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
-                    }`} />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                      <p className="text-xs text-gray-500">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center py-8 text-gray-500">
+                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>Chưa có dữ liệu hoạt động</p>
               </div>
             </CardContent>
           </Card>

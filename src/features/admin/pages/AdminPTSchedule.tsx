@@ -348,26 +348,6 @@ export function AdminPTSchedule() {
                                    schedule.status === 'NoShow' ? 'Vắng mặt' : schedule.status}
                                 </Badge>
                               </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50">
-                                  <Eye className="h-3 w-3 mr-1" />
-                                  Xem
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-300"
-                                  onClick={() => {
-                                    if (confirm('Bạn có chắc muốn xóa lịch này?')) {
-                                      deleteScheduleMutation.mutate(schedule._id);
-                                    }
-                                  }}
-                                  disabled={deleteScheduleMutation.isPending}
-                                >
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  Xóa
-                                </Button>
-                              </div>
                             </div>
                           </div>
                         </div>

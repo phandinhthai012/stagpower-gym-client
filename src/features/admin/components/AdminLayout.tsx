@@ -201,12 +201,6 @@ export function AdminLayout() {
               }
             </span>
             
-            {/* Notification */}
-            <Button variant="ghost" size="sm" className="relative p-2 text-gray-500 hover:text-gray-700">
-              <Bell className="w-5 h-5" />
-              <Badge variant="destructive" className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center">5</Badge>
-            </Button>
-            
             {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
