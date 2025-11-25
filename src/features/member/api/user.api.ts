@@ -82,8 +82,12 @@ export const userApi = {
   },
 
   // Cập nhật profile của user hiện tại
-  updateMyProfile: async (data: UpdateUserProfileRequest): Promise<User> => {
-    const response = await apiClient.put(API_ENDPOINTS.USER.UPDATE_MY_PROFILE, data);
+  updateMyProfile: async (data: UpdateUserProfileRequest, userId?: string): Promise<User> => {
+    // Use userId if provided, otherwise try to get from token or use UPDATE_MY_PROFILE
+    const endpoint = userId 
+      ? API_ENDPOINTS.USER.UPDATE_USER(userId)
+      : API_ENDPOINTS.USER.UPDATE_MY_PROFILE;
+    const response = await apiClient.put(endpoint, data);
     return response.data.data;
   },
 

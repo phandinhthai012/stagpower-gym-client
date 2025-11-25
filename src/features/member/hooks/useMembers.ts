@@ -22,13 +22,14 @@ export const useUpdateProfile = () => {
     const queryClient = useQueryClient();
     
     return useMutation({
-        mutationFn: (data: any) => userApi.updateMyProfile(data),
+        mutationFn: ({ data, userId }: { data: any; userId: string }) => userApi.updateMyProfile(data, userId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.me });
-            toast.success('Thông tin cá nhân đã được cập nhật!');
+            // Don't show toast here, let the component handle it
         },
         onError: (error: any) => {
-            toast.error(`Lỗi khi cập nhật thông tin: ${error?.response?.data?.message || error?.message || 'Có lỗi xảy ra'}`);
+            // Don't show toast here, let the component handle it
+            console.error('Update profile error:', error);
         },
     });
 };

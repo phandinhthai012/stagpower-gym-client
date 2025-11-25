@@ -44,7 +44,6 @@ export function MemberProfile() {
   const healthInfo = healthInfoList && healthInfoList.length > 0 ? healthInfoList[0] : null;
   const updateProfileMutation = useUpdateProfile();
   const createHealthInfoMutation = useCreateHealthInfo();
-  const updateHealthInfoMutation = useUpdateHealthInfo();
 
   // Debug: Log health info data
   useEffect(() => {
@@ -100,12 +99,15 @@ export function MemberProfile() {
   };
 
   const handleSave = async () => {
-    if (!editedUser) return;
+    if (!editedUser || !userData) return;
 
     try {
       await updateProfileMutation.mutateAsync({
-        fullName: editedUser.fullName,
-        email: editedUser.email,
+        data: {
+          fullName: editedUser.fullName,
+          email: editedUser.email,
+        },
+        userId: userData._id
       });
       toast.success('Cập nhật thông tin thành công!');
       setIsEditing(false);
@@ -178,36 +180,114 @@ export function MemberProfile() {
     if (!editedHealth || !userData) return;
 
     try {
-      if (healthInfo) {
-        // Update existing health info
-        await updateHealthInfoMutation.mutateAsync({
-          healthInfoId: healthInfo._id!,
-          data: {
-            ...editedHealth,
-            experience: editedHealth.experience?.toLowerCase(),
-            fitnessLevel: editedHealth.fitnessLevel?.toLowerCase(),
-            preferredTime: editedHealth.preferredTime?.toLowerCase(),
+      // Start with latest healthInfo as base (if exists)
+      const baseData: any = healthInfo ? { ...healthInfo } : {};
+      
+      // Remove MongoDB-specific fields
+      delete baseData._id;
+      delete baseData.memberId;
+      delete baseData.createdAt;
+      delete baseData.updatedAt;
+      delete baseData.__v;
+      delete baseData.lastUpdated;
+      
+      // Merge editedHealth values (prioritize edited values)
+      const mergedData: any = { ...baseData };
+      
+      Object.keys(editedHealth).forEach(key => {
+        const editedValue = editedHealth[key];
+        
+        // If edited value is not empty, use it; otherwise keep base value
+        if (editedValue !== null && editedValue !== undefined && editedValue !== '') {
+          mergedData[key] = editedValue;
+        } else if (baseData[key] !== undefined && baseData[key] !== null && baseData[key] !== '') {
+          // Keep base value if edited value is empty
+          mergedData[key] = baseData[key];
+        }
+      });
+
+      // Clean data: remove empty strings, null, undefined values, and ensure proper types
+      const cleanedData: any = {};
+      
+      Object.keys(mergedData).forEach(key => {
+        const value = mergedData[key];
+        
+        // Skip null, undefined, empty string
+        if (value === null || value === undefined || value === '') {
+          return;
+        }
+        
+        // Handle boolean values (smoking can be false, so check explicitly)
+        if (key === 'smoking' && typeof value === 'boolean') {
+          cleanedData[key] = value;
+          return;
+        }
+        
+        // Handle number fields - convert string to number and validate > 0
+        const numberFields = ['height', 'weight', 'age', 'bodyFatPercent', 'muscleMass', 
+          'visceralFatLevel', 'waterPercent', 'boneMass', 'bodyFatMass', 
+          'basalMetabolicRate', 'waistHipRatio', 'inBodyScore', 'dailyCalories', 'sleepHours'];
+        
+        if (numberFields.includes(key)) {
+          const numValue = typeof value === 'string' ? parseFloat(value) : value;
+          if (!isNaN(numValue) && numValue > 0) {
+            cleanedData[key] = numValue;
           }
-        });
-        toast.success('Cập nhật thông tin sức khỏe thành công!');
-      } else {
-        // Create new health info
-        await createHealthInfoMutation.mutateAsync({
-          memberId: userData._id,
-          data: {
-            ...editedHealth,
-            experience: editedHealth.experience?.toLowerCase(),
-            fitnessLevel: editedHealth.fitnessLevel?.toLowerCase(),
-            preferredTime: editedHealth.preferredTime?.toLowerCase(),
+          return;
+        }
+        
+        // Handle string values
+        if (typeof value === 'string' && value.trim() !== '') {
+          const trimmed = value.trim();
+          // For enum fields, convert to lowercase
+          if (['experience', 'fitnessLevel', 'preferredTime'].includes(key)) {
+            cleanedData[key] = trimmed.toLowerCase();
+          } else {
+            cleanedData[key] = trimmed;
           }
-        });
-        toast.success('Tạo thông tin sức khỏe thành công!');
+          return;
+        }
+        
+        // Handle arrays
+        if (Array.isArray(value) && value.length > 0) {
+          cleanedData[key] = value;
+          return;
+        }
+        
+        // Handle objects (segmental analysis)
+        if (typeof value === 'object' && value !== null && Object.keys(value).length > 0) {
+          cleanedData[key] = value;
+          return;
+        }
+      });
+
+      // Ensure at least some data is provided
+      if (Object.keys(cleanedData).length === 0) {
+        toast.error('Vui lòng nhập ít nhất một thông tin sức khỏe');
+        return;
       }
+
+      console.log('Sending health info data:', cleanedData);
+
+      // Always create new health info record to track changes over time
+      await createHealthInfoMutation.mutateAsync({
+        memberId: userData._id,
+        data: cleanedData
+      });
+      toast.success('Tạo thông tin sức khỏe thành công!', {
+        description: 'Bản ghi mới đã được tạo để theo dõi lịch sử thay đổi'
+      });
       setIsEditingHealth(false);
       setEditedHealth(null);
-    } catch (error) {
-      toast.error('Có lỗi xảy ra khi lưu thông tin sức khỏe');
+    } catch (error: any) {
       console.error('Health info save error:', error);
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.data?.data?.message ||
+                          error?.message || 
+                          'Có lỗi xảy ra khi lưu thông tin sức khỏe';
+      toast.error('Lỗi', {
+        description: errorMessage
+      });
     }
   };
 
@@ -505,17 +585,17 @@ export function MemberProfile() {
             {!isEditingHealth ? (
               <Button onClick={handleHealthEdit} size="sm" variant="outline" className="w-full sm:w-auto">
                 <Edit3 className="w-4 h-4" />
-                <span className="text-base sm:text-sm">{healthInfo ? 'Chỉnh sửa' : 'Tạo mới'}</span>
+                <span className="text-base sm:text-sm">Cập Nhật Thông Tin Sức Khỏe</span>
               </Button>
             ) : (
               <div className="flex gap-2 w-full sm:w-auto">
                 <Button
                   onClick={handleHealthSave}
                   size="sm"
-                  disabled={updateHealthInfoMutation.isPending || createHealthInfoMutation.isPending}
+                  disabled={createHealthInfoMutation.isPending}
                   className="flex-1 sm:flex-initial"
                 >
-                  {(updateHealthInfoMutation.isPending || createHealthInfoMutation.isPending) ? (
+                  {createHealthInfoMutation.isPending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Save className="w-4 h-4" />
