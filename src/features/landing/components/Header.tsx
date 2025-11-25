@@ -143,71 +143,71 @@ export const Header: React.FC = () => {
           : 'bg-gradient-to-r from-gray-900 to-gray-800'
       }`}
     >
-      <nav className="max-w-7xl mx-auto px-5 flex justify-between items-center h-16">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-5 flex justify-between items-center h-14 sm:h-16">
         {/* Logo */}
-        <div className="flex items-center gap-4">
-          <img 
-            src={LogoStag} 
-            alt="StagPower Logo" 
-            className="w-12 h-12 object-contain"
+        <div className="flex items-center gap-2 sm:gap-4">
+          <img
+            src={LogoStag}
+            alt="StagPower Logo"
+            className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
           />
-          <span className="text-2xl font-bold text-white">StagPower</span>
+          <span className="text-lg sm:text-xl lg:text-2xl font-bold text-white">StagPower</span>
         </div>
 
         {/* Navigation Menu */}
-        <ul className="hidden md:flex space-x-8">
+        <ul className="hidden lg:flex space-x-4 xl:space-x-8">
           <li>
-            <button 
+            <button
               onClick={() => scrollToSection('home')}
-              className="text-white hover:text-orange-400 font-medium transition-colors"
+              className="text-sm xl:text-base text-white hover:text-orange-400 font-medium transition-colors"
             >
               Trang Chủ
             </button>
           </li>
           <li>
-            <button 
+            <button
               onClick={() => scrollToSection('features')}
-              className="text-white hover:text-orange-400 font-medium transition-colors"
+              className="text-sm xl:text-base text-white hover:text-orange-400 font-medium transition-colors"
             >
               Tính Năng
             </button>
           </li>
           <li>
-            <button 
+            <button
               onClick={() => scrollToSection('packages')}
-              className="text-white hover:text-orange-400 font-medium transition-colors"
+              className="text-sm xl:text-base text-white hover:text-orange-400 font-medium transition-colors"
             >
               Gói Tập
             </button>
           </li>
           <li>
-            <button 
+            <button
               onClick={() => scrollToSection('gym-info')}
-              className="text-white hover:text-orange-400 font-medium transition-colors"
+              className="text-sm xl:text-base text-white hover:text-orange-400 font-medium transition-colors"
             >
               Thông Tin
             </button>
           </li>
           <li>
-            <button 
+            <button
               onClick={() => scrollToSection('testimonials')}
-              className="text-white hover:text-orange-400 font-medium transition-colors"
+              className="text-sm xl:text-base text-white hover:text-orange-400 font-medium transition-colors"
             >
               Đánh Giá
             </button>
           </li>
           <li>
-            <button 
+            <button
               onClick={() => scrollToSection('faq')}
-              className="text-white hover:text-orange-400 font-medium transition-colors"
+              className="text-sm xl:text-base text-white hover:text-orange-400 font-medium transition-colors"
             >
               FAQ
             </button>
           </li>
           <li>
-            <button 
+            <button
               onClick={() => scrollToSection('contact')}
-              className="text-white hover:text-orange-400 font-medium transition-colors"
+              className="text-sm xl:text-base text-white hover:text-orange-400 font-medium transition-colors"
             >
               Liên Hệ
             </button>
@@ -215,7 +215,7 @@ export const Header: React.FC = () => {
         </ul>
 
         {/* CTA Buttons */}
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-2 sm:gap-3 items-center">
           {isAuthenticated ? (
             <DropdownMenu
               onOpenChange={(open) => {
@@ -246,27 +246,27 @@ export const Header: React.FC = () => {
               }}
             >
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="h-auto px-2 py-1.5 text-white hover:text-orange-400 hover:bg-white/10"
-                >
-                  <div className="flex items-center space-x-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs bg-orange-500 text-white">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="hidden sm:flex flex-col items-start text-left">
-                      <span className="text-sm font-medium text-white">
-                        {userDisplayName}
-                      </span>
-                      <span className="text-xs text-gray-300">
-                        {userRole}
-                      </span>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-white hidden sm:block" />
-                  </div>
-                </Button>
+                    <Button
+                      variant="ghost"
+                      className="h-auto px-1.5 sm:px-2 py-1 sm:py-1.5 text-white hover:text-orange-400 hover:bg-white/10"
+                    >
+                      <div className="flex items-center space-x-1.5 sm:space-x-2">
+                        <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
+                          <AvatarFallback className="text-[10px] sm:text-xs bg-orange-500 text-white">
+                            {userInitials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="hidden md:flex flex-col items-start text-left">
+                          <span className="text-xs sm:text-sm font-medium text-white">
+                            {userDisplayName}
+                          </span>
+                          <span className="text-[10px] sm:text-xs text-gray-300">
+                            {userRole}
+                          </span>
+                        </div>
+                        <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-white hidden md:block" />
+                      </div>
+                    </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
@@ -299,21 +299,21 @@ export const Header: React.FC = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <>
-              <Button 
-                onClick={() => navigate('/login')}
-                variant="outline"
-                className="bg-white border-black text-black hover:bg-white hover:text-red-500 hover:border-red-500 px-4 py-2 rounded-full font-semibold transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-red-500/30"
-              >
-                Đăng Nhập
-              </Button>
-              <Button 
-                onClick={() => navigate('/register')}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-semibold transition-all hover:-translate-y-0.5"
-              >
-                Đăng Ký Ngay
-              </Button>
-            </>
+                  <>
+                    <Button
+                      onClick={() => navigate('/login')}
+                      variant="outline"
+                      className="bg-white border-black text-black hover:bg-white hover:text-red-500 hover:border-red-500 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-red-500/30"
+                    >
+                      Đăng Nhập
+                    </Button>
+                    <Button
+                      onClick={() => navigate('/register')}
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all hover:-translate-y-0.5"
+                    >
+                      Đăng Ký Ngay
+                    </Button>
+                  </>
           )}
         </div>
       </nav>

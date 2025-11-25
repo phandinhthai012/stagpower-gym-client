@@ -56,44 +56,44 @@ export const FAQSection: React.FC = () => {
   ];
 
   return (
-    <section id="faq" className="py-20 bg-gray-50">
-      <div className="max-w-4xl mx-auto px-5">
-        <div className="text-center mb-16">
-          <div className="flex items-center justify-center mb-4">
-            <HelpCircle className="w-8 h-8 text-orange-500 mr-3" />
-            <h2 className="text-4xl font-bold text-gray-800">
+    <section id="faq" className="py-12 sm:py-16 lg:py-20 bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-5">
+        <div className="text-center mb-10 sm:mb-12 lg:mb-16">
+          <div className="flex items-center justify-center mb-3 sm:mb-4">
+            <HelpCircle className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500 mr-2 sm:mr-3" />
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800">
               Câu Hỏi Thường Gặp
             </h2>
           </div>
-          <p className="text-xl text-gray-600">
+          <p className="text-base sm:text-lg lg:text-xl text-gray-600 px-2">
             Tìm hiểu thêm về dịch vụ và chính sách của StagPower
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+              className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 overflow-hidden"
             >
               <button
                 onClick={() => toggleItem(index)}
-                className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
               >
-                <span className="font-semibold text-gray-800 pr-4">
+                <span className="text-sm sm:text-base font-semibold text-gray-800 pr-3 sm:pr-4 flex-1">
                   {faq.question}
                 </span>
                 {openItems.includes(index) ? (
-                  <ChevronUp className="w-5 h-5 text-orange-500 flex-shrink-0" />
+                  <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 flex-shrink-0" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
                 )}
               </button>
               
               {openItems.includes(index) && (
-                <div className="px-6 pb-4">
-                  <div className="border-t border-gray-100 pt-4">
-                    <p className="text-gray-600 leading-relaxed">
+                <div className="px-4 sm:px-6 pb-3 sm:pb-4">
+                  <div className="border-t border-gray-100 pt-3 sm:pt-4">
+                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                       {faq.answer}
                     </p>
                   </div>
@@ -104,24 +104,24 @@ export const FAQSection: React.FC = () => {
         </div>
 
         {/* Contact Support */}
-        <div className="text-center mt-12">
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
+        <div className="text-center mt-8 sm:mt-10 lg:mt-12">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">
               Vẫn Còn Thắc Mắc?
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
               Đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng giúp đỡ bạn
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <a
                 href="tel:19001234"
-                className="bg-orange-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center"
+                className="bg-orange-500 text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center"
               >
                 📞 Gọi 1900 1234
               </a>
               <a
                 href="mailto:info@stagpower.com"
-                className="border-2 border-orange-500 text-orange-500 px-6 py-3 rounded-full font-semibold hover:bg-orange-500 hover:text-white transition-colors flex items-center justify-center"
+                className="border-2 border-orange-500 text-orange-500 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold hover:bg-orange-500 hover:text-white transition-colors flex items-center justify-center"
               >
                 ✉️ Email Support
               </a>
