@@ -6,3 +6,4 @@ export { ModalMemberCreatePackage } from './ModalMemberCreatePackage';
 export { StarRating } from './StarRating';
 export { ModalRatingForm } from './ModalRatingForm';
 export { ModalDeleteRating } from './ModalDeleteRating';
+export { HealthInfoDisplay } from './HealthInfoDisplay';

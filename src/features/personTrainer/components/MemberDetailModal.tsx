@@ -27,6 +27,7 @@ import { useMemberDetail } from '../hooks/useTrainerMembers';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { HealthInfoSection } from '../../../features/admin/components/member-management/HealthInfoSection';
+import { useAllHealthInfoByMemberId } from '../../../features/member/hooks/useHealthInfo';
 import { useAISuggestions, useUpdateAISuggestion } from '../../../features/member/hooks/useAISuggestions';
 import { AISuggestion } from '../../../features/member/api/aiSuggestion.api';
 import { Textarea } from '../../../components/ui/textarea';
@@ -47,6 +48,9 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
   const updateSuggestion = useUpdateAISuggestion();
   const [editingSuggestion, setEditingSuggestion] = useState<AISuggestion | null>(null);
   const [editForm, setEditForm] = useState<Partial<AISuggestion>>({});
+  
+  // Fetch all health info records for navigation
+  const { data: healthInfoList, isLoading: isLoadingHealthInfo } = useAllHealthInfoByMemberId(memberId);
 
   // Calculate achievements
   const achievements = useMemo(() => {
@@ -342,8 +346,8 @@ export function MemberDetailModal({ memberId, onClose, onCreateSchedule }: Membe
           {activeTab === 'health' && (
             <div className="space-y-6">
               <HealthInfoSection 
-                healthInfo={data.healthInfo || null}
-                isLoading={false}
+                healthInfo={healthInfoList || []}
+                isLoading={isLoadingHealthInfo}
               />
             </div>
           )}

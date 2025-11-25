@@ -26,6 +26,7 @@ interface HealthInfoSectionProps {
 
 export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoSectionProps) {
   const [selectedIndex, setSelectedIndex] = useState<number>(0); // Show first item by default
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
   
   // Normalize to array
   const healthInfoList: HealthInfo[] = healthInfo === null 
@@ -316,10 +317,32 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
 
         {/* Fitness Goals */}
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
-            <Target className="h-4 w-4" />
-            <span>Mục tiêu tập luyện</span>
-          </h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-gray-700 flex items-center space-x-2">
+              <Target className="h-4 w-4" />
+              <span>Mục tiêu tập luyện</span>
+            </h4>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-xs sm:text-sm text-blue-600 hover:text-blue-700"
+            >
+              {isExpanded ? (
+                <>
+                  <span className="hidden sm:inline">Thu gọn</span>
+                  <span className="sm:hidden">Thu gọn</span>
+                  <ChevronUp className="h-4 w-4 ml-1" />
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Xem đầy đủ</span>
+                  <span className="sm:hidden">Xem thêm</span>
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </>
+              )}
+            </Button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs text-gray-600">Mục tiêu chính</label>
@@ -352,6 +375,49 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
               </p>
             </div>
           </div>
+
+          {/* Expanded Content */}
+          {isExpanded && (
+            <div className="mt-4 space-y-4 pt-4 border-t border-gray-200">
+              {/* Training Preferences */}
+              {healthInfo.preferredTime && (
+                <div>
+                  <h5 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <Clock className="h-3 w-3" />
+                    <span>Thời gian ưa thích</span>
+                  </h5>
+                  <div className="bg-gray-50 p-2 rounded-lg">
+                    <Badge className="bg-indigo-100 text-indigo-800">
+                      {healthInfoUtils.getPreferredTimeText(healthInfo.preferredTime)}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+
+              {/* Age & Gender */}
+              {(healthInfo.age !== undefined || healthInfo.gender) && (
+                <div>
+                  <h5 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">Thông tin cá nhân</h5>
+                  <div className="grid grid-cols-2 gap-3">
+                    {healthInfo.age !== undefined && (
+                      <div>
+                        <label className="text-xs text-gray-600">Tuổi</label>
+                        <p className="text-xs text-gray-900 mt-1">{healthInfo.age} tuổi</p>
+                      </div>
+                    )}
+                    {healthInfo.gender && (
+                      <div>
+                        <label className="text-xs text-gray-600">Giới tính</label>
+                        <p className="text-xs text-gray-900 mt-1">
+                          {healthInfo.gender === 'male' ? 'Nam' : healthInfo.gender === 'female' ? 'Nữ' : 'Khác'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Training Preferences */}
@@ -510,13 +576,13 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
   return (
     <Card className="border-l-4 border-l-red-500">
       <CardHeader className="bg-red-50/50">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center space-x-2 text-red-900">
             <Heart className="h-5 w-5 text-red-600" />
             <span>Thông tin sức khỏe</span>
           </CardTitle>
           {healthInfoList.length > 1 && (
-            <Badge className="bg-blue-100 text-blue-800">
+            <Badge className="bg-blue-100 text-blue-800 whitespace-nowrap">
               {selectedIndex + 1} / {healthInfoList.length}
             </Badge>
           )}
@@ -530,26 +596,26 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
           </div>
         ) : (
           <>
-            {/* Navigation Controls */}
+            {/* Navigation Controls - Always show if more than 1 record */}
             {healthInfoList.length > 1 && (
-              <div className="flex items-center justify-between gap-4 pb-4 border-b border-gray-200">
+              <div className="flex items-center justify-between gap-2 sm:gap-4 pb-4 border-b border-gray-200">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={goToPrevious}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 sm:gap-2 flex-shrink-0"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  <span>Trước</span>
+                  <span className="hidden sm:inline">Trước</span>
                 </Button>
                 
-                <div className="flex-1 flex items-center justify-center gap-2">
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-gray-900">
+                <div className="flex-1 flex items-center justify-center gap-2 min-w-0">
+                  <div className="text-center min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                       {formatHealthInfoDate(currentHealthInfo!)}
                     </p>
                     {selectedIndex === 0 && (
-                      <Badge className="bg-green-100 text-green-800 text-xs mt-1">Mới nhất</Badge>
+                      <Badge className="bg-green-100 text-green-800 text-xs mt-1 whitespace-nowrap">Mới nhất</Badge>
                     )}
                   </div>
                 </div>
@@ -558,9 +624,9 @@ export function HealthInfoSection({ healthInfo, isLoading, onEdit }: HealthInfoS
                   variant="outline"
                   size="sm"
                   onClick={goToNext}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 sm:gap-2 flex-shrink-0"
                 >
-                  <span>Sau</span>
+                  <span className="hidden sm:inline">Sau</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

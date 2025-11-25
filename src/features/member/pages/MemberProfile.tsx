@@ -23,10 +23,11 @@ import {
   Loader2
 } from 'lucide-react';
 import { useMe, useUpdateProfile } from '../hooks/useMembers';
-import { useMyHealthInfo, useCreateHealthInfo, useUpdateHealthInfo } from '../hooks/useHealthInfo';
+import { useAllHealthInfoByMemberId, useCreateHealthInfo, useUpdateHealthInfo } from '../hooks/useHealthInfo';
 import { formatDate } from '../../../lib/date-utils';
 import { toast } from 'sonner';
 import { healthInfoUtils } from '../utils/healthInfo.utils';
+import { HealthInfoDisplay } from '../components/HealthInfoDisplay';
 
 export function MemberProfile() {
   const { user } = useAuth();
@@ -38,13 +39,15 @@ export function MemberProfile() {
 
   // API hooks
   const { data: userData, isLoading: userLoading, error: userError } = useMe();
-  const { data: healthInfo, isLoading: healthLoading, error: healthError } = useMyHealthInfo();
+  const { data: healthInfoList, isLoading: healthLoading, error: healthError } = useAllHealthInfoByMemberId(userData?._id);
+  // Get latest healthInfo for editing (first item in sorted list)
+  const healthInfo = healthInfoList && healthInfoList.length > 0 ? healthInfoList[0] : null;
   const updateProfileMutation = useUpdateProfile();
   const createHealthInfoMutation = useCreateHealthInfo();
   const updateHealthInfoMutation = useUpdateHealthInfo();
 
   // Debug: Log health info data
-  React.useEffect(() => {
+  useEffect(() => {
     if (healthInfo) {
       console.log('Health Info loaded:', healthInfo);
     } else if (!healthLoading && !healthError) {
@@ -228,6 +231,11 @@ export function MemberProfile() {
     return (weight / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
+  // Log health error if it's not a 404 (404 means user hasn't created health info yet, which is ok)
+  if (healthError && (healthError as any)?.response?.status !== 404) {
+    console.error('Health info error:', healthError);
+  }
+
   // Loading state - only block on user loading, not health (health can be null)
   if (userLoading) {
     return (
@@ -246,17 +254,24 @@ export function MemberProfile() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-base sm:text-sm text-red-600 mb-4">Có lỗi xảy ra khi tải thông tin</p>
-          <Button onClick={() => window.location.reload()}>
+          <Button onClick={() => {
+            // Reload page safely
+            if (typeof window !== 'undefined') {
+              setTimeout(() => {
+                window.location.reload();
+              }, 100);
+            }
+          }}>
             Thử lại
           </Button>
         </div>
       </div>
     );
   }
-  
-  // Log health error if it's not a 404 (404 means user hasn't created health info yet, which is ok)
-  if (healthError && (healthError as any)?.response?.status !== 404) {
-    console.error('Health info error:', healthError);
+
+  // Guard: Don't render if no user data
+  if (!userData && !user) {
+    return null;
   }
 
   return (
@@ -515,19 +530,13 @@ export function MemberProfile() {
             )}
           </div>
 
-          {!healthInfo && !isEditingHealth && (
-            <div className="mb-4 sm:mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Heart className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                <div>
-                  <p className="text-base sm:text-sm text-blue-800 font-medium">Chưa có thông tin sức khỏe</p>
-                  <p className="text-base sm:text-sm text-blue-600">Hãy tạo thông tin sức khỏe để được tư vấn tốt nhất</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {!isEditingHealth ? (
+            <HealthInfoDisplay 
+              healthInfoList={healthInfoList || []}
+              isLoading={healthLoading}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label className="text-base sm:text-sm">Chiều cao (cm)</Label>
               <Input
@@ -818,6 +827,7 @@ export function MemberProfile() {
               />
             </div>
           </div>
+          )}
         </div>
       )}
     </div>

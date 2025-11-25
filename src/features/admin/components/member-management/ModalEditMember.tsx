@@ -359,22 +359,14 @@ export function ModalEditMember({
         }
       });
 
-      // Handle health info update/create
+      // Handle health info - Always create new record to track history
       // All fields are now optional - backend allows creating health info with any fields
       if (Object.keys(healthUpdateData).length > 0) {
-        if (healthInfo?._id) {
-          // Update existing health info
-          await axiosInstance.put(
-            API_ENDPOINTS.HEALTH_INFO.UPDATE_HEALTH_INFO(healthInfo._id),
-            healthUpdateData
-          );
-        } else {
-          // Create new health info with whatever fields are provided
-          await axiosInstance.post(
-            API_ENDPOINTS.HEALTH_INFO.CREATE_HEALTH_INFO(member._id),
-            healthUpdateData
-          );
-        }
+        // Always create new health info record to track changes over time
+        await axiosInstance.post(
+          API_ENDPOINTS.HEALTH_INFO.CREATE_HEALTH_INFO(member._id),
+          healthUpdateData
+        );
       }
 
       // Show success message
@@ -656,28 +648,17 @@ export function ModalEditMember({
 
     setIsSaving(true);
     try {
-      // Check if member already has health info
-      if (healthInfo?._id) {
-        // Update existing health info
-        await axiosInstance.put(
-          API_ENDPOINTS.HEALTH_INFO.UPDATE_HEALTH_INFO(healthInfo._id),
-          parsedData.data
-        );
-        toast.success('Cập nhật thành công!', {
-          description: `Đã cập nhật thông tin sức khỏe cho ${member.fullName}`,
-        });
-      } else {
-        // Create new health info
-        await axiosInstance.post(
-          API_ENDPOINTS.HEALTH_INFO.CREATE_HEALTH_INFO(member._id),
-          parsedData.data
-        );
-        toast.success('Import thành công!', {
-          description: `Đã lưu thông tin sức khỏe cho ${member.fullName}`,
-        });
-      }
+      // Always create new health info record to track changes over time
+      await axiosInstance.post(
+        API_ENDPOINTS.HEALTH_INFO.CREATE_HEALTH_INFO(member._id),
+        parsedData.data
+      );
+      toast.success('Import thành công!', {
+        description: `Đã tạo bản ghi sức khỏe mới cho ${member.fullName}`,
+      });
       
       queryClient.invalidateQueries({ queryKey: ['health-info', 'member', member._id] });
+      queryClient.invalidateQueries({ queryKey: ['health-info'] });
       
       setImportFile(null);
       setParsedData(null);

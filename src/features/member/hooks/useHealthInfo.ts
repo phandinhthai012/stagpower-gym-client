@@ -3,13 +3,14 @@ import axiosInstance from '../../../configs/AxiosConfig';
 import { API_ENDPOINTS } from '../../../configs/Api';
 import { healthInfoApi } from '../api/healthInfo.api';
 
-// Get my health info
+// Get my health info (latest record - member 1-N healthInfo relationship)
 export const useMyHealthInfo = () => {
   return useQuery({
     queryKey: ['health-info', 'me'],
     queryFn: async () => {
       try {
         // Use healthInfoApi to get transformed data (lowercase enums -> PascalCase)
+        // Returns the latest healthInfo record (sorted by createdAt desc)
         return await healthInfoApi.getMyHealthInfo();
       } catch (error: any) {
         // 404 is expected when member doesn't have health info yet
@@ -24,7 +25,7 @@ export const useMyHealthInfo = () => {
   });
 };
 
-// Get health info by member ID (latest)
+// Get latest health info by member ID (member 1-N healthInfo relationship, returns latest)
 export const useHealthInfoByMemberId = (memberId: string | null | undefined) => {
   return useQuery({
     queryKey: ['health-info', 'member', memberId],
@@ -32,6 +33,7 @@ export const useHealthInfoByMemberId = (memberId: string | null | undefined) => 
       if (!memberId) return null;
       try {
         // Use healthInfoApi to get transformed data (lowercase enums -> PascalCase)
+        // Returns the latest healthInfo record (sorted by createdAt desc)
         return await healthInfoApi.getHealthInfoByMemberId(memberId);
       } catch (error: any) {
         // 404 is expected when member doesn't have health info yet

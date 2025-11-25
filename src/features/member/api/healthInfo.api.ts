@@ -228,13 +228,13 @@ export interface UpdateHealthInfoRequest extends Partial<CreateHealthInfoRequest
 
 // API Functions
 export const healthInfoApi = {
-  // Lấy thông tin sức khỏe của member hiện tại
+  // Lấy thông tin sức khỏe mới nhất của member hiện tại (member 1-N healthInfo, lấy bản mới nhất)
   getMyHealthInfo: async (): Promise<HealthInfo> => {
     const response = await apiClient.get(API_ENDPOINTS.HEALTH_INFO.GET_MY_HEALTH_INFO);
     return transformHealthInfoFromServer(response.data.data);
   },
 
-  // Lấy thông tin sức khỏe theo member ID
+  // Lấy thông tin sức khỏe mới nhất theo member ID (member 1-N healthInfo, lấy bản mới nhất)
   getHealthInfoByMemberId: async (memberId: string): Promise<HealthInfo> => {
     const response = await apiClient.get(API_ENDPOINTS.HEALTH_INFO.GET_HEALTH_INFO_BY_MEMBER_ID(memberId));
     return transformHealthInfoFromServer(response.data.data);
