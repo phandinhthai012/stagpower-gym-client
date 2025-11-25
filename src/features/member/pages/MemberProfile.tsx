@@ -45,14 +45,6 @@ export function MemberProfile() {
   const updateProfileMutation = useUpdateProfile();
   const createHealthInfoMutation = useCreateHealthInfo();
 
-  // Debug: Log health info data
-  useEffect(() => {
-    if (healthInfo) {
-      console.log('Health Info loaded:', healthInfo);
-    } else if (!healthLoading && !healthError) {
-      console.log('No health info found (member needs to create it)');
-    }
-  }, [healthInfo, healthLoading, healthError]);
 
   const initEditedHealth = () => {
     if (!healthInfo) return null;
@@ -114,7 +106,6 @@ export function MemberProfile() {
       setEditedUser(null);
     } catch (error) {
       toast.error('Có lỗi xảy ra khi cập nhật thông tin');
-      console.error('Update profile error:', error);
     }
   };
 
@@ -267,8 +258,6 @@ export function MemberProfile() {
         return;
       }
 
-      console.log('Sending health info data:', cleanedData);
-
       // Always create new health info record to track changes over time
       await createHealthInfoMutation.mutateAsync({
         memberId: userData._id,
@@ -280,7 +269,6 @@ export function MemberProfile() {
       setIsEditingHealth(false);
       setEditedHealth(null);
     } catch (error: any) {
-      console.error('Health info save error:', error);
       const errorMessage = error?.response?.data?.message || 
                           error?.response?.data?.data?.message ||
                           error?.message || 
@@ -311,10 +299,6 @@ export function MemberProfile() {
     return (weight / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
-  // Log health error if it's not a 404 (404 means user hasn't created health info yet, which is ok)
-  if (healthError && (healthError as any)?.response?.status !== 404) {
-    console.error('Health info error:', healthError);
-  }
 
   // Loading state - only block on user loading, not health (health can be null)
   if (userLoading) {
@@ -391,30 +375,32 @@ export function MemberProfile() {
 
           {/* Right: Summary */}
           {healthInfo && (
-            <div className="bg-gray-50 p-3 sm:p-4 rounded-xl md:ml-[-175px] mt-4 md:mt-0">
-              <h4 className="text-base sm:text-sm font-semibold text-gray-900 mb-3">Thông Tin Tóm Tắt</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
-                  <span className="text-blue-900 text-base sm:text-sm font-semibold">BMI</span>
-                  <span className="text-gray-700 text-base sm:text-sm truncate">
-                    {bmiValue ? `${bmiValue} (${healthInfoUtils.getBMICategory(Number(bmiValue))})` : 'Chưa cập nhật'}
-                  </span>
+            <div className="p-3 sm:p-4 rounded-xl md:ml-[-175px] mt-4 md:mt-0" style={{ backgroundColor: '#253974' }}>
+              <h4 className="text-sm font-semibold text-white mb-2">Tóm Tắt</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-white/80 backdrop-blur-sm p-2 rounded-lg">
+                  <div className="text-xs text-gray-600 mb-1">BMI</div>
+                  <div className="text-sm font-semibold text-blue-900">
+                    {bmiValue ? `${bmiValue}` : '-'}
+                  </div>
                 </div>
-                <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
-                  <span className="text-blue-900 text-base sm:text-sm font-semibold">Mục tiêu</span>
-                  <span className="text-gray-700 text-base sm:text-sm truncate">{healthInfoUtils.getGoalText(healthInfo?.goal)}</span>
+                <div className="bg-white/80 backdrop-blur-sm p-2 rounded-lg">
+                  <div className="text-xs text-gray-600 mb-1">Mục tiêu</div>
+                  <div className="text-sm font-semibold text-blue-900 truncate">
+                    {healthInfo?.goal ? healthInfoUtils.getGoalText(healthInfo.goal) : '-'}
+                  </div>
                 </div>
-                <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
-                  <span className="text-blue-900 text-base sm:text-sm font-semibold">Trình độ</span>
-                  <span className="text-gray-700 text-base sm:text-sm truncate">{healthInfoUtils.getExperienceText(healthInfo?.experience)}</span>
+                <div className="bg-white/80 backdrop-blur-sm p-2 rounded-lg">
+                  <div className="text-xs text-gray-600 mb-1">Trình độ</div>
+                  <div className="text-sm font-semibold text-blue-900 truncate">
+                    {healthInfo?.experience ? healthInfoUtils.getExperienceText(healthInfo.experience) : '-'}
+                  </div>
                 </div>
-                <div className="bg-white p-3 rounded-lg border-l-4 border-blue-900 flex items-center justify-between gap-3">
-                  <span className="text-blue-900 text-base sm:text-sm font-semibold">Điểm sức khỏe</span>
-                  <span className="text-gray-700 text-base sm:text-sm truncate">
-                    {healthInfo?.healthScore !== undefined 
-                      ? `${healthInfo.healthScore}/100 (${healthInfoUtils.getHealthStatusText(healthInfo.healthStatus)})`
-                      : 'Chưa đánh giá'}
-                  </span>
+                <div className="bg-white/80 backdrop-blur-sm p-2 rounded-lg">
+                  <div className="text-xs text-gray-600 mb-1">Điểm SK</div>
+                  <div className="text-sm font-semibold text-blue-900">
+                    {healthInfo?.healthScore !== undefined ? `${healthInfo.healthScore}/100` : '-'}
+                  </div>
                 </div>
               </div>
             </div>

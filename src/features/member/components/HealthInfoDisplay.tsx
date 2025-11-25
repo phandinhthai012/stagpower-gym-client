@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import {
@@ -25,18 +25,6 @@ interface HealthInfoDisplayProps {
 export function HealthInfoDisplay({ healthInfoList, isLoading }: HealthInfoDisplayProps) {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-
-  // Debug: Log healthInfoList
-  useEffect(() => {
-    console.log('HealthInfoDisplay - healthInfoList:', healthInfoList);
-    console.log('HealthInfoDisplay - length:', healthInfoList?.length);
-    console.log('HealthInfoDisplay - isArray:', Array.isArray(healthInfoList));
-    if (healthInfoList && healthInfoList.length > 1) {
-      console.log('HealthInfoDisplay - Should show navigation!');
-    } else {
-      console.log('HealthInfoDisplay - Will NOT show navigation. Length:', healthInfoList?.length);
-    }
-  }, [healthInfoList]);
 
   if (isLoading) {
     return (
@@ -121,9 +109,6 @@ export function HealthInfoDisplay({ healthInfoList, isLoading }: HealthInfoDispl
   };
   const bmiCategory = bmi ? getBMICategoryBadge(bmi) : null;
   const hasMultipleRecords = Array.isArray(healthInfoList) && healthInfoList.length > 1;
-
-  // Debug log before render
-  console.log('HealthInfoDisplay Render - hasMultipleRecords:', hasMultipleRecords, 'length:', healthInfoList?.length);
 
   return (
     <div className="space-y-4 sm:space-y-6">
