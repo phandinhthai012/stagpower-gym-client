@@ -8,7 +8,7 @@ export const PackagesSection: React.FC = () => {
   const packages = [
     {
       name: "Gói Thử Nghiệm",
-      price: "99.000",
+      price: "200.000",
       duration: "7 ngày",
       features: [
         "Tập tại tất cả chi nhánh",

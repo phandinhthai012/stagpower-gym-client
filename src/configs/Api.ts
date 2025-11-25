@@ -202,6 +202,7 @@ export const API_ENDPOINTS = {
         DELETE_RATING: (ratingId: string) => `${API_PREFIX}/ratings/${ratingId}`,
         GET_RATINGS_BY_TRAINER: (trainerId: string) => `${API_PREFIX}/ratings/trainer/${trainerId}`,
         GET_TRAINER_AVERAGE_RATING: (trainerId: string) => `${API_PREFIX}/ratings/trainer/${trainerId}/average`,
+        GET_TOP_RATINGS: `${API_PREFIX}/ratings/top`,
     },
 }
 
