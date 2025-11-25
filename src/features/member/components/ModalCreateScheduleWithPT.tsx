@@ -15,12 +15,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../../components/ui/alert-dialog';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, Clock, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCreateSchedule, useTrainers } from '../hooks';
+import { useCreateSchedule, useTrainers, useSchedulesByTrainer } from '../hooks';
 import { useBranches } from '../hooks/useBranches';
 import { CreateScheduleRequest } from '../types/schedule.types';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useMemo } from 'react';
 
 type Props = {
   trigger?: React.ReactNode;
@@ -58,8 +59,67 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
     note: '',
   });
 
+  // Fetch schedules when trainer is selected
+  const { data: trainerSchedules, isLoading: isLoadingSchedules } = useSchedulesByTrainer(
+    formData.trainerId || ''
+  );
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+
+  // Create map of busy time slots
+  const busySlots = useMemo(() => {
+    if (!trainerSchedules || !formData.trainerId) return new Set<string>();
+    
+    const slots = new Set<string>();
+    trainerSchedules
+      .filter(s => ['Pending', 'Confirmed'].includes(s.status))
+      .forEach(schedule => {
+        const start = new Date(schedule.dateTime);
+        const end = new Date(start.getTime() + schedule.durationMinutes * 60000);
+        // Create key for each 30-minute slot
+        for (let time = new Date(start); time < end; time = new Date(time.getTime() + 30 * 60000)) {
+          slots.add(time.toISOString().slice(0, 16));
+        }
+      });
+    return slots;
+  }, [trainerSchedules, formData.trainerId]);
+
+  // Check for conflict when dateTime or duration changes
+  useEffect(() => {
+    if (!formData.dateTime || !formData.duration || !trainerSchedules) {
+      setConflictWarning(null);
+      return;
+    }
+
+    const newStart = new Date(formData.dateTime);
+    const newEnd = new Date(newStart.getTime() + Number(formData.duration) * 60000);
+    
+    const conflict = trainerSchedules.find(schedule => {
+      if (!['Pending', 'Confirmed'].includes(schedule.status)) return false;
+      
+      const existingStart = new Date(schedule.dateTime);
+      const existingEnd = new Date(existingStart.getTime() + schedule.durationMinutes * 60000);
+      
+      // Check overlap: newStart < existingEnd && newEnd > existingStart
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+    
+    if (conflict) {
+      const conflictTime = new Date(conflict.dateTime).toLocaleString('vi-VN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      setConflictWarning(`⚠️ PT đã có lịch vào ${conflictTime}. Vui lòng chọn thời gian khác.`);
+    } else {
+      setConflictWarning(null);
+    }
+  }, [formData.dateTime, formData.duration, trainerSchedules]);
 
   // Ẩn scrollbar của page khi modal mở
   useEffect(() => {
@@ -103,6 +163,11 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
       const now = new Date();
       if (selectedDate <= now) {
         newErrors.dateTime = 'Thời gian phải trong tương lai';
+      }
+      
+      // Check conflict
+      if (conflictWarning) {
+        newErrors.dateTime = 'Thời gian này đã bị trùng với lịch khác';
       }
     }
     if (!formData.duration || Number(formData.duration) < 30) {
@@ -274,7 +339,15 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
                   type="datetime-local"
                   value={formData.dateTime}
                   onChange={(e) => handleChange('dateTime', e.target.value)}
+                  className={conflictWarning ? 'border-red-500 focus:ring-red-500' : ''}
+                  min={new Date().toISOString().slice(0, 16)}
                 />
+                {conflictWarning && (
+                  <div className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>{conflictWarning}</span>
+                  </div>
+                )}
                 {errors.dateTime && <p className="text-xs text-red-500">{errors.dateTime}</p>}
               </div>
 
@@ -304,6 +377,57 @@ export default function ModalCreateScheduleWithPT({ trigger, open, onOpenChange,
                 placeholder="Ví dụ: tập ngực - tay"
               />
             </div>
+
+            {/* Trainer's Existing Schedules */}
+            {formData.trainerId && (
+              <div className="space-y-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-600" />
+                  <Label className="text-sm font-semibold text-gray-700">
+                    Lịch đã có của PT
+                  </Label>
+                </div>
+                {isLoadingSchedules ? (
+                  <p className="text-xs text-gray-500">Đang tải lịch...</p>
+                ) : trainerSchedules && trainerSchedules.filter(s => ['Pending', 'Confirmed'].includes(s.status)).length > 0 ? (
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {trainerSchedules
+                      .filter(s => ['Pending', 'Confirmed'].includes(s.status))
+                      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
+                      .map(schedule => {
+                        const scheduleDate = new Date(schedule.dateTime);
+                        const scheduleEnd = new Date(scheduleDate.getTime() + schedule.durationMinutes * 60000);
+                        return (
+                          <div key={schedule._id} className="flex items-center gap-2 text-xs text-gray-600 bg-white p-2 rounded border border-gray-200">
+                            <Clock className="h-3 w-3 text-gray-400" />
+                            <span className="font-medium">
+                              {scheduleDate.toLocaleDateString('vi-VN', { 
+                                weekday: 'short',
+                                day: '2-digit',
+                                month: '2-digit'
+                              })}
+                            </span>
+                            <span>
+                              {scheduleDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - 
+                              {scheduleEnd.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span className="text-gray-400">({schedule.durationMinutes} phút)</span>
+                            <span className={`ml-auto px-1.5 py-0.5 rounded text-[10px] ${
+                              schedule.status === 'Confirmed' 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {schedule.status === 'Confirmed' ? 'Đã xác nhận' : 'Chờ xác nhận'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">PT chưa có lịch nào</p>
+                )}
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-2">

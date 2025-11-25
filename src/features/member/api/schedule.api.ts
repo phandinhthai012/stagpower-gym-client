@@ -33,5 +33,11 @@ export const scheduleApi = {
     const response = await apiClient.get(API_ENDPOINTS.SCHEDULE.GET_SCHEDULE_BY_ID(scheduleId));
     return response.data.data;
   },
+
+  // Get schedules by trainer ID
+  getSchedulesByTrainerId: async (trainerId: string): Promise<ScheduleWithDetails[]> => {
+    const response = await apiClient.get(API_ENDPOINTS.SCHEDULE.GET_SCHEDULE_BY_TRAINERID(trainerId));
+    return response.data.data || [];
+  },
 };
 

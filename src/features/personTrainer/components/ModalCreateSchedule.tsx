@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Label } from '../../../components/ui/label';
 import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { X, Calendar, Clock, User, MapPin } from 'lucide-react';
+import { X, Calendar, Clock, User, MapPin, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCreateSchedule, useMembers, useBranches } from '../hooks';
+import { useCreateSchedule, useMembers, useBranches, useSchedulesByTrainer } from '../hooks';
 import { CreateScheduleRequest } from '../types/schedule.types';
 import { useScrollLock } from '../../../hooks/useScrollLock';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface Props {
   isOpen: boolean;
@@ -30,9 +31,15 @@ interface FormErrors {
 }
 
 export function ModalCreateSchedule({ isOpen, onClose }: Props) {
+  const { user } = useAuth();
   const { data: members } = useMembers();
   const { data: branches } = useBranches();
   const createMutation = useCreateSchedule();
+  
+  // Fetch trainer's existing schedules
+  const { data: trainerSchedules, isLoading: isLoadingSchedules } = useSchedulesByTrainer(
+    user?.id || ''
+  );
 
   // Filter members to only show those with PT sessions remaining > 0
   const availableMembers = React.useMemo(() => {
@@ -62,6 +69,58 @@ export function ModalCreateSchedule({ isOpen, onClose }: Props) {
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+
+  // Create map of busy time slots
+  const busySlots = useMemo(() => {
+    if (!trainerSchedules || !user?.id) return new Set<string>();
+    
+    const slots = new Set<string>();
+    trainerSchedules
+      .filter(s => ['Pending', 'Confirmed'].includes(s.status))
+      .forEach(schedule => {
+        const start = new Date(schedule.dateTime);
+        const end = new Date(start.getTime() + schedule.durationMinutes * 60000);
+        for (let time = new Date(start); time < end; time = new Date(time.getTime() + 30 * 60000)) {
+          slots.add(time.toISOString().slice(0, 16));
+        }
+      });
+    return slots;
+  }, [trainerSchedules, user?.id]);
+
+  // Check for conflict when dateTime or duration changes
+  useEffect(() => {
+    if (!formData.dateTime || !formData.duration || !trainerSchedules) {
+      setConflictWarning(null);
+      return;
+    }
+
+    const newStart = new Date(formData.dateTime);
+    const newEnd = new Date(newStart.getTime() + Number(formData.duration) * 60000);
+    
+    const conflict = trainerSchedules.find(schedule => {
+      if (!['Pending', 'Confirmed'].includes(schedule.status)) return false;
+      
+      const existingStart = new Date(schedule.dateTime);
+      const existingEnd = new Date(existingStart.getTime() + schedule.durationMinutes * 60000);
+      
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+    
+    if (conflict) {
+      const conflictTime = new Date(conflict.dateTime).toLocaleString('vi-VN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      setConflictWarning(`⚠️ Bạn đã có lịch vào ${conflictTime}. Vui lòng chọn thời gian khác.`);
+    } else {
+      setConflictWarning(null);
+    }
+  }, [formData.dateTime, formData.duration, trainerSchedules]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -113,6 +172,11 @@ export function ModalCreateSchedule({ isOpen, onClose }: Props) {
       const now = new Date();
       if (selectedDate <= now) {
         newErrors.dateTime = 'Ngày giờ phải trong tương lai';
+      }
+      
+      // Check conflict
+      if (conflictWarning) {
+        newErrors.dateTime = 'Thời gian này đã bị trùng với lịch khác';
       }
     }
 
@@ -283,8 +347,15 @@ export function ModalCreateSchedule({ isOpen, onClose }: Props) {
                 type="datetime-local"
                 value={formData.dateTime}
                 onChange={(e) => handleChange('dateTime', e.target.value)}
-                className={errors.dateTime ? 'border-red-500 focus:ring-red-500' : ''}
+                className={conflictWarning || errors.dateTime ? 'border-red-500 focus:ring-red-500' : ''}
+                min={new Date().toISOString().slice(0, 16)}
               />
+              {conflictWarning && (
+                <div className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>{conflictWarning}</span>
+                </div>
+              )}
               <p className="text-xs text-gray-500">
                 Chọn thời gian bắt đầu buổi tập
               </p>
@@ -335,6 +406,57 @@ export function ModalCreateSchedule({ isOpen, onClose }: Props) {
                 Ghi chú về nội dung, mục tiêu hoặc lưu ý đặc biệt
               </p>
             </div>
+
+            {/* Trainer's Existing Schedules */}
+            {user?.id && (
+              <div className="space-y-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-600" />
+                  <Label className="text-sm font-semibold text-gray-700">
+                    Lịch đã có của bạn
+                  </Label>
+                </div>
+                {isLoadingSchedules ? (
+                  <p className="text-xs text-gray-500">Đang tải lịch...</p>
+                ) : trainerSchedules && trainerSchedules.filter(s => ['Pending', 'Confirmed'].includes(s.status)).length > 0 ? (
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {trainerSchedules
+                      .filter(s => ['Pending', 'Confirmed'].includes(s.status))
+                      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
+                      .map(schedule => {
+                        const scheduleDate = new Date(schedule.dateTime);
+                        const scheduleEnd = new Date(scheduleDate.getTime() + schedule.durationMinutes * 60000);
+                        return (
+                          <div key={schedule._id} className="flex items-center gap-2 text-xs text-gray-600 bg-white p-2 rounded border border-gray-200">
+                            <Clock className="h-3 w-3 text-gray-400" />
+                            <span className="font-medium">
+                              {scheduleDate.toLocaleDateString('vi-VN', { 
+                                weekday: 'short',
+                                day: '2-digit',
+                                month: '2-digit'
+                              })}
+                            </span>
+                            <span>
+                              {scheduleDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - 
+                              {scheduleEnd.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span className="text-gray-400">({schedule.durationMinutes} phút)</span>
+                            <span className={`ml-auto px-1.5 py-0.5 rounded text-[10px] ${
+                              schedule.status === 'Confirmed' 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {schedule.status === 'Confirmed' ? 'Đã xác nhận' : 'Chờ xác nhận'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">Bạn chưa có lịch nào</p>
+                )}
+              </div>
+            )}
 
           </div>
         </form>

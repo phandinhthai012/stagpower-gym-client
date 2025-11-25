@@ -8,6 +8,7 @@ export const scheduleQueryKeys = {
   all: ['member-schedules'] as const,
   mySchedules: (memberId: string) => [...scheduleQueryKeys.all, 'my', memberId] as const,
   detail: (id: string) => [...scheduleQueryKeys.all, 'detail', id] as const,
+  byTrainer: (trainerId: string) => [...scheduleQueryKeys.all, 'trainer', trainerId] as const,
 };
 
 // Get my schedules
@@ -58,6 +59,15 @@ export const useScheduleDetail = (scheduleId: string) => {
     queryKey: scheduleQueryKeys.detail(scheduleId),
     queryFn: () => scheduleApi.getScheduleById(scheduleId),
     enabled: !!scheduleId,
+  });
+};
+
+// Get schedules by trainer ID
+export const useSchedulesByTrainer = (trainerId: string) => {
+  return useQuery({
+    queryKey: scheduleQueryKeys.byTrainer(trainerId),
+    queryFn: () => scheduleApi.getSchedulesByTrainerId(trainerId),
+    enabled: !!trainerId,
   });
 };
 

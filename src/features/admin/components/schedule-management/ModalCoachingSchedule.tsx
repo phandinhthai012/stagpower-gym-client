@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
@@ -8,9 +8,12 @@ import {
   Save, 
   X, 
   Loader2,
-  Dumbbell
+  Dumbbell,
+  AlertTriangle,
+  Calendar,
+  Clock
 } from 'lucide-react';
-import { useCreateSchedule, useTrainers, useBranches } from '../../hooks';
+import { useCreateSchedule, useTrainers, useBranches, useSchedulesByTrainer } from '../../hooks';
 import { useMembersWithActivePTSubscriptions } from '../../hooks/useMember';
 import { CreateScheduleRequest } from '../../types/schedule.types';
 import { toast } from 'sonner';
@@ -57,6 +60,63 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+
+  // Fetch trainer's existing schedules when trainer is selected
+  const { data: trainerSchedules, isLoading: isLoadingSchedules } = useSchedulesByTrainer(
+    formData.trainerId || ''
+  );
+
+  // Create map of busy time slots
+  const busySlots = useMemo(() => {
+    if (!trainerSchedules || !formData.trainerId) return new Set<string>();
+    
+    const slots = new Set<string>();
+    trainerSchedules
+      .filter(s => ['Pending', 'Confirmed'].includes(s.status))
+      .forEach(schedule => {
+        const start = new Date(schedule.dateTime);
+        const end = new Date(start.getTime() + schedule.durationMinutes * 60000);
+        for (let time = new Date(start); time < end; time = new Date(time.getTime() + 30 * 60000)) {
+          slots.add(time.toISOString().slice(0, 16));
+        }
+      });
+    return slots;
+  }, [trainerSchedules, formData.trainerId]);
+
+  // Check for conflict when dateTime or duration changes
+  useEffect(() => {
+    if (!formData.sessionDateTime || !formData.sessionDuration || !trainerSchedules) {
+      setConflictWarning(null);
+      return;
+    }
+
+    const newStart = new Date(formData.sessionDateTime);
+    const newEnd = new Date(newStart.getTime() + formData.sessionDuration * 60000);
+    
+    const conflict = trainerSchedules.find(schedule => {
+      if (!['Pending', 'Confirmed'].includes(schedule.status)) return false;
+      
+      const existingStart = new Date(schedule.dateTime);
+      const existingEnd = new Date(existingStart.getTime() + schedule.durationMinutes * 60000);
+      
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+    
+    if (conflict) {
+      const conflictTime = new Date(conflict.dateTime).toLocaleString('vi-VN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      setConflictWarning(`⚠️ PT đã có lịch vào ${conflictTime}. Vui lòng chọn thời gian khác.`);
+    } else {
+      setConflictWarning(null);
+    }
+  }, [formData.sessionDateTime, formData.sessionDuration, trainerSchedules]);
 
   const handleChange = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -85,6 +145,11 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
       const now = new Date();
       if (selectedDate <= now) {
         newErrors.sessionDateTime = 'Ngày giờ phải trong tương lai';
+      }
+      
+      // Check conflict
+      if (conflictWarning) {
+        newErrors.sessionDateTime = 'Thời gian này đã bị trùng với lịch khác';
       }
     }
 
@@ -260,9 +325,15 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                 type="datetime-local"
                 value={formData.sessionDateTime}
                 onChange={(e) => handleChange('sessionDateTime', e.target.value)}
-                className={errors.sessionDateTime ? 'border-red-500' : ''}
+                className={conflictWarning || errors.sessionDateTime ? 'border-red-500' : ''}
                 min={new Date().toISOString().slice(0, 16)}
               />
+              {conflictWarning && (
+                <div className="flex items-start gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800 mt-1">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>{conflictWarning}</span>
+                </div>
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 Chọn ngày và giờ trong tương lai cho buổi tập
               </p>
@@ -305,6 +376,57 @@ export function ModalCoachingSchedule({ isOpen, onClose }: ModalCoachingSchedule
                 Ghi chú về nội dung, mục tiêu hoặc yêu cầu đặc biệt của buổi tập
               </p>
             </div>
+
+            {/* Trainer's Existing Schedules */}
+            {formData.trainerId && (
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="h-4 w-4 text-gray-600" />
+                  <Label className="text-sm font-semibold text-gray-700">
+                    Lịch đã có của PT
+                  </Label>
+                </div>
+                {isLoadingSchedules ? (
+                  <p className="text-xs text-gray-500">Đang tải lịch...</p>
+                ) : trainerSchedules && trainerSchedules.filter(s => ['Pending', 'Confirmed'].includes(s.status)).length > 0 ? (
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {trainerSchedules
+                      .filter(s => ['Pending', 'Confirmed'].includes(s.status))
+                      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
+                      .map(schedule => {
+                        const scheduleDate = new Date(schedule.dateTime);
+                        const scheduleEnd = new Date(scheduleDate.getTime() + schedule.durationMinutes * 60000);
+                        return (
+                          <div key={schedule._id} className="flex items-center gap-2 text-xs text-gray-600 bg-white p-2 rounded border border-gray-200">
+                            <Clock className="h-3 w-3 text-gray-400" />
+                            <span className="font-medium">
+                              {scheduleDate.toLocaleDateString('vi-VN', { 
+                                weekday: 'short',
+                                day: '2-digit',
+                                month: '2-digit'
+                              })}
+                            </span>
+                            <span>
+                              {scheduleDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - 
+                              {scheduleEnd.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span className="text-gray-400">({schedule.durationMinutes} phút)</span>
+                            <span className={`ml-auto px-1.5 py-0.5 rounded text-[10px] ${
+                              schedule.status === 'Confirmed' 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {schedule.status === 'Confirmed' ? 'Đã xác nhận' : 'Chờ xác nhận'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">PT chưa có lịch nào</p>
+                )}
+              </div>
+            )}
 
             {/* Form Actions */}
             <div className="flex justify-end gap-3 pt-4 border-t">

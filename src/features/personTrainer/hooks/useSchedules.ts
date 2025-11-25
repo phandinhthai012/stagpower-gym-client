@@ -8,6 +8,7 @@ export const scheduleQueryKeys = {
   all: ['trainer-schedules'] as const,
   mySchedules: (trainerId: string) => [...scheduleQueryKeys.all, 'my', trainerId] as const,
   detail: (id: string) => [...scheduleQueryKeys.all, 'detail', id] as const,
+  byTrainer: (trainerId: string) => [...scheduleQueryKeys.all, 'trainer', trainerId] as const,
 };
 
 export const useMySchedules = () => {
@@ -107,5 +108,14 @@ export const useDeleteSchedule = () => {
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Có lỗi xảy ra khi xóa lịch!');
     },
+  });
+};
+
+// Get schedules by trainer ID
+export const useSchedulesByTrainer = (trainerId: string) => {
+  return useQuery({
+    queryKey: scheduleQueryKeys.byTrainer(trainerId),
+    queryFn: () => scheduleApi.getSchedulesByTrainerId(trainerId),
+    enabled: !!trainerId,
   });
 };

@@ -62,6 +62,7 @@ export {
   useCreateSchedule,
   useCancelSchedule,
   useScheduleDetail,
+  useSchedulesByTrainer,
   scheduleQueryKeys
 } from './useSchedules';
 
