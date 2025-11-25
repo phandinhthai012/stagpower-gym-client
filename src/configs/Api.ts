@@ -193,6 +193,16 @@ export const API_ENDPOINTS = {
         DELETE: (notificationId: string) => `${API_PREFIX}/notifications/${notificationId}`,
         CREATE: `${API_PREFIX}/notifications`,
     },
+    RATING: {
+        GET_MY_RATINGS: `${API_PREFIX}/ratings/member/my-ratings`,
+        GET_RATEABLE_TRAINERS: `${API_PREFIX}/ratings/member/rateable-trainers`,
+        CREATE_RATING: `${API_PREFIX}/ratings`,
+        GET_RATING_BY_ID: (ratingId: string) => `${API_PREFIX}/ratings/${ratingId}`,
+        UPDATE_RATING: (ratingId: string) => `${API_PREFIX}/ratings/${ratingId}`,
+        DELETE_RATING: (ratingId: string) => `${API_PREFIX}/ratings/${ratingId}`,
+        GET_RATINGS_BY_TRAINER: (trainerId: string) => `${API_PREFIX}/ratings/trainer/${trainerId}`,
+        GET_TRAINER_AVERAGE_RATING: (trainerId: string) => `${API_PREFIX}/ratings/trainer/${trainerId}/average`,
+    },
 }
 
 export default API_CONFIG;

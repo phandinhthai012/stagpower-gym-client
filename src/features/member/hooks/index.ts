@@ -76,3 +76,16 @@ export {
   useBranches,
   useBranchById
 } from './useBranches';
+
+// Rating hooks
+export {
+  useMyRatings,
+  useRateableTrainers,
+  useCreateRating,
+  useUpdateRating,
+  useDeleteRating,
+  useRatingDetail,
+  useRatingsByTrainer,
+  useTrainerAverageRating,
+  ratingQueryKeys
+} from './useRatings';

@@ -13,6 +13,7 @@ import { MemberSchedule } from './features/member/pages/MemberSchedule';
 import { MemberHistory } from './features/member/pages/MemberHistory';
 import { MemberNotifications } from './features/member/pages/MemberNotifications';
 import { MemberSuggestions } from './features/member/pages/MemberSuggestions';
+import { MemberTrainerRating } from './features/member/pages/MemberTrainerRating';
 import { LandingPage } from './features/landing/page/LandingPage';
 import { AdminDashboard, AdminPackageManagementWithModal, AdminAccessControl, AdminMemberManagementWithModal, AdminReports, AdminPTSchedule, AdminStaffPTManagement, AdminInvoicePayment, AdminBranchManagement, AdminExerciseManagement, AdminDiscountManagement, AdminComplaintManagement, AdminAccountSettings } from './features/admin/pages';
 import { AdminLayout } from './features/admin/components';
@@ -125,6 +126,7 @@ function App() {
             <Route path="history" element={<MemberHistory />} />
             <Route path="notifications" element={<MemberNotifications />} />
             <Route path="suggestions" element={<MemberSuggestions />} />
+            <Route path="trainer-rating" element={<MemberTrainerRating />} />
           </Route>
 
           {/* Catch all route */}

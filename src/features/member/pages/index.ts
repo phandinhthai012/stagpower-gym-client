@@ -9,3 +9,4 @@ export { MemberSchedule } from './MemberSchedule';
 export { MemberHistory } from './MemberHistory';
 export { MemberNotifications } from './MemberNotifications';
 export { MemberSuggestions } from './MemberSuggestions';
+export { MemberTrainerRating } from './MemberTrainerRating';

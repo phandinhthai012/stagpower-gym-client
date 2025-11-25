@@ -62,23 +62,25 @@ export function TrainerSessionDetailPage() {
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* member, time, type, duration, status, note */}
           <div className="space-y-2">
-            <div><span className="text-gray-500">Hội viên:</span> Nguyễn Văn A</div>
-            <div><span className="text-gray-500">Thời gian:</span> 09:00 - 10:00, 20/09/2025</div>
-            <div><span className="text-gray-500">Loại buổi:</span> PT cá nhân</div>
+            <div className="text-sm sm:text-base"><span className="text-gray-500">Hội viên:</span> Nguyễn Văn A</div>
+            <div className="text-sm sm:text-base"><span className="text-gray-500">Thời gian:</span> 09:00 - 10:00, 20/09/2025</div>
+            <div className="text-sm sm:text-base"><span className="text-gray-500">Loại buổi:</span> PT cá nhân</div>
           </div>
           <div className="space-y-2">
-            <div><span className="text-gray-500">Thời lượng:</span> 60 phút</div>
-            <div className="flex items-center gap-2">
+            <div className="text-sm sm:text-base"><span className="text-gray-500">Thời lượng:</span> 60 phút</div>
+            <div className="flex items-center gap-2 text-sm sm:text-base">
               <span className="text-gray-500">Trạng thái:</span>
-              <Badge className="bg-yellow-100 text-yellow-800">Chờ xác nhận</Badge>
+              <Badge className="bg-yellow-100 text-yellow-800 text-xs sm:text-xs">Chờ xác nhận</Badge>
             </div>
-            <div><span className="text-gray-500">Ghi chú:</span> Tập thân dưới, tránh gối trái</div>
+            <div className="text-sm sm:text-base"><span className="text-gray-500">Ghi chú:</span> Tập thân dưới, tránh gối trái</div>
           </div>
         </CardContent>
       </Card>
       <div className="flex flex-col gap-2">
         {isConfirm && (<Card>
-          <CardHeader>Bổ sung bài tập (nếu có)</CardHeader>
+          <CardHeader>
+            <CardTitle className="text-lg sm:text-lg">Bổ sung bài tập (nếu có)</CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex gap-2">
@@ -102,7 +104,7 @@ export function TrainerSessionDetailPage() {
               {/* Danh sách bài tập đã chọn */}
               {selectedExercises.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-medium text-gray-900">Bài tập đã chọn:</h4>
+                  <h4 className="font-medium text-gray-900 text-sm sm:text-base">Bài tập đã chọn:</h4>
                   {selectedExercises.map((exercise) => (
                     <div key={exercise.id} className="p-3 bg-gray-50 rounded-lg border">
                       <div className="flex justify-between items-start">

@@ -32,6 +32,7 @@ export function MemberLayout() {
     if (path.includes('/checkin')) return 'Check-in';
     if (path.includes('/schedule')) return 'Đặt lịch PT';
     if (path.includes('/history')) return 'Lịch sử tập luyện';
+    if (path.includes('/trainer-rating')) return 'Đánh giá PT';
     if (path.includes('/suggestions')) return 'Gợi ý tập luyện';
     if (path.includes('/payments')) return 'Lịch sử thanh toán';
     if (path.includes('/notifications')) return 'Thông báo';
