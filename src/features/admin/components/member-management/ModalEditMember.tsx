@@ -461,7 +461,7 @@ export function ModalEditMember({
           // Auto-fill form with parsed data for preview
           const data = response.data.data.data;
           
-          // Fill health info fields
+          // Fill health info fields (body metrics)
           if (data.height !== undefined && data.height !== null) {
             setValue('height', data.height);
           }
@@ -498,43 +498,117 @@ export function ModalEditMember({
           if (data.inBodyScore !== undefined && data.inBodyScore !== null) {
             setValue('inBodyScore', data.inBodyScore);
           }
+          
+          // Fill fields that should fallback to latest healthInfo if not in imported data
+          // Medical History
           if (data.medicalHistory !== undefined && data.medicalHistory !== null) {
             setValue('medicalHistory', data.medicalHistory);
+          } else if (healthInfo?.medicalHistory) {
+            setValue('medicalHistory', healthInfo.medicalHistory);
           }
+          
+          // Allergies
           if (data.allergies !== undefined && data.allergies !== null) {
             setValue('allergies', data.allergies);
+          } else if (healthInfo?.allergies) {
+            setValue('allergies', healthInfo.allergies);
           }
-          if (data.goal !== undefined && data.goal !== null) {
-            setValue('goal', data.goal);
-          }
+          
           // Set Select values after a short delay to ensure they display correctly
           setTimeout(() => {
+            // Goal - fallback to latest healthInfo
+            if (data.goal !== undefined && data.goal !== null) {
+              setValue('goal', data.goal as any);
+            } else if (healthInfo?.goal) {
+              setValue('goal', healthInfo.goal as any);
+            }
+            
+            // Experience
             if (data.experience !== undefined && data.experience !== null) {
-              // Normalize enum value to match form schema
               const experience = typeof data.experience === 'string' 
                 ? data.experience.toLowerCase() as 'beginner' | 'intermediate' | 'advanced'
                 : data.experience;
               setValue('experience', experience as any);
+            } else if (healthInfo?.experience) {
+              const experience = typeof healthInfo.experience === 'string'
+                ? healthInfo.experience.toLowerCase() as 'beginner' | 'intermediate' | 'advanced'
+                : healthInfo.experience;
+              setValue('experience', experience as any);
             }
+            
+            // Fitness Level
             if (data.fitnessLevel !== undefined && data.fitnessLevel !== null) {
-              // Normalize enum value to match form schema
               const fitnessLevel = typeof data.fitnessLevel === 'string'
                 ? data.fitnessLevel.toLowerCase() as 'low' | 'medium' | 'high'
                 : data.fitnessLevel;
               setValue('fitnessLevel', fitnessLevel as any);
+            } else if (healthInfo?.fitnessLevel) {
+              const fitnessLevel = typeof healthInfo.fitnessLevel === 'string'
+                ? healthInfo.fitnessLevel.toLowerCase() as 'low' | 'medium' | 'high'
+                : healthInfo.fitnessLevel;
+              setValue('fitnessLevel', fitnessLevel as any);
             }
+            
+            // Preferred Time - fallback to latest healthInfo
             if (data.preferredTime !== undefined && data.preferredTime !== null) {
-              // Normalize enum value to match form schema
               const preferredTime = typeof data.preferredTime === 'string'
                 ? data.preferredTime.toLowerCase() as 'morning' | 'afternoon' | 'evening'
                 : data.preferredTime;
               setValue('preferredTime', preferredTime as any);
+            } else if (healthInfo?.preferredTime) {
+              const preferredTime = typeof healthInfo.preferredTime === 'string'
+                ? healthInfo.preferredTime.toLowerCase() as 'morning' | 'afternoon' | 'evening'
+                : healthInfo.preferredTime;
+              setValue('preferredTime', preferredTime as any);
             }
+            
+            // Weekly Sessions
             if (data.weeklySessions !== undefined && data.weeklySessions !== null) {
               setValue('weeklySessions', data.weeklySessions as any);
+            } else if (healthInfo?.weeklySessions) {
+              setValue('weeklySessions', healthInfo.weeklySessions as any);
             }
-            if (data.goal !== undefined && data.goal !== null) {
-              setValue('goal', data.goal as any);
+            
+            // Diet Type - fallback to latest healthInfo
+            if (data.dietType !== undefined && data.dietType !== null) {
+              setValue('dietType', data.dietType as any);
+            } else if (healthInfo?.dietType) {
+              setValue('dietType', healthInfo.dietType as any);
+            }
+            
+            // Daily Calories - fallback to latest healthInfo
+            if (data.dailyCalories !== undefined && data.dailyCalories !== null) {
+              setValue('dailyCalories', data.dailyCalories);
+            } else if (healthInfo?.dailyCalories !== undefined && healthInfo?.dailyCalories !== null) {
+              setValue('dailyCalories', healthInfo.dailyCalories);
+            }
+            
+            // Sleep Hours - fallback to latest healthInfo
+            if (data.sleepHours !== undefined && data.sleepHours !== null) {
+              setValue('sleepHours', data.sleepHours);
+            } else if (healthInfo?.sleepHours !== undefined && healthInfo?.sleepHours !== null) {
+              setValue('sleepHours', healthInfo.sleepHours);
+            }
+            
+            // Stress Level - fallback to latest healthInfo
+            if (data.stressLevel !== undefined && data.stressLevel !== null) {
+              setValue('stressLevel', data.stressLevel as any);
+            } else if (healthInfo?.stressLevel) {
+              setValue('stressLevel', healthInfo.stressLevel as any);
+            }
+            
+            // Alcohol - fallback to latest healthInfo
+            if (data.alcohol !== undefined && data.alcohol !== null) {
+              setValue('alcohol', data.alcohol as any);
+            } else if (healthInfo?.alcohol) {
+              setValue('alcohol', healthInfo.alcohol as any);
+            }
+            
+            // Smoking - fallback to latest healthInfo
+            if (data.smoking !== undefined && data.smoking !== null) {
+              setValue('smoking', data.smoking);
+            } else if (healthInfo?.smoking !== undefined && healthInfo?.smoking !== null) {
+              setValue('smoking', healthInfo.smoking);
             }
           }, 100);
           
@@ -648,10 +722,69 @@ export function ModalEditMember({
 
     setIsSaving(true);
     try {
+      // Merge imported data with latest healthInfo for missing fields
+      const mergedData: any = { ...parsedData.data };
+      
+      // Fill missing fields from latest healthInfo if available
+      if (healthInfo) {
+        // Goal
+        if (!mergedData.goal && healthInfo.goal) {
+          mergedData.goal = healthInfo.goal;
+        }
+        
+        // Preferred Time
+        if (!mergedData.preferredTime && healthInfo.preferredTime) {
+          mergedData.preferredTime = healthInfo.preferredTime;
+        }
+        
+        // Medical History
+        if (!mergedData.medicalHistory && healthInfo.medicalHistory) {
+          mergedData.medicalHistory = healthInfo.medicalHistory;
+        }
+        
+        // Allergies
+        if (!mergedData.allergies && healthInfo.allergies) {
+          mergedData.allergies = healthInfo.allergies;
+        }
+        
+        // Diet Type
+        if (!mergedData.dietType && healthInfo.dietType) {
+          mergedData.dietType = healthInfo.dietType;
+        }
+        
+        // Daily Calories
+        if (mergedData.dailyCalories === undefined && mergedData.dailyCalories === null && 
+            healthInfo.dailyCalories !== undefined && healthInfo.dailyCalories !== null) {
+          mergedData.dailyCalories = healthInfo.dailyCalories;
+        }
+        
+        // Sleep Hours
+        if (mergedData.sleepHours === undefined && mergedData.sleepHours === null && 
+            healthInfo.sleepHours !== undefined && healthInfo.sleepHours !== null) {
+          mergedData.sleepHours = healthInfo.sleepHours;
+        }
+        
+        // Stress Level
+        if (!mergedData.stressLevel && healthInfo.stressLevel) {
+          mergedData.stressLevel = healthInfo.stressLevel;
+        }
+        
+        // Alcohol
+        if (!mergedData.alcohol && healthInfo.alcohol) {
+          mergedData.alcohol = healthInfo.alcohol;
+        }
+        
+        // Smoking
+        if (mergedData.smoking === undefined && mergedData.smoking === null && 
+            healthInfo.smoking !== undefined && healthInfo.smoking !== null) {
+          mergedData.smoking = healthInfo.smoking;
+        }
+      }
+      
       // Always create new health info record to track changes over time
       await axiosInstance.post(
         API_ENDPOINTS.HEALTH_INFO.CREATE_HEALTH_INFO(member._id),
-        parsedData.data
+        mergedData
       );
       toast.success('Import thành công!', {
         description: `Đã tạo bản ghi sức khỏe mới cho ${member.fullName}`,
