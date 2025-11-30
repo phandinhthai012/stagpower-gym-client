@@ -90,6 +90,7 @@ export function AuthPage() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     try {
       const result = await login({
@@ -126,6 +127,8 @@ export function AuthPage() {
     } catch (err) {
       setError('Đã xảy ra lỗi. Vui lòng thử lại.');
       toast.error('Đã xảy ra lỗi. Vui lòng thử lại.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -134,7 +137,7 @@ export function AuthPage() {
     if (!validateRegisterForm()) return;
 
     setError('');
-
+    setIsLoading(true);
     try {
       const response = await register(registerData);
 
@@ -148,6 +151,8 @@ export function AuthPage() {
     } catch (err: any) {
       console.log('err', err);
       setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
