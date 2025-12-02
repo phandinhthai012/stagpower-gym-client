@@ -71,10 +71,31 @@ export function AuthPage() {
 
   const handleRegisterInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setRegisterData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Auto format date of birth
+    if (name === 'dateOfBirth') {
+      // Remove all non-digit characters
+      const digitsOnly = value.replace(/\D/g, '');
+      
+      // Format as DD/MM/YYYY
+      let formatted = digitsOnly;
+      if (digitsOnly.length > 2) {
+        formatted = digitsOnly.slice(0, 2) + '/' + digitsOnly.slice(2);
+      }
+      if (digitsOnly.length > 4) {
+        formatted = digitsOnly.slice(0, 2) + '/' + digitsOnly.slice(2, 4) + '/' + digitsOnly.slice(4, 8);
+      }
+      
+      setRegisterData(prev => ({
+        ...prev,
+        [name]: formatted
+      }));
+    } else {
+      setRegisterData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
     setError('');
   };
   // validate thêm phone, gender, dateOfBirth
@@ -306,10 +327,22 @@ export function AuthPage() {
           <Input
             id="dateOfBirth"
             name="dateOfBirth"
-            type="date"
-            placeholder="Ví dụ: 01/01/2000"
+            type="text"
+            placeholder="DD/MM/YYYY"
             value={registerData.dateOfBirth}
             onChange={handleRegisterInputChange}
+            onFocus={(e) => {
+              // Clear if it's a complete date format (has slashes) to allow fresh input
+              const currentValue = e.target.value;
+              if (currentValue && currentValue.includes('/') && currentValue.length >= 8) {
+                e.target.value = '';
+                setRegisterData(prev => ({
+                  ...prev,
+                  dateOfBirth: ''
+                }));
+              }
+            }}
+            maxLength={10}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
@@ -411,10 +444,12 @@ export function AuthPage() {
 
       {/* Right Panel - Auth Form */}
       <div className="w-full lg:w-1/2 bg-white flex flex-col items-center justify-center p-8 relative min-h-screen">
-        {/* Small Logo at top */}
-        <div className="absolute top-8 left-8">
-          <img src={LogoStagPower4x} alt="StagPower" className="w-24 h-24" />
-        </div>
+        {/* Small Logo at top - hidden on register, centered on mobile */}
+        {authMode === 'login' && (
+          <div className="absolute top-8 left-1/2 transform -translate-x-1/2 lg:left-8 lg:transform-none">
+            <img src={LogoStagPower4x} alt="StagPower" className="w-24 h-24" />
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex space-x-8 mb-8">
@@ -474,19 +509,6 @@ export function AuthPage() {
               className="text-blue-600 hover:text-blue-800 text-sm"
             >
               Trang Chủ
-            </button>
-          </div>
-
-          {/* Debug Button */}
-          <div className="mt-2 text-center">
-            <button
-              onClick={() => {
-                localStorage.clear();
-                window.location.reload();
-              }}
-              className="text-red-500 hover:text-red-700 text-xs"
-            >
-              Clear Storage & Reload
             </button>
           </div>
         </div>
