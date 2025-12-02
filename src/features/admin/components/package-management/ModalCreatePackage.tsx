@@ -238,7 +238,10 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">Tên gói *</Label>
+                    <Label htmlFor="name">
+                      Tên gói <span className="text-red-500">*</span>
+                      {errors.name && <span className="text-red-500 ml-1">({errors.name})</span>}
+                    </Label>
                     <Input
                       id="name"
                       value={formData.name}
@@ -246,12 +249,12 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                       placeholder="VD: Gói VIP 6 tháng"
                       className={errors.name ? 'border-red-500' : ''}
                     />
-                    {errors.name && (
-                      <p className="text-sm text-red-500 mt-1">{errors.name}</p>
-                    )}
                   </div>
                   <div>
-                    <Label htmlFor="type">Loại gói *</Label>
+                    <Label htmlFor="type">
+                      Loại gói <span className="text-red-500">*</span>
+                      {errors.type && <span className="text-red-500 ml-1">({errors.type})</span>}
+                    </Label>
                     <Select
                       value={formData.type}
                       onValueChange={(value) => handleInputChange('type', value)}
@@ -265,15 +268,15 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                         <SelectItem value="PT">PT riêng</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.type && (
-                      <p className="text-sm text-red-500 mt-1">{errors.type}</p>
-                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="packageCategory">Thời hạn *</Label>
+                    <Label htmlFor="packageCategory">
+                      Thời hạn <span className="text-red-500">*</span>
+                      {errors.packageCategory && <span className="text-red-500 ml-1">({errors.packageCategory})</span>}
+                    </Label>
                     <Select
                       value={formData.packageCategory}
                       onValueChange={(value) => handleInputChange('packageCategory', value)}
@@ -288,12 +291,12 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                         <SelectItem value="Trial">Gói thử (1-7 ngày)</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.packageCategory && (
-                      <p className="text-sm text-red-500 mt-1">{errors.packageCategory}</p>
-                    )}
                   </div>
                   <div>
-                    <Label htmlFor="durationMonths">Số tháng *</Label>
+                    <Label htmlFor="durationMonths">
+                      Số tháng <span className="text-red-500">*</span>
+                      {errors.durationMonths && <span className="text-red-500 ml-1">({errors.durationMonths})</span>}
+                    </Label>
                     <Input
                       id="durationMonths"
                       type="number"
@@ -302,14 +305,14 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                       placeholder="1, 3, 6, 12"
                       className={errors.durationMonths ? 'border-red-500' : ''}
                     />
-                    {errors.durationMonths && (
-                      <p className="text-sm text-red-500 mt-1">{errors.durationMonths}</p>
-                    )}
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Mô tả gói *</Label>
+                  <Label htmlFor="description">
+                    Mô tả gói <span className="text-red-500">*</span>
+                    {errors.description && <span className="text-red-500 ml-1">({errors.description})</span>}
+                  </Label>
                   <textarea
                     id="description"
                     value={formData.description}
@@ -318,9 +321,6 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                     rows={3}
                     placeholder="Mô tả chi tiết về gói tập..."
                   />
-                  {errors.description && (
-                    <p className="text-sm text-red-500 mt-1">{errors.description}</p>
-                  )}
                 </div>
 
                 {/* Trial Package Fields */}
@@ -337,7 +337,10 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                   </div>
                   {formData.isTrial && (
                     <div>
-                      <Label htmlFor="maxTrialDays">Số ngày thử nghiệm *</Label>
+                      <Label htmlFor="maxTrialDays">
+                        Số ngày thử nghiệm <span className="text-red-500">*</span>
+                        {errors.maxTrialDays && <span className="text-red-500 ml-1">({errors.maxTrialDays})</span>}
+                      </Label>
                       <Input
                         id="maxTrialDays"
                         type="number"
@@ -346,9 +349,6 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                         placeholder="3, 7, 14"
                         className={errors.maxTrialDays ? 'border-red-500' : ''}
                       />
-                      {errors.maxTrialDays && (
-                        <p className="text-sm text-red-500 mt-1">{errors.maxTrialDays}</p>
-                      )}
                     </div>
                   )}
                 </div>
@@ -367,7 +367,10 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="membershipType">Loại Membership *</Label>
+                      <Label htmlFor="membershipType">
+                        Loại Membership <span className="text-red-500">*</span>
+                        {errors.membershipType && <span className="text-red-500 ml-1">({errors.membershipType})</span>}
+                      </Label>
                       <Select
                         value={formData.membershipType}
                         onValueChange={(value) => handleInputChange('membershipType', value)}
@@ -380,12 +383,12 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                           <SelectItem value="VIP">VIP (Tất cả chi nhánh)</SelectItem>
                         </SelectContent>
                       </Select>
-                      {errors.membershipType && (
-                        <p className="text-sm text-red-500 mt-1">{errors.membershipType}</p>
-                      )}
                     </div>
                     <div>
-                      <Label htmlFor="branchAccess">Quyền truy cập *</Label>
+                      <Label htmlFor="branchAccess">
+                        Quyền truy cập <span className="text-red-500">*</span>
+                        {errors.branchAccess && <span className="text-red-500 ml-1">({errors.branchAccess})</span>}
+                      </Label>
                       <Select
                         value={formData.branchAccess}
                         onValueChange={(value) => handleInputChange('branchAccess', value)}
@@ -398,9 +401,6 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                           <SelectItem value="All">Tất cả chi nhánh</SelectItem>
                         </SelectContent>
                       </Select>
-                      {errors.branchAccess && (
-                        <p className="text-sm text-red-500 mt-1">{errors.branchAccess}</p>
-                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -419,7 +419,10 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="ptSessions">Số buổi PT *</Label>
+                      <Label htmlFor="ptSessions">
+                        Số buổi PT <span className="text-red-500">*</span>
+                        {errors.ptSessions && <span className="text-red-500 ml-1">({errors.ptSessions})</span>}
+                      </Label>
                       <Input
                         id="ptSessions"
                         type="number"
@@ -428,12 +431,12 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                         placeholder="0 nếu không có PT"
                         className={errors.ptSessions ? 'border-red-500' : ''}
                       />
-                      {errors.ptSessions && (
-                        <p className="text-sm text-red-500 mt-1">{errors.ptSessions}</p>
-                      )}
                     </div>
                     <div>
-                      <Label htmlFor="ptSessionDuration">Thời lượng buổi PT (phút) *</Label>
+                      <Label htmlFor="ptSessionDuration">
+                        Thời lượng buổi PT (phút) <span className="text-red-500">*</span>
+                        {errors.ptSessionDuration && <span className="text-red-500 ml-1">({errors.ptSessionDuration})</span>}
+                      </Label>
                       <Input
                         id="ptSessionDuration"
                         type="number"
@@ -442,9 +445,6 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                         placeholder="90"
                         className={errors.ptSessionDuration ? 'border-red-500' : ''}
                       />
-                      {errors.ptSessionDuration && (
-                        <p className="text-sm text-red-500 mt-1">{errors.ptSessionDuration}</p>
-                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -461,7 +461,10 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="price">Giá gốc (VNĐ) *</Label>
+                  <Label htmlFor="price">
+                    Giá gốc (VNĐ) <span className="text-red-500">*</span>
+                    {errors.price && <span className="text-red-500 ml-1">({errors.price})</span>}
+                  </Label>
                   <Input
                     id="price"
                     type="number"
@@ -470,9 +473,6 @@ export function ModalCreatePackage({ isOpen, onClose, onSuccess }: ModalCreatePa
                     placeholder="2000000"
                     className={errors.price ? 'border-red-500' : ''}
                   />
-                  {errors.price && (
-                    <p className="text-sm text-red-500 mt-1">{errors.price}</p>
-                  )}
                 </div>
               </CardContent>
             </Card>

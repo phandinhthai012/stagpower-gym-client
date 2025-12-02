@@ -299,18 +299,6 @@ export function AdminExerciseManagement() {
   return (
     <div className="space-y-6">
 
-      {/* Action Buttons */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-wrap gap-4">
-            <Button onClick={handleAddExercise}>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm bài tập mới
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Search and Filter */}
       <Card>
         <CardHeader>
@@ -727,6 +715,18 @@ export function AdminExerciseManagement() {
               )}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-wrap gap-4">
+            <Button onClick={handleAddExercise}>
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm bài tập mới
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -228,13 +228,14 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
             <div className="space-y-2">
               <Label htmlFor="memberId" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
-                Chọn hội viên *
+                Chọn hội viên <span className="text-red-500">*</span>
+                {errors.memberId && <span className="text-red-500 ml-1">({errors.memberId})</span>}
               </Label>
               <Select
                 value={formData.memberId}
                 onValueChange={(value) => handleInputChange('memberId', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.memberId ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Chọn hội viên..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -245,22 +246,20 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
                   ))}
                 </SelectContent>
               </Select>
-              {errors.memberId && (
-                <p className="text-sm text-red-600">{errors.memberId}</p>
-              )}
             </div>
 
             {/* Package Selection */}
             <div className="space-y-2">
               <Label htmlFor="packageId" className="flex items-center gap-2">
                 <Package className="w-4 h-4" />
-                Chọn gói dịch vụ *
+                Chọn gói dịch vụ <span className="text-red-500">*</span>
+                {errors.packageId && <span className="text-red-500 ml-1">({errors.packageId})</span>}
               </Label>
               <Select
                 value={formData.packageId}
                 onValueChange={handlePackageChange}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.packageId ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Chọn gói dịch vụ..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -274,9 +273,6 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
                   ))}
                 </SelectContent>
               </Select>
-              {errors.packageId && (
-                <p className="text-sm text-red-600">{errors.packageId}</p>
-              )}
             </div>
 
             {/* Amount Fields */}
@@ -298,7 +294,8 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
               <div className="space-y-2">
                 <Label htmlFor="amount" className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
-                  Số tiền thanh toán *
+                  Số tiền thanh toán <span className="text-red-500">*</span>
+                  {errors.amount && <span className="text-red-500 ml-1">({errors.amount})</span>}
                 </Label>
                 <Input
                   id="amount"
@@ -306,10 +303,8 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
                   value={formData.amount}
                   onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
                   placeholder="Nhập số tiền..."
+                  className={errors.amount ? 'border-red-500' : ''}
                 />
-                {errors.amount && (
-                  <p className="text-sm text-red-600">{errors.amount}</p>
-                )}
               </div>
             </div>
 
@@ -337,17 +332,16 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
               <div className="space-y-2">
                 <Label htmlFor="dueDate" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  Hạn thanh toán *
+                  Hạn thanh toán <span className="text-red-500">*</span>
+                  {errors.dueDate && <span className="text-red-500 ml-1">({errors.dueDate})</span>}
                 </Label>
                 <Input
                   id="dueDate"
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                  className={errors.dueDate ? 'border-red-500' : ''}
                 />
-                {errors.dueDate && (
-                  <p className="text-sm text-red-600">{errors.dueDate}</p>
-                )}
               </div>
             </div>
 

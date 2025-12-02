@@ -109,7 +109,8 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
     }
 
     if (!formData.discountPercentage && !formData.discountAmount) {
-      newErrors.discount = 'Phải có ít nhất một loại giảm giá';
+      newErrors.discountPercentage = 'Phải có ít nhất một loại giảm giá';
+      newErrors.discountAmount = 'Phải có ít nhất một loại giảm giá';
     }
 
     if (!formData.conditions.trim()) {
@@ -195,7 +196,10 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Tên ưu đãi *</Label>
+                  <Label htmlFor="name">
+                    Tên ưu đãi <span className="text-red-500">*</span>
+                    {errors.name && <span className="text-red-500 ml-1">({errors.name})</span>}
+                  </Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -203,11 +207,13 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                     placeholder="VD: Ưu đãi HSSV - Giảm 15%"
                     className={errors.name ? 'border-red-500' : ''}
                   />
-                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                 </div>
 
                 <div>
-                  <Label htmlFor="type">Loại ưu đãi *</Label>
+                  <Label htmlFor="type">
+                    Loại ưu đãi <span className="text-red-500">*</span>
+                    {errors.type && <span className="text-red-500 ml-1">({errors.type})</span>}
+                  </Label>
                   <Select 
                     value={formData.type} 
                     onValueChange={(value) => handleInputChange('type', value)}
@@ -223,12 +229,14 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                       <SelectItem value="Voucher">Voucher</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="conditions">Điều kiện áp dụng *</Label>
+                <Label htmlFor="conditions">
+                  Điều kiện áp dụng <span className="text-red-500">*</span>
+                  {errors.conditions && <span className="text-red-500 ml-1">({errors.conditions})</span>}
+                </Label>
                 <textarea
                   id="conditions"
                   className={`w-full p-3 border rounded-md resize-none ${errors.conditions ? 'border-red-500' : 'border-gray-300'}`}
@@ -237,7 +245,6 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                   value={formData.conditions}
                   onChange={(e) => handleInputChange('conditions', e.target.value)}
                 />
-                {errors.conditions && <p className="text-red-500 text-sm mt-1">{errors.conditions}</p>}
               </div>
             </div>
 
@@ -250,7 +257,10 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="discountPercentage">Giảm giá %</Label>
+                  <Label htmlFor="discountPercentage">
+                    Giảm giá %
+                    {errors.discountPercentage && <span className="text-red-500 ml-1">({errors.discountPercentage})</span>}
+                  </Label>
                   <Input
                     id="discountPercentage"
                     type="number"
@@ -259,11 +269,15 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                     placeholder="15"
                     min="1"
                     max="100"
+                    className={errors.discountPercentage ? 'border-red-500' : ''}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="discountAmount">Giảm giá cố định (VNĐ)</Label>
+                  <Label htmlFor="discountAmount">
+                    Giảm giá cố định (VNĐ)
+                    {errors.discountAmount && <span className="text-red-500 ml-1">({errors.discountAmount})</span>}
+                  </Label>
                   <Input
                     id="discountAmount"
                     type="number"
@@ -271,6 +285,7 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                     onChange={(e) => handleInputChange('discountAmount', e.target.value ? Number(e.target.value) : undefined)}
                     placeholder="100000"
                     min="0"
+                    className={errors.discountAmount ? 'border-red-500' : ''}
                   />
                 </div>
 
@@ -335,11 +350,8 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                       onChange={(e) => setNewDurationType(e.target.value)}
                       placeholder="Nhập loại thời hạn"
                     />
-                    <Button type="button" onClick={addDurationType} size="sm">
-                      Thêm
-                    </Button>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mb-2">
                     {formData.durationTypes.map((type) => (
                       <Badge key={type} variant="outline" className="flex items-center gap-1">
                         {type}
@@ -353,6 +365,9 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                       </Badge>
                     ))}
                   </div>
+                  <Button type="button" onClick={addDurationType} size="sm" className="mt-2">
+                    Thêm
+                  </Button>
                 </div>
 
                 <div>
@@ -363,11 +378,8 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                       onChange={(e) => setNewPackageType(e.target.value)}
                       placeholder="Nhập loại gói"
                     />
-                    <Button type="button" onClick={addPackageType} size="sm">
-                      Thêm
-                    </Button>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mb-2">
                     {formData.packageTypes.map((type) => (
                       <Badge key={type} variant="outline" className="flex items-center gap-1">
                         {type}
@@ -381,6 +393,9 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                       </Badge>
                     ))}
                   </div>
+                  <Button type="button" onClick={addPackageType} size="sm" className="mt-2">
+                    Thêm
+                  </Button>
                 </div>
               </div>
             </div>
@@ -394,7 +409,10 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="startDate">Ngày bắt đầu *</Label>
+                  <Label htmlFor="startDate">
+                    Ngày bắt đầu <span className="text-red-500">*</span>
+                    {errors.startDate && <span className="text-red-500 ml-1">({errors.startDate})</span>}
+                  </Label>
                   <Input
                     id="startDate"
                     type="date"
@@ -403,11 +421,13 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                     className={errors.startDate ? 'border-red-500' : ''}
                     required
                   />
-                  {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
                 </div>
 
                 <div>
-                  <Label htmlFor="endDate">Ngày kết thúc *</Label>
+                  <Label htmlFor="endDate">
+                    Ngày kết thúc <span className="text-red-500">*</span>
+                    {errors.endDate && <span className="text-red-500 ml-1">({errors.endDate})</span>}
+                  </Label>
                   <Input
                     id="endDate"
                     type="date"
@@ -416,7 +436,6 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                     className={errors.endDate ? 'border-red-500' : ''}
                     required
                   />
-                  {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
                 </div>
               </div>
             </div>

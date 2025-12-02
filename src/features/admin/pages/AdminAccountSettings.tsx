@@ -1,13 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useUpdateMyProfile, useMe } from '../../member/api/user.queries';
+import apiClient from '../../../configs/AxiosConfig';
+import { API_ENDPOINTS } from '../../../configs/Api';
+import { toast } from 'sonner';
 import { User, Mail, Phone, MapPin, Save, Key } from 'lucide-react';
 
 export function AdminAccountSettings() {
   const { user } = useAuth();
+  const { data: meData, refetch: refetchMe } = useMe();
+  const updateProfileMutation = useUpdateMyProfile();
   
   // ✅ GOOD: Memoize initial form data để tránh tạo lại object
   const initialFormData = useMemo(() => ({
@@ -19,27 +25,110 @@ export function AdminAccountSettings() {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
-    address: '',
+    address: (user as any)?.address || '',
   }), [user]); // Chỉ tính toán lại khi user thay đổi
   
   const [formData, setFormData] = useState(initialFormData);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
+  // Update form data when user data changes
+  useEffect(() => {
+    if (meData) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: meData.fullName || prev.fullName,
+        email: meData.email || prev.email,
+        phone: meData.phone || prev.phone,
+        gender: meData.gender || prev.gender,
+        dateOfBirth: meData.dateOfBirth || prev.dateOfBirth,
+        address: (meData as any)?.address || prev.address,
+      }));
+      // Update localStorage with fresh user data
+      if (meData) {
+        localStorage.setItem('stagpower_user', JSON.stringify(meData));
+      }
+    }
+  }, [meData]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveProfile = () => {
-    // TODO: Implement save profile logic
-    console.log('Saving profile:', formData);
-  };
-
-  const handleChangePassword = () => {
-    if (formData.newPassword !== formData.confirmPassword) {
-      alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+  const handleSaveProfile = async () => {
+    if (!isFormValid) {
+      toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
-    // TODO: Implement change password logic
-    console.log('Changing password');
+
+    try {
+      const updateData: any = {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+      };
+      
+      if (formData.gender) {
+        updateData.gender = formData.gender;
+      }
+      if (formData.dateOfBirth) {
+        updateData.dateOfBirth = formData.dateOfBirth;
+      }
+      if (formData.address) {
+        updateData.address = formData.address;
+      }
+
+      await updateProfileMutation.mutateAsync(updateData);
+      await refetchMe();
+      toast.success('Cập nhật thông tin thành công!');
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error(error?.response?.data?.message || 'Có lỗi xảy ra khi cập nhật thông tin');
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!formData.currentPassword) {
+      toast.error('Vui lòng nhập mật khẩu hiện tại');
+      return;
+    }
+    
+    if (!formData.newPassword) {
+      toast.error('Vui lòng nhập mật khẩu mới');
+      return;
+    }
+    
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast.error('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+      return;
+    }
+
+    if (formData.newPassword.length < 8) {
+      toast.error('Mật khẩu mới phải có ít nhất 8 ký tự');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await apiClient.put(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, {
+        oldPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+      });
+      
+      toast.success('Đổi mật khẩu thành công!');
+      
+      // Clear password fields
+      setFormData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      }));
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      toast.error(error?.response?.data?.message || 'Có lỗi xảy ra khi đổi mật khẩu');
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   // ✅ GOOD: Memoize validation rules để tránh tạo lại object
@@ -145,10 +234,19 @@ export function AdminAccountSettings() {
             <Button 
               onClick={handleSaveProfile} 
               className="w-full"
-              disabled={!isFormValid}
+              disabled={!isFormValid || updateProfileMutation.isPending}
             >
-              <Save className="w-4 h-4 mr-2" />
-              Lưu Thông Tin {!isFormValid && '(Vui lòng điền đầy đủ thông tin)'}
+              {updateProfileMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Đang lưu...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Lưu Thông Tin
+                </>
+              )}
             </Button>
           </div>
         </Card>
@@ -199,9 +297,23 @@ export function AdminAccountSettings() {
               />
             </div>
 
-            <Button onClick={handleChangePassword} variant="destructive" className="w-full">
-              <Key className="w-4 h-4 mr-2" />
-              Đổi Mật Khẩu
+            <Button 
+              onClick={handleChangePassword} 
+              variant="destructive" 
+              className="w-full"
+              disabled={isChangingPassword || !formData.currentPassword || !formData.newPassword || !formData.confirmPassword}
+            >
+              {isChangingPassword ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Đang đổi...
+                </>
+              ) : (
+                <>
+                  <Key className="w-4 h-4 mr-2" />
+                  Đổi Mật Khẩu
+                </>
+              )}
             </Button>
           </div>
         </Card>
