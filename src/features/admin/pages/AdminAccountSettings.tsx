@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useUpdateMyProfile, useMe } from '../../member/api/user.queries';
+import { useUpdateUser, useMe } from '../../member/api/user.queries';
 import apiClient from '../../../configs/AxiosConfig';
 import { API_ENDPOINTS } from '../../../configs/Api';
 import { toast } from 'sonner';
@@ -13,7 +13,7 @@ import { User, Mail, Phone, MapPin, Save, Key } from 'lucide-react';
 export function AdminAccountSettings() {
   const { user } = useAuth();
   const { data: meData, refetch: refetchMe } = useMe();
-  const updateProfileMutation = useUpdateMyProfile();
+  const updateProfileMutation = useUpdateUser();
   
   // ✅ GOOD: Memoize initial form data để tránh tạo lại object
   const initialFormData = useMemo(() => ({
@@ -60,6 +60,13 @@ export function AdminAccountSettings() {
       return;
     }
 
+    // Get user ID from meData or user
+    const userId = meData?._id || user?._id;
+    if (!userId) {
+      toast.error('Không tìm thấy thông tin người dùng');
+      return;
+    }
+
     try {
       const updateData: any = {
         fullName: formData.fullName,
@@ -77,7 +84,8 @@ export function AdminAccountSettings() {
         updateData.address = formData.address;
       }
 
-      await updateProfileMutation.mutateAsync(updateData);
+      // Use userId to call the correct endpoint
+      await updateProfileMutation.mutateAsync({ userId, data: updateData });
       await refetchMe();
       toast.success('Cập nhật thông tin thành công!');
     } catch (error: any) {
