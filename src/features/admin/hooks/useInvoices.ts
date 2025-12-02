@@ -124,12 +124,16 @@ export const useRecordPayment = () => {
 };
 
 export const useSendPaymentReminder = () => {
+  const queryClient = useQueryClient();
   const toast = useToast();
 
   return useMutation({
     mutationFn: invoiceApi.sendPaymentReminder,
     onSuccess: () => {
-      toast.success('Gửi nhắc nhở thanh toán thành công');
+      // Invalidate queries to refresh data if needed
+      queryClient.invalidateQueries({ queryKey: [queryKeys.invoices] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      // Toast will be handled by the component for more detailed messages
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi gửi nhắc nhở');
@@ -138,12 +142,16 @@ export const useSendPaymentReminder = () => {
 };
 
 export const useBulkSendReminders = () => {
+  const queryClient = useQueryClient();
   const toast = useToast();
 
   return useMutation({
     mutationFn: invoiceApi.bulkSendReminders,
     onSuccess: () => {
-      toast.success('Gửi nhắc nhở hàng loạt thành công');
+      // Invalidate queries to refresh data if needed
+      queryClient.invalidateQueries({ queryKey: [queryKeys.invoices] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      // Toast will be handled by the component for more detailed messages
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi gửi nhắc nhở hàng loạt');

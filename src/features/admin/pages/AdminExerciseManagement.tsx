@@ -482,6 +482,10 @@ export function AdminExerciseManagement() {
               <Dumbbell className="w-5 h-5 text-blue-600" />
               Danh sách bài tập ({filteredExercises.length})
             </CardTitle>
+            <Button onClick={handleAddExercise}>
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm bài tập mới
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -715,18 +719,6 @@ export function AdminExerciseManagement() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Action Buttons */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-wrap gap-4">
-            <Button onClick={handleAddExercise}>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm bài tập mới
-            </Button>
-          </div>
         </CardContent>
       </Card>
 

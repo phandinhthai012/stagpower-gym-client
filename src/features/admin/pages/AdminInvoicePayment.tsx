@@ -317,9 +317,16 @@ export function AdminInvoicePayment() {
 
   const handleSendReminder = async (payment: Payment) => {
     try {
+      const memberName = (payment as any).memberId?.fullName || 'hội viên';
+      toast.loading(`Đang gửi nhắc nhở đến ${memberName}...`, { id: `reminder-${payment._id}` });
       await sendReminderMutation.mutateAsync(payment._id);
-    } catch (error) {
+      toast.success(`Đã gửi nhắc nhở thanh toán đến ${memberName}`, { id: `reminder-${payment._id}` });
+    } catch (error: any) {
       console.error('Error sending reminder:', error);
+      toast.error(
+        error?.response?.data?.message || 'Có lỗi xảy ra khi gửi nhắc nhở',
+        { id: `reminder-${payment._id}` }
+      );
     }
   };
 
@@ -354,12 +361,21 @@ export function AdminInvoicePayment() {
   };
 
   const handleBulkSendReminders = async () => {
-    if (selectedInvoices.length === 0) return;
+    if (selectedInvoices.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một hóa đơn để gửi nhắc nhở');
+      return;
+    }
     try {
+      toast.loading(`Đang gửi nhắc nhở đến ${selectedInvoices.length} hội viên...`, { id: 'bulk-reminder' });
       await bulkSendRemindersMutation.mutateAsync(selectedInvoices);
+      toast.success(`Đã gửi nhắc nhở thành công đến ${selectedInvoices.length} hội viên`, { id: 'bulk-reminder' });
       setSelectedInvoices([]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending bulk reminders:', error);
+      toast.error(
+        error?.response?.data?.message || 'Có lỗi xảy ra khi gửi nhắc nhở hàng loạt',
+        { id: 'bulk-reminder' }
+      );
     }
   };
 

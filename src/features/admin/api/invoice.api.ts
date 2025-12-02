@@ -58,7 +58,7 @@ export const invoiceApi = {
   },
 
   sendPaymentReminder: async (invoiceId: string): Promise<void> => {
-    await apiClient.post(`${API_ENDPOINTS.INVOICE.SEND_PAYMENT_REMINDER}/${invoiceId}`);
+    await apiClient.post(API_ENDPOINTS.INVOICE.SEND_PAYMENT_REMINDER(invoiceId));
   },
 
   bulkSendReminders: async (invoiceIds: string[]): Promise<void> => {

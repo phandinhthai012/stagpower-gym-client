@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { Input } from '../../../../components/ui/input';
@@ -42,6 +42,41 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [qrData, setQrData] = useState<any>(null);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
+  const [memberSearchTerm, setMemberSearchTerm] = useState<string>('');
+  const [showMemberDropdown, setShowMemberDropdown] = useState<boolean>(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const memberDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Update member search term when memberId changes externally
+  useEffect(() => {
+    if (formData.memberId && !selectedMember) {
+      const member = members.find((m: any) => m._id === formData.memberId);
+      if (member) {
+        setSelectedMember(member);
+        setMemberSearchTerm(`${member.fullName} - ${member.email}`);
+      }
+    } else if (!formData.memberId && selectedMember) {
+      setSelectedMember(null);
+      setMemberSearchTerm('');
+    }
+  }, [formData.memberId, members, selectedMember]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (memberDropdownRef.current && !memberDropdownRef.current.contains(event.target as Node)) {
+        setShowMemberDropdown(false);
+      }
+    };
+
+    if (showMemberDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMemberDropdown]);
 
   const resetForm = () => {
     setFormData({
@@ -54,6 +89,9 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
       notes: ''
     });
     setSelectedPackage(null);
+    setSelectedMember(null);
+    setMemberSearchTerm('');
+    setShowMemberDropdown(false);
     setErrors({});
   };
   // Scroll lock effect
@@ -202,6 +240,47 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
     }
   };
 
+  // Filter members based on search term
+  const filteredMembers = React.useMemo(() => {
+    if (!memberSearchTerm.trim()) {
+      return members;
+    }
+    const searchLower = memberSearchTerm.toLowerCase();
+    return members.filter((member: any) =>
+      member.fullName?.toLowerCase().includes(searchLower) ||
+      member.email?.toLowerCase().includes(searchLower) ||
+      member.phone?.toLowerCase().includes(searchLower)
+    );
+  }, [members, memberSearchTerm]);
+
+  const handleMemberSelect = (member: any) => {
+    setSelectedMember(member);
+    setFormData(prev => ({
+      ...prev,
+      memberId: member._id
+    }));
+    setMemberSearchTerm(`${member.fullName} - ${member.email}`);
+    setShowMemberDropdown(false);
+    if (errors.memberId) {
+      setErrors(prev => ({
+        ...prev,
+        memberId: ''
+      }));
+    }
+  };
+
+  const handleMemberSearchChange = (value: string) => {
+    setMemberSearchTerm(value);
+    setShowMemberDropdown(true);
+    if (selectedMember) {
+      setSelectedMember(null);
+      setFormData(prev => ({
+        ...prev,
+        memberId: ''
+      }));
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -224,28 +303,47 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Member Selection */}
+            {/* Member Selection - Autocomplete */}
             <div className="space-y-2">
               <Label htmlFor="memberId" className="flex items-center gap-2">
                 <User className="w-4 h-4" />
                 Chọn hội viên <span className="text-red-500">*</span>
                 {errors.memberId && <span className="text-red-500 ml-1">({errors.memberId})</span>}
               </Label>
-              <Select
-                value={formData.memberId}
-                onValueChange={(value) => handleInputChange('memberId', value)}
-              >
-                <SelectTrigger className={errors.memberId ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Chọn hội viên..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((member: any) => (
-                    <SelectItem key={member._id} value={member._id}>
-                      {member.fullName} - {member.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative" ref={memberDropdownRef}>
+                <Input
+                  id="memberId"
+                  type="text"
+                  placeholder="Tìm kiếm hội viên (tên, email, số điện thoại)..."
+                  value={memberSearchTerm}
+                  onChange={(e) => handleMemberSearchChange(e.target.value)}
+                  onFocus={() => setShowMemberDropdown(true)}
+                  className={errors.memberId ? 'border-red-500' : ''}
+                />
+                {showMemberDropdown && filteredMembers.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredMembers.map((member: any) => (
+                      <button
+                        key={member._id}
+                        type="button"
+                        onClick={() => handleMemberSelect(member)}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="font-medium">{member.fullName}</div>
+                        <div className="text-sm text-gray-600">{member.email}</div>
+                        {member.phone && (
+                          <div className="text-xs text-gray-500">{member.phone}</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {showMemberDropdown && memberSearchTerm && filteredMembers.length === 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 text-sm text-gray-500">
+                    Không tìm thấy hội viên
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Package Selection */}
