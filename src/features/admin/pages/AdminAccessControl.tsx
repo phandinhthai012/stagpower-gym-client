@@ -114,8 +114,18 @@ export function AdminAccessControl() {
     () => checkInsData.filter(checkIn => checkIn.status === 'Active'),
     [checkInsData]
   );
-  const activeCheckIns =
+  const allActiveCheckIns =
     socketActiveCheckIns.length > 0 ? socketActiveCheckIns : fallbackActiveCheckIns;
+  
+  // Filter active check-ins by selected branch
+  const activeCheckIns = useMemo(() => {
+    if (!selectedBranchId) return allActiveCheckIns;
+    
+    return allActiveCheckIns.filter((checkIn) => {
+      const checkInBranchId = getIdValue(checkIn.branchId);
+      return checkInBranchId === selectedBranchId;
+    });
+  }, [allActiveCheckIns, selectedBranchId]);
 
   // Get recent check-ins (last 75 for scrollable list)
   const recentCheckIns = checkInsData

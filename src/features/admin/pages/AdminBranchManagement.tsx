@@ -32,6 +32,8 @@ import {
 import { LoadingSpinner } from '../../../components/common';
 // import { mockBranches } from '../../../mockdata/branches';
 import { useBranches, useCreateBranch, useUpdateBranch, useChangeBranchStatus } from '../hooks';
+import { useMembers, useStaffs } from '../hooks/useUsers';
+import { useSubscriptions } from '../hooks/useSubscriptions';
 import { ModalCreateBranch } from '../components/branch-management/ModalCreateBranch';
 import { ModelEditBranch } from '../components/branch-management/ModelEditBranch';
 import { ModalBranchDetail } from '../components/branch-management/ModalBranchDetail';
@@ -64,11 +66,70 @@ export function AdminBranchManagement() {
     action: null
   });
   const { data: branches = [], isLoading, error } = useBranches();
+  const { data: staffs = [] } = useStaffs();
+  const { data: subscriptionsResponse } = useSubscriptions();
 
   const createBranch = useCreateBranch();
   const updateBranch = useUpdateBranch();
   const changeBranchStatus = useChangeBranchStatus();
-  console.log(branches);
+
+  // Get subscriptions data
+  const subscriptions = subscriptionsResponse?.success ? subscriptionsResponse.data : [];
+
+  // Helper function to get ID value (handles both string and object)
+  const getIdValue = (value: string | { _id?: string } | undefined | null): string | undefined => {
+    if (!value) return undefined;
+    if (typeof value === 'string') return value;
+    return value._id;
+  };
+
+  // Calculate staff and member counts for each branch
+  const branchStats = React.useMemo(() => {
+    const stats: Record<string, { staffCount: number; memberCount: number }> = {};
+
+    // Initialize stats for all branches
+    branches.forEach((branch: any) => {
+      const branchId = branch._id;
+      stats[branchId] = { staffCount: 0, memberCount: 0 };
+    });
+
+    // Count staffs by branch
+    staffs.forEach((staff: any) => {
+      const staffBranchId = getIdValue(staff.staffInfo?.brand_id || staff.staffInfo?.branchId);
+      if (staffBranchId && stats[staffBranchId]) {
+        stats[staffBranchId].staffCount++;
+      }
+    });
+
+    // Count members by branch (based on active subscriptions)
+    // Use a Set to avoid counting the same member multiple times for the same branch
+    const memberBranchMap: Record<string, Set<string>> = {};
+    
+    subscriptions.forEach((subscription: any) => {
+      if (subscription.status === 'Active') {
+        const branchId = getIdValue(subscription.branchId);
+        const memberId = getIdValue(subscription.memberId);
+        
+        if (branchId && memberId && stats[branchId]) {
+          // If branchId is null, subscription is valid for all branches
+          // For now, we'll only count subscriptions with specific branchId
+          if (!memberBranchMap[branchId]) {
+            memberBranchMap[branchId] = new Set<string>();
+          }
+          memberBranchMap[branchId].add(memberId);
+        }
+      }
+    });
+
+    // Update stats with member counts
+    Object.keys(memberBranchMap).forEach((branchId) => {
+      if (stats[branchId]) {
+        stats[branchId].memberCount = memberBranchMap[branchId].size;
+      }
+    });
+
+    return stats;
+  }, [branches, staffs, subscriptions]);
 
 
   if (isLoading) {
@@ -364,11 +425,11 @@ export function AdminBranchManagement() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">{branch.staff_count || 0} nhân viên</span>
+                  <span className="text-sm text-gray-600">{branchStats[branch._id]?.staffCount || 0} nhân viên</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">{branch.member_count || 0} hội viên</span>
+                  <span className="text-sm text-gray-600">{branchStats[branch._id]?.memberCount || 0} hội viên</span>
                 </div>
               </div>
 
