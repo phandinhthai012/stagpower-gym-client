@@ -108,6 +108,14 @@ export function AdminAccessControl() {
   const checkInsData: CheckIn[] = response?.data || [];
   const members = membersData?.success ? membersData?.data : [];
   const membersWithActiveSubscriptions = membersWithActiveSubscriptionsData;
+  
+  // Helper function to get ID value
+  const getIdValue = (value: string | { _id?: string } | undefined | null) => {
+    if (!value) return undefined;
+    if (typeof value === 'string') return value;
+    return value._id;
+  };
+  
   // Get active check-ins
   // const activeCheckIns = mockCheckIns.filter(checkIn => checkIn.status === 'Active');
   const fallbackActiveCheckIns = useMemo(
@@ -257,12 +265,6 @@ export function AdminAccessControl() {
   };
 
   // Helper function to find member by ID
-  const getIdValue = (value: string | { _id?: string } | undefined | null) => {
-    if (!value) return undefined;
-    if (typeof value === 'string') return value;
-    return value._id;
-  };
-
   const findMemberById = (memberId: string | { _id?: string }) => {
     const id = getIdValue(memberId);
     if (!id) return undefined;
