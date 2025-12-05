@@ -44,9 +44,6 @@ export function AdminPTSchedule() {
   const [showChangeSingleScheduleModal, setShowChangeSingleScheduleModal] = useState(false);
   const [selectedScheduleForChange, setSelectedScheduleForChange] = useState<ScheduleWithDetails | null>(null);
   
-  // Filter states for calendar view
-  const [currentFilter, setCurrentFilter] = useState('all');
-  const [calendarTypeFilter, setCalendarTypeFilter] = useState<'all' | 'direct' | 'pt'>('all');
   
   // Filter states for CRUD view
   const [searchTerm, setSearchTerm] = useState('');
@@ -249,16 +246,11 @@ export function AdminPTSchedule() {
     };
   }, [isDropdownOpen]);
 
-  // Filter schedules for calendar view
+  // Filter schedules for calendar view (no filter, show all)
   const filteredCalendarSchedules = useMemo(() => {
     if (!allSchedules) return [];
-    if (calendarTypeFilter === 'all') return allSchedules;
-    return allSchedules.filter(schedule => {
-      if (calendarTypeFilter === 'direct') return isDirectSchedule(schedule);
-      if (calendarTypeFilter === 'pt') return !isDirectSchedule(schedule);
-      return true;
-    });
-  }, [allSchedules, calendarTypeFilter]);
+    return allSchedules;
+  }, [allSchedules]);
 
   // Filter schedules for CRUD view
   const filteredCRUDSchedules = useMemo(() => {
@@ -296,9 +288,6 @@ export function AdminPTSchedule() {
     });
   }, [allSchedules, searchTerm, statusFilter, typeFilter, timeFilter]);
 
-  const handleResetCalendarFilters = () => {
-    setCalendarTypeFilter('all');
-  };
 
   const handleResetCRUDFilters = () => {
     setSearchTerm('');
@@ -365,60 +354,6 @@ export function AdminPTSchedule() {
       {/* TAB 1: Calendar View */}
       {activeTab === 'calendar' && (
         <div className="space-y-6">
-          {/* Filter for Calendar View */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-purple-600" />
-                Bộ lọc
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Select 
-                  value={calendarTypeFilter} 
-                  onValueChange={(value) => {
-                    setCalendarTypeFilter(value as 'all' | 'direct' | 'pt');
-                  }}
-                  onOpenChange={(open) => {
-                    setIsDropdownOpen(open);
-                    requestAnimationFrame(() => {
-                      if (document.body.style.position === 'fixed') {
-                        const scrollY = document.body.style.top;
-                        document.body.style.position = '';
-                        document.body.style.top = '';
-                        document.body.style.width = '';
-                        document.body.style.overflow = '';
-                        document.documentElement.style.overflow = '';
-                        document.body.removeAttribute('data-scroll-locked');
-                        if (scrollY) {
-                          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
-                          window.scrollTo(0, y);
-                        }
-                      } else {
-                        document.body.style.overflow = '';
-                        document.documentElement.style.overflow = '';
-                        document.body.removeAttribute('data-scroll-locked');
-                      }
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn loại lịch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả</SelectItem>
-                    <SelectItem value="direct">Lịch trực</SelectItem>
-                    <SelectItem value="pt">Lịch PT</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" onClick={handleResetCalendarFilters} className="w-full md:w-auto">
-                  Đặt lại
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
           <CalendarComponent
             schedules={filteredCalendarSchedules}
             onDayClick={handleDayClick}
