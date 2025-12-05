@@ -52,6 +52,7 @@ export function AdminPTSchedule() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Pending' | 'NoShow'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'direct' | 'pt'>('all');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'past' | 'ongoing' | 'upcoming'>('upcoming');
   const [page, setPage] = useState(1);
   
   // Track dropdown open state to prevent scroll lock
@@ -111,6 +112,16 @@ export function AdminPTSchedule() {
     }
     if (schedule.branch?.name) {
       return schedule.branch.name;
+    }
+    return '';
+  };
+
+  const getBranchAddress = (schedule: ScheduleWithDetails) => {
+    if (typeof schedule.branchId === 'object' && schedule.branchId?.address) {
+      return schedule.branchId.address;
+    }
+    if (schedule.branch?.address) {
+      return schedule.branch.address;
     }
     return '';
   };
@@ -252,6 +263,7 @@ export function AdminPTSchedule() {
   // Filter schedules for CRUD view
   const filteredCRUDSchedules = useMemo(() => {
     if (!allSchedules) return [];
+    const now = new Date();
     return allSchedules.filter(schedule => {
       const matchesSearch = !searchTerm || 
         schedule.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -261,9 +273,28 @@ export function AdminPTSchedule() {
       const matchesType = typeFilter === 'all' || 
         (typeFilter === 'direct' && isDirectSchedule(schedule)) ||
         (typeFilter === 'pt' && !isDirectSchedule(schedule));
-      return matchesSearch && matchesStatus && matchesType;
+      
+      // Filter by time
+      let matchesTime = true;
+      if (timeFilter !== 'all') {
+        const scheduleStart = new Date(schedule.dateTime);
+        const scheduleEnd = new Date(scheduleStart.getTime() + schedule.durationMinutes * 60000);
+        
+        if (timeFilter === 'past') {
+          // Đã diễn ra: thời gian kết thúc < hiện tại
+          matchesTime = scheduleEnd < now;
+        } else if (timeFilter === 'ongoing') {
+          // Đang diễn ra: bắt đầu <= hiện tại && kết thúc >= hiện tại
+          matchesTime = scheduleStart <= now && scheduleEnd >= now;
+        } else if (timeFilter === 'upcoming') {
+          // Sẽ diễn ra: thời gian bắt đầu > hiện tại
+          matchesTime = scheduleStart > now;
+        }
+      }
+      
+      return matchesSearch && matchesStatus && matchesType && matchesTime;
     });
-  }, [allSchedules, searchTerm, statusFilter, typeFilter]);
+  }, [allSchedules, searchTerm, statusFilter, typeFilter, timeFilter]);
 
   const handleResetCalendarFilters = () => {
     setCalendarTypeFilter('all');
@@ -273,6 +304,7 @@ export function AdminPTSchedule() {
     setSearchTerm('');
     setStatusFilter('all');
     setTypeFilter('all');
+    setTimeFilter('all');
     setPage(1);
   };
 
@@ -416,7 +448,7 @@ export function AdminPTSchedule() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
@@ -511,6 +543,46 @@ export function AdminPTSchedule() {
                   </SelectContent>
                 </Select>
                 
+                <Select 
+                  value={timeFilter} 
+                  onValueChange={(value) => {
+                    setTimeFilter(value as 'all' | 'past' | 'ongoing' | 'upcoming');
+                    setPage(1);
+                  }}
+                  onOpenChange={(open) => {
+                    setIsDropdownOpen(open);
+                    requestAnimationFrame(() => {
+                      if (document.body.style.position === 'fixed') {
+                        const scrollY = document.body.style.top;
+                        document.body.style.position = '';
+                        document.body.style.top = '';
+                        document.body.style.width = '';
+                        document.body.style.overflow = '';
+                        document.documentElement.style.overflow = '';
+                        document.body.removeAttribute('data-scroll-locked');
+                        if (scrollY) {
+                          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+                          window.scrollTo(0, y);
+                        }
+                      } else {
+                        document.body.style.overflow = '';
+                        document.documentElement.style.overflow = '';
+                        document.body.removeAttribute('data-scroll-locked');
+                      }
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Thời gian" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả thời gian</SelectItem>
+                    <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
+                    <SelectItem value="ongoing">Đang diễn ra</SelectItem>
+                    <SelectItem value="past">Đã diễn ra</SelectItem>
+                  </SelectContent>
+                </Select>
+                
                 <Button variant="outline" onClick={handleResetCRUDFilters} className="w-full md:w-auto">
                   Đặt lại
                 </Button>
@@ -532,7 +604,7 @@ export function AdminPTSchedule() {
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-1.5">
                   {filteredCRUDSchedules.length > 0 ? (
                     filteredCRUDSchedules.map((schedule) => {
                       const scheduleDate = new Date(schedule.dateTime);
@@ -541,91 +613,91 @@ export function AdminPTSchedule() {
                       const timeStr = scheduleDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
                       
                       return (
-                        <div key={schedule._id} className="p-4 bg-white border-l-4 rounded-lg shadow-sm hover:shadow-md transition-shadow" style={{ borderLeftColor: isDirectSchedule(schedule) ? '#3b82f6' : '#f97316' }}>
-                          <div className="flex items-start justify-between gap-4">
+                        <div key={schedule._id} className="p-2.5 bg-white border-l-4 rounded-lg shadow-sm hover:shadow-md transition-shadow" style={{ borderLeftColor: isDirectSchedule(schedule) ? '#3b82f6' : '#f97316' }}>
+                          <div className="flex items-center justify-between gap-3">
                             {/* Left: Schedule Info */}
-                            <div className="flex items-start gap-3 flex-1">
-                              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0 ${isDirectSchedule(schedule) ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-orange-500 to-orange-600'}`}>
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm flex-shrink-0 ${isDirectSchedule(schedule) ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-orange-500 to-orange-600'}`}>
                                 {getTrainerName(schedule).charAt(0)}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-base md:text-lg text-gray-900 mb-1">
-                                  {isDirectSchedule(schedule) ? 'Lịch trực' : 'Lịch PT'} - {getTrainerName(schedule)}
-                                </h4>
-                                {getTrainerSpecialty(schedule) && (
-                                  <p className="text-sm text-blue-600 font-medium mb-2">
-                                    Chuyên môn: {getTrainerSpecialty(schedule)}
-                                  </p>
-                                )}
-                                
-                                {/* Date & Time Info */}
-                                <div className="space-y-1.5 mb-2">
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <Calendar className="h-4 w-4 text-gray-500" />
-                                    <span className="font-semibold text-gray-700">{dayOfWeek}</span>
-                                    <span className="text-gray-600">-</span>
-                                    <span className="text-gray-700">{dateStr}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-sm">
-                                    <Clock className="h-4 w-4 text-gray-500" />
-                                    <span className="font-semibold text-gray-700">Giờ: {timeStr}</span>
-                                    <span className="text-gray-600">•</span>
-                                    <span className="text-gray-700">Thời lượng: {schedule.durationMinutes} phút</span>
-                                  </div>
-                                  {getBranchName(schedule) && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                      <MapPin className="h-4 w-4 text-gray-500" />
-                                      <span className="text-gray-700">{getBranchName(schedule)}</span>
-                                    </div>
-                                  )}
-                                  {!isDirectSchedule(schedule) && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                      <User className="h-4 w-4 text-gray-500" />
-                                      <span className="text-gray-700">Hội viên: {getMemberName(schedule)}</span>
-                                    </div>
-                                  )}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-semibold text-sm text-gray-900">
+                                    {isDirectSchedule(schedule) ? 'Lịch trực' : 'Lịch PT'} - {getTrainerName(schedule)}
+                                  </h4>
+                                  <Badge variant="outline" className={`${
+                                    schedule.status === 'Confirmed' ? 'bg-green-100 text-green-800 border-green-300' :
+                                    schedule.status === 'Pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                                    schedule.status === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-300' :
+                                    schedule.status === 'Completed' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                    schedule.status === 'NoShow' ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                                    'bg-gray-100 text-gray-800 border-gray-300'
+                                  } text-xs font-medium px-2 py-0 h-5`}>
+                                    {schedule.status === 'Confirmed' ? 'Đã xác nhận' :
+                                     schedule.status === 'Pending' ? 'Chờ xác nhận' :
+                                     schedule.status === 'Cancelled' ? 'Đã hủy' :
+                                     schedule.status === 'Completed' ? 'Hoàn thành' :
+                                     schedule.status === 'NoShow' ? 'Vắng mặt' : schedule.status}
+                                  </Badge>
                                 </div>
                                 
-                                {/* Notes */}
-                                {schedule.notes && (
-                                  <p className="text-xs text-gray-500 italic mt-2">
-                                    📝 {schedule.notes}
+                                {/* Member Name - Highlighted with Date & Time */}
+                                {!isDirectSchedule(schedule) ? (
+                                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span className="font-bold text-sm text-gray-900">
+                                      {getMemberName(schedule)}
+                                    </span>
+                                    <span className="text-xs text-gray-600">
+                                      • {dayOfWeek}, {dateStr}
+                                    </span>
+                                    <span className="text-xs text-gray-600">
+                                      • {timeStr} ({schedule.durationMinutes}p)
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span className="text-xs text-gray-600">
+                                      {dayOfWeek}, {dateStr}
+                                    </span>
+                                    <span className="text-xs text-gray-600">
+                                      • {timeStr} ({schedule.durationMinutes}p)
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Branch Location - Full display with address */}
+                                {getBranchName(schedule) && (
+                                  <div className="flex items-start gap-1 mt-0.5 text-xs text-gray-600">
+                                    <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                      <span className="font-medium">{getBranchName(schedule)}</span>
+                                      {getBranchAddress(schedule) && (
+                                        <span className="text-gray-500 ml-1">- {getBranchAddress(schedule)}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Notes - compact, filter out "Buổi tập PT" */}
+                                {schedule.notes && schedule.notes.trim() && !schedule.notes.toLowerCase().includes('buổi tập pt') && (
+                                  <p className="text-xs text-gray-500 mt-0.5 break-words">
+                                    📝 {schedule.notes.replace(/Buổi tập PT/gi, '').trim()}
                                   </p>
                                 )}
                               </div>
                             </div>
 
-                            {/* Right: Status & Actions */}
-                            <div className="flex flex-col items-end gap-2">
-                              <div className="flex gap-2 flex-wrap justify-end">
-                                <Badge variant="outline" className={`${isDirectSchedule(schedule) ? 'bg-blue-100 text-blue-800 border-blue-300' : 'bg-orange-100 text-orange-800 border-orange-300'} text-xs font-semibold px-3 py-1`}>
-                                  {isDirectSchedule(schedule) ? 'Lịch trực' : 'Lịch PT'}
-                                </Badge>
-                                <Badge variant="outline" className={`${
-                                  schedule.status === 'Confirmed' ? 'bg-green-100 text-green-800 border-green-300' :
-                                  schedule.status === 'Pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
-                                  schedule.status === 'Cancelled' ? 'bg-red-100 text-red-800 border-red-300' :
-                                  schedule.status === 'Completed' ? 'bg-blue-100 text-blue-800 border-blue-300' :
-                                  schedule.status === 'NoShow' ? 'bg-orange-100 text-orange-800 border-orange-300' :
-                                  'bg-gray-100 text-gray-800 border-gray-300'
-                                } text-xs font-semibold px-3 py-1`}>
-                                  {schedule.status === 'Confirmed' ? 'Đã xác nhận' :
-                                   schedule.status === 'Pending' ? 'Chờ xác nhận' :
-                                   schedule.status === 'Cancelled' ? 'Đã hủy' :
-                                   schedule.status === 'Completed' ? 'Hoàn thành' :
-                                   schedule.status === 'NoShow' ? 'Vắng mặt' : schedule.status}
-                                </Badge>
-                              </div>
-                              {/* Action Button - Change PT/Staff for single schedule */}
+                            {/* Right: Action Button */}
+                            <div className="flex-shrink-0">
                               {getTrainerId(schedule) && (schedule.status === 'Pending' || schedule.status === 'Confirmed') && (
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleOpenChangeSingleSchedule(schedule)}
-                                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                                  className="text-blue-600 border-blue-300 hover:bg-blue-50 h-8 px-2 text-xs"
                                 >
-                                  <UserX className="w-4 h-4 mr-1" />
-                                  Đổi {getTrainerRole(schedule) === 'trainer' ? 'PT' : 'Nhân viên'}
+                                  <UserX className="w-3 h-3 mr-1" />
+                                  Đổi PT
                                 </Button>
                               )}
                             </div>
