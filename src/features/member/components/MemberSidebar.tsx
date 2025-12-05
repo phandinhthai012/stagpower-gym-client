@@ -29,9 +29,9 @@ export function MemberSidebar({ sidebarOpen, setSidebarOpen }: MemberSidebarProp
     { id: 'packages', label: 'Gói tập của tôi', icon: Package, path: '/member/packages' },
     { id: 'checkin', label: 'Check-in', icon: QrCode, path: '/member/checkin' },
     { id: 'schedule', label: 'Đặt lịch PT', icon: Calendar, path: '/member/schedule' },
-    { id: 'history', label: 'Lịch sử tập luyện', icon: History, path: '/member/history' },
+    { id: 'history', label: 'Lịch tập', icon: History, path: '/member/history' },
     { id: 'trainer-rating', label: 'Đánh giá PT', icon: Star, path: '/member/trainer-rating' },
-    { id: 'suggestions', label: 'Gợi ý tập luyện', icon: Lightbulb, path: '/member/suggestions' },
+    { id: 'suggestions', label: 'PT AI', icon: Lightbulb, path: '/member/suggestions' },
     { id: 'payments', label: 'Thanh toán', icon: CreditCard, path: '/member/payments' },
     { id: 'notifications', label: 'Thông báo', icon: Bell, path: '/member/notifications' },
   ];

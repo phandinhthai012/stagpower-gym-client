@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
-import { Timeline } from '../../../components/ui';
+import { Calendar as CalendarComponent, ModalDaySchedules } from '../../../components/ui';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -41,6 +41,9 @@ export function TrainerSchedulePage() {
 
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDaySchedulesModal, setShowDaySchedulesModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDaySchedules, setSelectedDaySchedules] = useState<ScheduleWithDetails[]>([]);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [scheduleToCancel, setScheduleToCancel] = useState<string | null>(null);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
@@ -262,6 +265,13 @@ export function TrainerSchedulePage() {
     });
   };
 
+  // Handle day click to show schedules modal
+  const handleDayClick = (date: Date, daySchedules: ScheduleWithDetails[]) => {
+    setSelectedDate(date);
+    setSelectedDaySchedules(daySchedules);
+    setShowDaySchedulesModal(true);
+  };
+
 
 
   return (
@@ -314,30 +324,44 @@ export function TrainerSchedulePage() {
         </CardHeader>
       </Card>
 
-      {/* Timeline View */}
+      {/* Calendar View */}
       {currentView === 'timeline' && (
         <>
-          <Timeline
-            schedules={schedules}
-            getMemberName={getMemberName}
-            getBranchName={getBranchName}
-            getStatusColor={getStatusColor}
-            getStatusText={getStatusText}
-            showDeleteButton={false}
-            onActionClick={(action, schedule) => {
-              switch (action) {
-                case 'confirm':
-                  handleConfirmSchedule(schedule._id);
-                  break;
-                case 'complete':
-                  handleCompleteSchedule(schedule._id);
-                  break;
-                case 'cancel':
-                  handleCancelSchedule(schedule._id);
-                  break;
-              }
-            }}
-          />
+          <Card>
+            <CardHeader className="p-3 sm:p-4 md:p-6">
+              <CardTitle className="flex items-center space-x-2 text-sm sm:text-base md:text-lg">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span>Lịch làm việc</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-2 sm:p-2 md:p-4 pt-0">
+              <CalendarComponent
+                schedules={schedules}
+                onDayClick={handleDayClick}
+                getScheduleDisplayText={(schedule) => {
+                  const time = new Date(schedule.dateTime).toLocaleTimeString('vi-VN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  });
+                  const memberName = getMemberName(schedule as ScheduleWithDetails);
+                  return `${time} - ${memberName}`;
+                }}
+                getScheduleColor={(schedule) => {
+                  const status = (schedule as ScheduleWithDetails).status;
+                  if (status === 'Completed') {
+                    return 'bg-green-100 text-green-800';
+                  } else if (status === 'Confirmed') {
+                    return 'bg-blue-100 text-blue-800';
+                  } else if (status === 'Pending') {
+                    return 'bg-yellow-100 text-yellow-800';
+                  } else if (status === 'Cancelled') {
+                    return 'bg-red-100 text-red-800';
+                  }
+                  return 'bg-orange-100 text-orange-800';
+                }}
+              />
+            </CardContent>
+          </Card>
           
           {/* Floating Add Button */}
           <Button
@@ -567,6 +591,26 @@ export function TrainerSchedulePage() {
       <ModalCreateSchedule
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+      />
+
+      {/* Modal for Day Schedules */}
+      <ModalDaySchedules
+        isOpen={showDaySchedulesModal}
+        onClose={() => {
+          setShowDaySchedulesModal(false);
+          setSelectedDate(null);
+          setSelectedDaySchedules([]);
+        }}
+        date={selectedDate}
+        schedules={selectedDaySchedules}
+        getMemberName={getMemberName}
+        getTrainerName={(schedule) => {
+          // For trainer view, return current user's name
+          return user?.fullName || 'PT';
+        }}
+        getBranchName={getBranchName}
+        getStatusColor={getStatusColor}
+        getStatusText={getStatusText}
       />
 
       {/* Cancel Schedule Dialog */}

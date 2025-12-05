@@ -70,42 +70,33 @@ export function Calendar({
     <div className={`space-y-4 ${className}`}>
       {/* Calendar Header */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={goToNextMonth}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold text-gray-900 text-center">{currentMonth}</h2>
-            </div>
-            <div className="flex gap-2">
-              {/* Empty div for spacing */}
-            </div>
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <Button variant="outline" size="sm" onClick={goToPreviousMonth} className="h-8 w-8 sm:h-9 sm:w-9 p-0 flex-shrink-0">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <h2 className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold text-gray-900 text-center flex-1">{currentMonth}</h2>
+            <Button variant="outline" size="sm" onClick={goToNextMonth} className="h-8 w-8 sm:h-9 sm:w-9 p-0 flex-shrink-0">
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Calendar Grid */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-2 sm:p-4 md:p-6 overflow-x-auto">
           {/* Day Headers */}
-          <div className="grid grid-cols-7 gap-2 mb-4">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 sm:mb-4 min-w-[320px]">
             {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day) => (
-              <div key={day} className="text-center font-semibold text-gray-600 py-2">
+              <div key={day} className="text-center font-semibold text-gray-600 py-1 sm:py-2 text-xs sm:text-sm">
                 {day}
               </div>
             ))}
           </div>
 
           {/* Calendar Days */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 min-w-[320px]">
             {Array.from({ length: 35 }, (_, i) => {
               const year = currentDate.getFullYear();
               const month = currentDate.getMonth();
@@ -134,11 +125,11 @@ export function Calendar({
               return (
                 <div 
                   key={i} 
-                  className={`min-h-[100px] border border-gray-200 rounded-lg p-2 transition-all ${
+                  className={`min-h-[60px] sm:min-h-[80px] md:min-h-[100px] border border-gray-200 rounded-md sm:rounded-lg p-1 sm:p-1.5 md:p-2 transition-all ${
                     isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                   } ${
                     isClickable 
-                      ? 'hover:bg-blue-50 hover:border-blue-300 cursor-pointer' 
+                      ? 'hover:bg-blue-50 hover:border-blue-300 cursor-pointer active:bg-blue-100' 
                       : ''
                   }`}
                   onClick={() => {
@@ -148,26 +139,32 @@ export function Calendar({
                     }
                   }}
                 >
-                  <div className={`text-sm font-medium mb-2 ${
+                  <div className={`text-xs sm:text-sm font-medium mb-1 sm:mb-2 ${
                     isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
                   }`}>
                     {isCurrentMonth ? dayNumber : ''}
                   </div>
                   
                   {hasSchedules && (
-                    <div className="space-y-1">
+                    <div className="space-y-0.5 sm:space-y-1">
                       {daySchedules.slice(0, 2).map(schedule => (
                         <div 
                           key={schedule._id} 
-                          className={`text-xs p-1 rounded truncate ${colorFn(schedule)}`}
+                          className={`text-[10px] sm:text-xs p-0.5 sm:p-1 rounded truncate ${colorFn(schedule)}`}
                           title={displayTextFn(schedule)}
                         >
-                          {displayTextFn(schedule)}
+                          <span className="hidden sm:inline">{displayTextFn(schedule)}</span>
+                          <span className="sm:hidden">
+                            {new Date(schedule.dateTime).toLocaleTimeString('vi-VN', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </span>
                         </div>
                       ))}
                       {daySchedules.length > 2 && (
-                        <div className="text-xs text-gray-500 font-medium">
-                          +{daySchedules.length - 2} khác
+                        <div className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                          +{daySchedules.length - 2}
                         </div>
                       )}
                     </div>
