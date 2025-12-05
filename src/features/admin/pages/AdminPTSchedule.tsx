@@ -20,9 +20,10 @@ import {
   User,
   XCircle
 } from 'lucide-react';
-import { ModalDirectSchedule, ModalCoachingSchedule } from '../components/schedule-management';
+import { ModalDirectSchedule, ModalCoachingSchedule, ModalChangeSchedule, ModalChangeSingleSchedule } from '../components/schedule-management';
 import { useAllSchedules, useDeleteSchedule } from '../hooks';
 import { ScheduleWithDetails } from '../types/schedule.types';
+import { UserX } from 'lucide-react';
 
 export function AdminPTSchedule() {
   // Tab state
@@ -34,6 +35,14 @@ export function AdminPTSchedule() {
   const [showDaySchedulesModal, setShowDaySchedulesModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDaySchedules, setSelectedDaySchedules] = useState<ScheduleWithDetails[]>([]);
+  const [showChangeScheduleModal, setShowChangeScheduleModal] = useState(false);
+  const [selectedTrainerForChange, setSelectedTrainerForChange] = useState<{
+    trainerId: string;
+    trainerName: string;
+    trainerRole: 'trainer' | 'staff';
+  } | null>(null);
+  const [showChangeSingleScheduleModal, setShowChangeSingleScheduleModal] = useState(false);
+  const [selectedScheduleForChange, setSelectedScheduleForChange] = useState<ScheduleWithDetails | null>(null);
   
   // Filter states for calendar view
   const [currentFilter, setCurrentFilter] = useState('all');
@@ -114,6 +123,52 @@ export function AdminPTSchedule() {
       return schedule.member.fullName;
     }
     return 'Member';
+  };
+
+  // Helper to get trainer ID from schedule
+  const getTrainerId = (schedule: ScheduleWithDetails): string => {
+    if (typeof schedule.trainerId === 'object' && schedule.trainerId?._id) {
+      return schedule.trainerId._id;
+    }
+    if (schedule.trainer?._id) {
+      return schedule.trainer._id;
+    }
+    if (typeof schedule.trainerId === 'string') {
+      return schedule.trainerId;
+    }
+    return '';
+  };
+
+  // Helper to determine trainer role from schedule
+  const getTrainerRole = (schedule: ScheduleWithDetails): 'trainer' | 'staff' => {
+    // Check if trainer has trainerInfo (PT) or not (staff)
+    const hasTrainerInfo = 
+      (typeof schedule.trainerId === 'object' && schedule.trainerId?.trainerInfo) ||
+      (schedule.trainer?.trainerInfo);
+    
+    return hasTrainerInfo ? 'trainer' : 'staff';
+  };
+
+  // Handler to open change schedule modal (all schedules of trainer)
+  const handleOpenChangeSchedule = (schedule: ScheduleWithDetails) => {
+    const trainerId = getTrainerId(schedule);
+    const trainerName = getTrainerName(schedule);
+    const trainerRole = getTrainerRole(schedule);
+    
+    if (trainerId) {
+      setSelectedTrainerForChange({
+        trainerId,
+        trainerName,
+        trainerRole
+      });
+      setShowChangeScheduleModal(true);
+    }
+  };
+
+  // Handler to open change single schedule modal
+  const handleOpenChangeSingleSchedule = (schedule: ScheduleWithDetails) => {
+    setSelectedScheduleForChange(schedule);
+    setShowChangeSingleScheduleModal(true);
   };
 
   const isDirectSchedule = (schedule: any) => {
@@ -542,7 +597,7 @@ export function AdminPTSchedule() {
 
                             {/* Right: Status & Actions */}
                             <div className="flex flex-col items-end gap-2">
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 flex-wrap justify-end">
                                 <Badge variant="outline" className={`${isDirectSchedule(schedule) ? 'bg-blue-100 text-blue-800 border-blue-300' : 'bg-orange-100 text-orange-800 border-orange-300'} text-xs font-semibold px-3 py-1`}>
                                   {isDirectSchedule(schedule) ? 'Lịch trực' : 'Lịch PT'}
                                 </Badge>
@@ -561,6 +616,18 @@ export function AdminPTSchedule() {
                                    schedule.status === 'NoShow' ? 'Vắng mặt' : schedule.status}
                                 </Badge>
                               </div>
+                              {/* Action Button - Change PT/Staff for single schedule */}
+                              {getTrainerId(schedule) && (schedule.status === 'Pending' || schedule.status === 'Confirmed') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleOpenChangeSingleSchedule(schedule)}
+                                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                                >
+                                  <UserX className="w-4 h-4 mr-1" />
+                                  Đổi {getTrainerRole(schedule) === 'trainer' ? 'PT' : 'Nhân viên'}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -602,6 +669,41 @@ export function AdminPTSchedule() {
         getMemberName={getMemberName}
         getTrainerName={getTrainerName}
         getBranchName={getBranchName}
+        onOpenChangeSchedule={(schedule) => {
+          handleOpenChangeSingleSchedule(schedule as ScheduleWithDetails);
+        }}
+      />
+
+      {/* Modal Change Schedule (All schedules of trainer) */}
+      {selectedTrainerForChange && (
+        <ModalChangeSchedule
+          isOpen={showChangeScheduleModal}
+          onClose={() => {
+            setShowChangeScheduleModal(false);
+            setSelectedTrainerForChange(null);
+          }}
+          trainerId={selectedTrainerForChange.trainerId}
+          trainerName={selectedTrainerForChange.trainerName}
+          trainerRole={selectedTrainerForChange.trainerRole}
+          onSuccess={() => {
+            // Refetch schedules after successful change
+            // The modal will close automatically
+          }}
+        />
+      )}
+
+      {/* Modal Change Single Schedule */}
+      <ModalChangeSingleSchedule
+        isOpen={showChangeSingleScheduleModal}
+        onClose={() => {
+          setShowChangeSingleScheduleModal(false);
+          setSelectedScheduleForChange(null);
+        }}
+        schedule={selectedScheduleForChange}
+        onSuccess={() => {
+          // Refetch schedules after successful change
+          // The modal will close automatically
+        }}
       />
     </div>
   );

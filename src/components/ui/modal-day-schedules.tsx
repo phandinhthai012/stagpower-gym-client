@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './card';
 import { Button } from './button';
 import { Badge } from './badge';
-import { X, Clock, User, MapPin, Calendar } from 'lucide-react';
+import { X, Clock, User, MapPin, Calendar, UserX } from 'lucide-react';
 
 interface Schedule {
   _id: string;
@@ -23,6 +23,7 @@ interface ModalDaySchedulesProps {
   getBranchName?: (schedule: Schedule) => string;
   getStatusColor?: (status: string) => string;
   getStatusText?: (status: string) => string;
+  onOpenChangeSchedule?: (schedule: Schedule) => void;
 }
 
 export function ModalDaySchedules({
@@ -34,7 +35,8 @@ export function ModalDaySchedules({
   getTrainerName,
   getBranchName,
   getStatusColor,
-  getStatusText
+  getStatusText,
+  onOpenChangeSchedule
 }: ModalDaySchedulesProps) {
   if (!isOpen || !date) return null;
 
@@ -113,6 +115,35 @@ export function ModalDaySchedules({
   const statusColorFn = getStatusColor || defaultGetStatusColor;
   const statusTextFn = getStatusText || defaultGetStatusText;
 
+  // Helper to get trainer ID from schedule
+  const getTrainerId = (schedule: Schedule): string => {
+    if (typeof schedule.trainerId === 'object' && schedule.trainerId?._id) {
+      return schedule.trainerId._id;
+    }
+    if (schedule.trainer?._id) {
+      return schedule.trainer._id;
+    }
+    if (typeof schedule.trainerId === 'string') {
+      return schedule.trainerId;
+    }
+    return '';
+  };
+
+  // Helper to determine trainer role from schedule
+  const getTrainerRole = (schedule: Schedule): 'trainer' | 'staff' => {
+    // Check if trainer has trainerInfo (PT) or not (staff)
+    const hasTrainerInfo = 
+      (typeof schedule.trainerId === 'object' && schedule.trainerId?.trainerInfo) ||
+      (schedule.trainer?.trainerInfo);
+    
+    return hasTrainerInfo ? 'trainer' : 'staff';
+  };
+
+  // Check if schedule can be changed (not completed, cancelled, or no-show)
+  const canChangeSchedule = (schedule: Schedule): boolean => {
+    return schedule.status === 'Pending' || schedule.status === 'Confirmed';
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
@@ -181,11 +212,23 @@ export function ModalDaySchedules({
                         </div>
                       </div>
 
-                      {/* Right: Status */}
+                      {/* Right: Status & Actions */}
                       <div className="flex flex-col items-end gap-2">
                         <Badge variant="outline" className={`${statusColorFn(schedule.status)} text-xs font-semibold px-3 py-1`}>
                           {statusTextFn(schedule.status)}
                         </Badge>
+                        {/* Action Button - Change PT/Staff */}
+                        {onOpenChangeSchedule && getTrainerId(schedule) && canChangeSchedule(schedule) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onOpenChangeSchedule(schedule)}
+                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                          >
+                            <UserX className="w-4 h-4 mr-1" />
+                            Đổi {getTrainerRole(schedule) === 'trainer' ? 'PT' : 'Nhân viên'}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>

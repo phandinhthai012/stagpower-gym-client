@@ -17,20 +17,27 @@ import {
   Award,
   Phone,
   Mail,
-  Loader2
+  Loader2,
+  CheckCircle
 } from 'lucide-react';
-import { StaffPTDetailModal, ModalCreateStaffPT, ModalEditStaffPT } from '../components/staff-pt-management';
+import { StaffPTDetailModal, ModalCreateStaffPT, ModalEditStaffPT, ModalDeactivateConfirm } from '../components/staff-pt-management';
+import { ModalChangeSchedule } from '../components/schedule-management';
 import { 
   useStaffTrainers,
   useChangeStaffTrainerStatus,
   useBranches
 } from '../hooks';
+import { scheduleApi } from '../api/schedule.api';
+import { staffTrainerApi } from '../api/staff-trainer.api';
 import { 
   StaffTrainerUser
 } from '../types/staff-trainer.types';
 import { useSortableTable } from '../../../hooks/useSortableTable';
 import { SortableTableHeader, NonSortableHeader } from '../../../components/ui';
 import { useAuth } from '../../../contexts/AuthContext';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { staffTrainerQueryKeys } from '../hooks/useStaffTrainers';
 
 export function AdminStaffPTManagement() {
   // State for filters and pagination
@@ -45,6 +52,17 @@ export function AdminStaffPTManagement() {
   const [selectedUser, setSelectedUser] = useState<StaffTrainerUser | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showChangeScheduleModal, setShowChangeScheduleModal] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState<StaffTrainerUser | null>(null);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  
+  // Modal state - unified
+  const [modalMode, setModalMode] = useState<'confirm' | 'bulk'>('confirm');
+  const [usersWithSchedules, setUsersWithSchedules] = useState<Array<{ user: StaffTrainerUser; scheduleCount: number }>>([]);
+  const [usersWithoutSchedules, setUsersWithoutSchedules] = useState<StaffTrainerUser[]>([]);
+  const [pendingDeactivateAction, setPendingDeactivateAction] = useState<(() => void) | null>(null);
+  const [confirmUserCount, setConfirmUserCount] = useState(1);
+  const [confirmUserName, setConfirmUserName] = useState<string>('');
   
   // Check if current user is staff (limited permissions)
   const { user } = useAuth();
@@ -65,6 +83,7 @@ export function AdminStaffPTManagement() {
 
   // Mutations
   const changeStatusMutation = useChangeStaffTrainerStatus();
+  const queryClient = useQueryClient();
 
   // Data from API
   console.log('📊 staffTrainersData:', staffTrainersData);
@@ -169,15 +188,267 @@ export function AdminStaffPTManagement() {
   };
 
   const handleDelete = async (userId: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn vô hiệu hóa nhân viên/PT này?')) {
+    const user = staffTrainers.find((u: StaffTrainerUser) => u._id === userId);
+    if (!user) return;
+
+    // Deactivate directly - no modal for single user
+    try {
+      await changeStatusMutation.mutateAsync({
+        userId,
+        status: 'inactive'
+      });
+    } catch (error: any) {
+      // Check if error is about active schedules
+      const errorResponse = error?.response?.data;
+      const errorCode = errorResponse?.code;
+      const scheduleCount = errorResponse?.data?.scheduleCount;
+
+      if (errorCode === 'HAS_ACTIVE_SCHEDULES') {
+        const roleText = user.role === 'trainer' ? 'PT' : 'Nhân viên';
+        toast.error(
+          `Không thể vô hiệu hóa ${roleText} ${user.fullName}`,
+          {
+            description: `${roleText} đang còn ${scheduleCount || 0} lịch làm việc ở tương lai. Vui lòng thay đổi ${roleText === 'PT' ? 'PT' : 'nhân viên'} khác vào các lịch đó trước khi vô hiệu hóa.`
+          }
+        );
+      } else {
+        // Other errors are handled by mutation
+        console.error('Error deactivating user:', error);
+      }
+    }
+  };
+
+  const handleConfirmDeactivate = async () => {
+    setShowDeactivateModal(false);
+    if (pendingDeactivateAction) {
+      await pendingDeactivateAction();
+      setPendingDeactivateAction(null);
+    }
+  };
+
+  const handleConfirmChangeSchedule = () => {
+    // This is only used for bulk mode now
+    if (usersWithSchedules.length > 0) {
+      const firstUser = usersWithSchedules[0];
+      setUserToDeactivate(firstUser.user);
+      setShowDeactivateModal(false);
+      setShowChangeScheduleModal(true);
+    }
+  };
+
+  const handleChangeScheduleSuccess = async () => {
+    // After successfully changing schedules, try to deactivate again
+    if (userToDeactivate) {
       try {
         await changeStatusMutation.mutateAsync({
-          userId,
+          userId: userToDeactivate._id,
           status: 'inactive'
         });
+        setUserToDeactivate(null);
+        setShowChangeScheduleModal(false);
       } catch (error) {
         // Error handled by mutation
       }
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUsers.length === 0) return;
+
+    const usersToDelete = staffTrainers.filter((u: StaffTrainerUser) => 
+      selectedUsers.includes(u._id)
+    );
+
+    // Check all users' schedules first
+    const usersWithSchedulesList: Array<{ user: StaffTrainerUser; scheduleCount: number }> = [];
+    const usersWithoutSchedulesList: StaffTrainerUser[] = [];
+
+    // Check schedules for each user in parallel
+    const scheduleChecks = await Promise.all(
+      usersToDelete.map(async (user) => {
+        try {
+          const schedules = await scheduleApi.getSchedulesByTrainerId(user._id);
+          const now = new Date();
+          const activeSchedules = schedules.filter((schedule: any) => {
+            const scheduleDate = new Date(schedule.dateTime);
+            return (
+              scheduleDate >= now &&
+              (schedule.status === 'Pending' || schedule.status === 'Confirmed')
+            );
+          });
+
+          if (activeSchedules.length > 0) {
+            return {
+              user,
+              scheduleCount: activeSchedules.length,
+              hasSchedules: true
+            };
+          } else {
+            return {
+              user,
+              scheduleCount: 0,
+              hasSchedules: false
+            };
+          }
+        } catch (error) {
+          // If error fetching schedules, assume no schedules
+          console.error(`Error checking schedules for ${user.fullName}:`, error);
+          return {
+            user,
+            scheduleCount: 0,
+            hasSchedules: false
+          };
+        }
+      })
+    );
+
+    // Categorize users
+    scheduleChecks.forEach((check) => {
+      if (check.hasSchedules) {
+        usersWithSchedulesList.push({
+          user: check.user,
+          scheduleCount: check.scheduleCount
+        });
+      } else {
+        usersWithoutSchedulesList.push(check.user);
+      }
+    });
+
+    // If only 1 user and has schedules, still use bulk mode (but with 1 user)
+    // This keeps the UI consistent
+
+    // If all users can be deactivated, deactivate directly (no modal)
+    if (usersWithSchedulesList.length === 0 && usersWithoutSchedulesList.length > 0) {
+      // Deactivate all users directly using API to avoid multiple toasts
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const user of usersWithoutSchedulesList) {
+        try {
+          await staffTrainerApi.changeStatus(user._id, 'inactive');
+          successCount++;
+          // Invalidate queries manually
+          queryClient.invalidateQueries({ queryKey: staffTrainerQueryKeys.all });
+          queryClient.invalidateQueries({ queryKey: staffTrainerQueryKeys.detail(user._id) });
+        } catch (error: any) {
+          errorCount++;
+          console.error(`Error deactivating ${user.fullName}:`, error);
+        }
+      }
+      
+      // Show single toast with summary
+      if (successCount > 0) {
+        toast.success(`Đã vô hiệu hóa ${successCount} nhân viên/PT thành công!`, {
+          description: errorCount > 0 ? `${errorCount} nhân viên/PT gặp lỗi` : undefined
+        });
+      }
+      if (errorCount > 0 && successCount === 0) {
+        toast.error(`Không thể vô hiệu hóa ${errorCount} nhân viên/PT`);
+      }
+      
+      if (successCount > 0) {
+        setSelectedUsers([]); // Clear selection if all processed successfully
+      }
+      return;
+    }
+
+    // Show bulk modal when there are multiple users or mix of users with/without schedules
+    setModalMode('bulk');
+    setUsersWithSchedules(usersWithSchedulesList);
+    setUsersWithoutSchedules(usersWithoutSchedulesList);
+    setShowDeactivateModal(true);
+  };
+
+  const handleBulkDeactivateConfirm = async () => {
+    // Deactivate users without schedules using API to avoid multiple toasts
+    let successCount = 0;
+    let errorCount = 0;
+    
+    if (usersWithoutSchedules.length > 0) {
+      for (const user of usersWithoutSchedules) {
+        try {
+          await staffTrainerApi.changeStatus(user._id, 'inactive');
+          successCount++;
+          // Invalidate queries manually
+          queryClient.invalidateQueries({ queryKey: staffTrainerQueryKeys.all });
+          queryClient.invalidateQueries({ queryKey: staffTrainerQueryKeys.detail(user._id) });
+        } catch (error: any) {
+          errorCount++;
+          console.error(`Error deactivating ${user.fullName}:`, error);
+        }
+      }
+    }
+    
+    // Show single toast with summary
+    if (successCount > 0) {
+      toast.success(`Đã vô hiệu hóa ${successCount} nhân viên/PT thành công!`, {
+        description: errorCount > 0 ? `${errorCount} nhân viên/PT gặp lỗi` : undefined
+      });
+    }
+    if (errorCount > 0 && successCount === 0) {
+      toast.error(`Không thể vô hiệu hóa ${errorCount} nhân viên/PT`);
+    }
+    
+    setShowDeactivateModal(false);
+    setUsersWithSchedules([]);
+    setUsersWithoutSchedules([]);
+    
+    if (successCount > 0) {
+      setSelectedUsers([]); // Clear selection if all processed successfully
+    }
+  };
+
+  const handleBulkDeactivateWithScheduleChange = () => {
+    // If there are users with schedules, show change schedule modal for the first one
+    if (usersWithSchedules.length > 0) {
+      const firstUser = usersWithSchedules[0];
+      setUserToDeactivate(firstUser.user);
+      setShowDeactivateModal(false);
+      setShowChangeScheduleModal(true);
+    }
+  };
+
+  const handleBulkActivate = async () => {
+    if (selectedUsers.length === 0) return;
+
+    const usersToActivate = staffTrainers.filter((u: StaffTrainerUser) => 
+      selectedUsers.includes(u._id) && u.status === 'inactive'
+    );
+
+    if (usersToActivate.length === 0) {
+      toast.info('Không có nhân viên/PT nào không hoạt động được chọn để kích hoạt.');
+      return;
+    }
+
+    // Activate all selected inactive users using API to avoid multiple toasts
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const user of usersToActivate) {
+      try {
+        await staffTrainerApi.changeStatus(user._id, 'active');
+        successCount++;
+        // Invalidate queries manually
+        queryClient.invalidateQueries({ queryKey: staffTrainerQueryKeys.all });
+        queryClient.invalidateQueries({ queryKey: staffTrainerQueryKeys.detail(user._id) });
+      } catch (error: any) {
+        errorCount++;
+        console.error(`Error activating ${user.fullName}:`, error);
+      }
+    }
+
+    // Show single toast with summary
+    if (successCount > 0) {
+      toast.success(`Đã kích hoạt ${successCount} nhân viên/PT thành công!`, {
+        description: errorCount > 0 ? `${errorCount} nhân viên/PT gặp lỗi` : undefined
+      });
+    }
+    if (errorCount > 0 && successCount === 0) {
+      toast.error(`Không thể kích hoạt ${errorCount} nhân viên/PT`);
+    }
+    
+    if (successCount > 0) {
+      setSelectedUsers([]); // Clear selection if all processed successfully
     }
   };
 
@@ -389,7 +660,27 @@ export function AdminStaffPTManagement() {
                   <Mail className="w-4 h-4 mr-2" />
                   Gửi email
                 </Button>
-                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                {staffTrainers.some((u: StaffTrainerUser) => 
+                  selectedUsers.includes(u._id) && u.status === 'inactive'
+                ) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-green-600 hover:text-green-700"
+                    onClick={handleBulkActivate}
+                    disabled={changeStatusMutation.isPending}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Kích hoạt
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-red-600 hover:text-red-700"
+                  onClick={handleBulkDelete}
+                  disabled={changeStatusMutation.isPending}
+                >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Vô hiệu hóa
                 </Button>
@@ -695,6 +986,42 @@ export function AdminStaffPTManagement() {
         }}
         onEdit={handleEditFromDetail}
       />
+
+      {/* Unified Deactivate Confirm Modal */}
+      <ModalDeactivateConfirm
+        isOpen={showDeactivateModal}
+        onClose={() => {
+          setShowDeactivateModal(false);
+          setUsersWithSchedules([]);
+          setUsersWithoutSchedules([]);
+          setPendingDeactivateAction(null);
+        }}
+        onConfirm={handleConfirmDeactivate}
+        onConfirmWithScheduleChange={
+          modalMode === 'bulk' && usersWithSchedules.length > 0 
+            ? handleBulkDeactivateWithScheduleChange 
+            : undefined
+        }
+        usersWithSchedules={usersWithSchedules}
+        usersWithoutSchedules={usersWithoutSchedules}
+        userCount={confirmUserCount}
+        userName={confirmUserName}
+      />
+
+      {/* Change Schedule Modal */}
+      {userToDeactivate && (
+        <ModalChangeSchedule
+          isOpen={showChangeScheduleModal}
+          onClose={() => {
+            setShowChangeScheduleModal(false);
+            setUserToDeactivate(null);
+          }}
+          trainerId={userToDeactivate._id}
+          trainerName={userToDeactivate.fullName}
+          trainerRole={userToDeactivate.role as 'trainer' | 'staff'}
+          onSuccess={handleChangeScheduleSuccess}
+        />
+      )}
     </div>
   );
 }
