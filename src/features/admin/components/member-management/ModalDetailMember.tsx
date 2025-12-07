@@ -12,13 +12,15 @@ import {
   Clock,
   Edit,
   Activity,
-  Package
+  Package,
+  Plus
 } from 'lucide-react';
 import { User as UserType } from '../../../../mockdata/users';
 import { useAllHealthInfoByMemberId } from '../../../member/hooks/useHealthInfo';
 import { useSubscriptionByMemberId } from '../../hooks/useSubscriptions';
 import { useCheckInByMemberId } from '../../../member/hooks/useCheckIns';
 import { HealthInfoSection } from './HealthInfoSection';
+import { HealthChart } from './HealthChart';
 import { UniversalUser, normalizeUser } from '../../types/user.types';
 
 interface ModalDetailMemberProps {
@@ -352,6 +354,12 @@ export function ModalDetailMember({
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Health Chart */}
+              <HealthChart 
+                healthInfoList={healthInfoList || []}
+                isLoading={isLoadingHealthInfo}
+              />
             </div>
           </div>
         </div>
@@ -384,11 +392,12 @@ export function ModalDetailMember({
               </Button>
               <Button 
                 onClick={() => onEdit?.(rawMember)} 
-                className="bg-blue-600 hover:bg-blue-700 text-white flex-1 sm:flex-initial sm:min-w-[120px]"
+                className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-initial sm:min-w-[180px]"
                 size="default"
               >
-                <Edit className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Chỉnh sửa</span>
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Tạo mới sức khỏe hiện tại</span>
+                <span className="sm:hidden">Tạo mới</span>
               </Button>
             </div>
           </div>

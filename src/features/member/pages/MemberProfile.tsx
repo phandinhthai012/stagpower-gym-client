@@ -28,6 +28,7 @@ import { formatDate } from '../../../lib/date-utils';
 import { toast } from 'sonner';
 import { healthInfoUtils } from '../utils/healthInfo.utils';
 import { HealthInfoDisplay } from '../components/HealthInfoDisplay';
+import { HealthChart } from '../../admin/components/member-management/HealthChart';
 
 export function MemberProfile() {
   const { user } = useAuth();
@@ -571,7 +572,7 @@ export function MemberProfile() {
             {!isEditingHealth ? (
               <Button onClick={handleHealthEdit} size="sm" variant="outline" className="w-full sm:w-auto">
                 <Edit3 className="w-4 h-4" />
-                <span className="text-base sm:text-sm">Cập Nhật Thông Tin Sức Khỏe</span>
+                <span className="text-base sm:text-sm">Thêm sức khỏe hiện tại</span>
               </Button>
             ) : (
               <div className="flex gap-2 w-full sm:w-auto">
@@ -597,10 +598,20 @@ export function MemberProfile() {
           </div>
 
           {!isEditingHealth ? (
-            <HealthInfoDisplay 
-              healthInfoList={healthInfoList || []}
-              isLoading={healthLoading}
-            />
+            <>
+              <HealthInfoDisplay 
+                healthInfoList={healthInfoList || []}
+                isLoading={healthLoading}
+              />
+              
+              {/* Health Chart */}
+              <div className="mt-6">
+                <HealthChart 
+                  healthInfoList={healthInfoList || []}
+                  isLoading={healthLoading}
+                />
+              </div>
+            </>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
