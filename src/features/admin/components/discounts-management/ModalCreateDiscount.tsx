@@ -9,6 +9,7 @@ import { useScrollLock } from '../../../../hooks/useScrollLock';
 import { useCreateDiscount } from '../../hooks/useDiscounts';
 import { CreateDiscountData } from '../../types/discount.types';
 import { useDiscountTypes } from '../../hooks/useDiscountTypes';
+import { ModalCreateDiscountType } from './ModalCreateDiscountType';
 import {
   X,
   Percent,
@@ -21,7 +22,8 @@ import {
   Package,
   Hash,
   ShoppingCart,
-  Users2
+  Users2,
+  Plus
 } from 'lucide-react';
 
 interface ModalCreateDiscountProps {
@@ -51,6 +53,7 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newDurationType, setNewDurationType] = useState('');
   const [newPackageType, setNewPackageType] = useState('');
+  const [isCreateDiscountTypeModalOpen, setIsCreateDiscountTypeModalOpen] = useState(false);
 
   // Scroll lock effect
   React.useEffect(() => {
@@ -243,7 +246,7 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">
-                    Tên ưu đãi <span className="text-red-500">*</span>
+                    Tên ưu đãi <span className="text-red-500 ">*</span>
                     {errors.name && <span className="text-red-500 ml-1">({errors.name})</span>}
                   </Label>
                   <Input
@@ -256,10 +259,22 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                 </div>
 
                 <div>
-                  <Label htmlFor="type">
-                    Loại ưu đãi <span className="text-red-500">*</span>
-                    {errors.type && <span className="text-red-500 ml-1">({errors.type})</span>}
-                  </Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="type">
+                      Loại ưu đãi <span className="text-red-500">*</span>
+                      {errors.type && <span className="text-red-500 ml-1">({errors.type})</span>}
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsCreateDiscountTypeModalOpen(true)}
+                      className="h-7 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Tạo loại mới
+                    </Button>
+                  </div>
                   <Select
                     value={formData.type}
                     onValueChange={(value) => handleInputChange('type', value)}
@@ -607,6 +622,12 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
           </form>
         </CardContent>
       </Card>
+
+      {/* Modal Create Discount Type */}
+      <ModalCreateDiscountType
+        isOpen={isCreateDiscountTypeModalOpen}
+        onClose={() => setIsCreateDiscountTypeModalOpen(false)}
+      />
     </div>
   );
 }
