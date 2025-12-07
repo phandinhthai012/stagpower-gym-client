@@ -8,6 +8,8 @@ import { useAdminCheckIn } from '../../hooks/useAdminCheckIn';
 import { useBranches } from '../../hooks/useBranches';
 import { QRScanner } from './QRScanner';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
+import { CheckInResultModal, CheckInResultData } from './CheckInResultModal';
+import { useUserById } from '../../hooks/useUsers';
 interface ModalQRCheckInProps {
     isOpen: boolean;
     onClose: () => void;
@@ -34,6 +36,28 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
     const { adminQRCheckIn, isCheckingInQR } = useAdminCheckIn();
     const branches = branchesData || [];
 
+    // Check in result modal
+    const [resultModalOpen, setResultModalOpen] = useState(false);
+    const [checkInResult, setCheckInResult] = useState<CheckInResultData | null>(null);
+    const [memberIdToFetch, setMemberIdToFetch] = useState<string | null>(null);
+    const memberIdString = memberIdToFetch 
+        ? (typeof memberIdToFetch === 'string' ? memberIdToFetch : (memberIdToFetch as any)._id || '')
+        : '';
+    const { data: memberData, isLoading: isLoadingMember } = useUserById(memberIdString);
+    useEffect(() => {
+        if (memberData && checkInResult?.success && !checkInResult.member) {
+            setCheckInResult(prev => prev ? {
+                ...prev,
+                member: {
+                    _id: memberData._id,
+                    fullName: memberData.fullName,
+                    email: memberData.email,
+                    phone: memberData.phone
+                }
+            } : null);
+        }
+    }, [memberData, checkInResult]);
+    
     // Use propSelectedBranchId if provided (shared selection), otherwise use internal state
     const selectedBranchId = propSelectedBranchId || internalBranchId;
 
@@ -96,13 +120,20 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
     //     setIsScanning(false);
     //     await processQRCheckIn(result);
     // };
+
+    // Helper function to find branch by ID
+    const findBranchById = (branchId: string | { _id?: string }) => {
+        const id = typeof branchId === 'string' ? branchId : branchId?._id;
+        if (!id) return undefined;
+        return branches?.find(b => b._id === id);
+    };
     const processQRCheckIn = async (token: string) => {
         if (!token || !selectedBranchId) return;
         setCheckInStatus('idle');
         setValidationMessage('Đã quét. Đang xử lý mã QR code...');
 
         try {
-            await adminQRCheckIn({
+            const result = await adminQRCheckIn({
                 token: token,
                 branchId: selectedBranchId
             });
@@ -111,15 +142,41 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
             setValidationMessage('Check-in bằng QR code thành công!');
             setIsScanning(false); // <-- CHỈ TẮT CAMERA KHI THÀNH CÔNG
 
-
-            // Reset form after 2 seconds
-            setTimeout(() => {
-                handleClose();
-            }, 2000);
+            // Set check in result
+            const checkInData = result?.data || null;
+            const memberId = checkInData?.memberId || null;
+            if (memberId) {
+                setMemberIdToFetch(memberId);
+            }
+            console.log('memberData', memberData);
+            const branch = checkInData?.branchId 
+                ? findBranchById(checkInData.branchId) || (typeof checkInData.branchId === 'object' ? checkInData.branchId : undefined)
+                : undefined;
+            setCheckInResult({
+                success: true,
+                message: 'Check-in bằng QR code thành công!',
+                member: undefined,
+                branch: branch,
+                checkInTime: checkInData?.checkInTime || undefined,
+                error: undefined
+            });
+            setResultModalOpen(true);
+            setQrToken('');
         } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || 'Lỗi: Mã không hợp lệ. Vui lòng quét lại.';
+            // setCheckInStatus('error');
+            // setValidationMessage(error?.response?.data?.message || 'Lỗi: Mã không hợp lệ. Vui lòng quét lại.');
+            // setQrToken(''); // Xóa token lỗi để sẵn sàng quét lại
+            setIsScanning(false);
+            setCheckInResult({
+                success: false,
+                message: 'Check-in thất bại',
+                error: errorMessage
+            });
+            setResultModalOpen(true);
             setCheckInStatus('error');
-            setValidationMessage(error?.response?.data?.message || 'Lỗi: Mã không hợp lệ. Vui lòng quét lại.');
-            setQrToken(''); // Xóa token lỗi để sẵn sàng quét lại
+            setValidationMessage(errorMessage);
+            setQrToken('');
         }
     };
 
@@ -267,6 +324,19 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
                     )}
 
                 </div>
+                <CheckInResultModal
+                isOpen={resultModalOpen}
+                onClose={() => {
+                    setResultModalOpen(false);
+                    if (!checkInResult?.success) {
+                        // If failed, allow retry by keeping modal open
+                        setQrToken('');
+                        setCheckInStatus('idle');
+                        setValidationMessage('');
+                    }
+                }}
+                result={checkInResult}
+            />
             </div>
         );
     }
@@ -434,10 +504,22 @@ export const ModalQRCheckIn: React.FC<ModalQRCheckInProps> = ({ isOpen, onClose,
                     </div>
                 </div>
             </div>
+            <CheckInResultModal
+                isOpen={resultModalOpen}
+                onClose={() => {
+                    setResultModalOpen(false);
+                    if (!checkInResult?.success) {
+                        // If failed, allow retry by keeping modal open
+                        setQrToken('');
+                        setCheckInStatus('idle');
+                        setValidationMessage('');
+                    }
+                }}
+                result={checkInResult}
+            />
         </div>
     );
 };
-
 
 
 

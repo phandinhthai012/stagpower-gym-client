@@ -10,7 +10,7 @@ import { useAdminCheckIn } from '../../hooks/useAdminCheckIn';
 import { useBranches } from '../../hooks/useBranches';
 import { useMembersWithActiveSubscriptions } from '../../hooks/useMember';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
-
+import { CheckInResultModal, CheckInResultData } from './CheckInResultModal';
 interface ModalManualCheckInProps {
     isOpen: boolean;
     onClose: () => void;
@@ -31,6 +31,9 @@ export function ModalManualCheckIn({ isOpen, onClose, defaultBranchId, selectedB
     const [checkInStatus, setCheckInStatus] = useState<'idle' | 'success' | 'error' | 'warning'>('idle');
     const [validationMessage, setValidationMessage] = useState('');
     const [memberSearchTerm, setMemberSearchTerm] = useState('');
+
+    const [resultModalOpen, setResultModalOpen] = useState(false);
+    const [checkInResult, setCheckInResult] = useState<CheckInResultData | null>(null);
 
     const { adminCheckIn, isCheckingIn } = useAdminCheckIn();
     const { data: branchesData } = useBranches();
@@ -77,6 +80,11 @@ export function ModalManualCheckIn({ isOpen, onClose, defaultBranchId, selectedB
         );
     }, [membersWithActiveSubscriptions, memberSearchTerm]);
 
+    const findBranchById = (branchId: string | { _id?: string }) => {
+        const id = typeof branchId === 'string' ? branchId : branchId?._id;
+        if (!id) return undefined;
+        return branches?.find(b => b._id === id);
+    };
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -85,19 +93,62 @@ export function ModalManualCheckIn({ isOpen, onClose, defaultBranchId, selectedB
                 branchId: selectedBranchId,
                 notes
             });
-            console.log("response", response);
-            onClose();
-        } catch (error: any) {
-            console.log(error);
-            setValidationMessage(error?.response?.data?.message || 'Lỗi khi check-in');
-            setCheckInStatus('error');
-        }finally {
-            setCheckInStatus('idle');
-            setValidationMessage('');
+            const checkInData = response?.data || null;
+            const branch = checkInData?.branchId
+                ? findBranchById(checkInData.branchId) || (typeof checkInData.branchId === 'object' ? checkInData.branchId : undefined)
+                : undefined;
+            setCheckInResult({
+                success: true,
+                message: response?.message || 'Check-in thành công!',
+                member: {
+                    _id: selectedMember._id,
+                    fullName: selectedMember.fullName || '',
+                    email: selectedMember.email,
+                    phone: selectedMember.phone
+                },
+                branch: branch,
+                checkInTime: checkInData?.checkInTime || undefined,
+                error: undefined
+            });
+            setResultModalOpen(true);
+            setCheckInStatus('success');
+            setValidationMessage('Check-in thành công!');
             setSelectedMember(null);
-            // Don't reset selectedBranchId, keep it for next time
             setNotes('');
             setMemberSearchTerm('');
+            // console.log("response", response);
+            // onClose();
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || 'Lỗi khi check-in';
+            
+            // Set error result
+            const branch = branches.find(b => b._id === selectedBranchId);
+            setCheckInResult({
+                success: false,
+                message: 'Check-in thất bại',
+                error: errorMessage,
+                member: {
+                    _id: selectedMember._id,
+                    fullName: selectedMember.fullName || '',
+                    email: selectedMember.email,
+                    phone: selectedMember.phone
+                },
+                branch: branch ? {
+                    _id: branch._id,
+                    name: branch.name,
+                    address: branch.address
+                } : undefined
+            });
+            setResultModalOpen(true);
+            setCheckInStatus('error');
+            setValidationMessage(errorMessage);
+        } finally {
+            // setCheckInStatus('idle');
+            // setValidationMessage('');
+            // setSelectedMember(null);
+            // // Don't reset selectedBranchId, keep it for next time
+            // setNotes('');
+            // setMemberSearchTerm('');
         }
     };
 
@@ -115,6 +166,7 @@ export function ModalManualCheckIn({ isOpen, onClose, defaultBranchId, selectedB
 
     if (embedded) {
         return (
+            <>
             <div className="w-full flex flex-col h-full">
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -237,6 +289,12 @@ export function ModalManualCheckIn({ isOpen, onClose, defaultBranchId, selectedB
                     </div>
                 </form>
             </div>
+            <CheckInResultModal
+                isOpen={resultModalOpen}
+                onClose={() => setResultModalOpen(false)}
+                result={checkInResult}
+            />
+            </>
         );
     }
 
@@ -397,6 +455,11 @@ export function ModalManualCheckIn({ isOpen, onClose, defaultBranchId, selectedB
                     </div>
                 </form>
             </div>
+            <CheckInResultModal
+                isOpen={resultModalOpen}
+                onClose={() => setResultModalOpen(false)}
+                result={checkInResult}
+            />
         </div>
     )
 }
