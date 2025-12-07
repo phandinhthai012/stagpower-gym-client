@@ -5,7 +5,8 @@ import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { Textarea } from '../../../../components/ui/textarea';
-import { X, Plus, DollarSign, Calendar, User, Package } from 'lucide-react';
+import { Badge } from '../../../../components/ui/badge';
+import { X, Plus, DollarSign, Calendar, User, Package, Tag, XCircle } from 'lucide-react';
 import { useCreateInvoice, useCreateSubscriptionWithPayment } from '../../hooks/useInvoices';
 import { CreateInvoiceData } from '../../types/invoice.types';
 import { useMembers } from '../../../member/hooks/useMembers';
@@ -13,6 +14,10 @@ import { usePackages } from '../../hooks/usePackages';
 import ModelQRMomo from './ModelQRMomo';
 import QRCode from 'qrcode';
 import socketService from '../../../../services/socket';
+import { toast } from 'sonner';
+
+import { useGetAvailableDiscounts, useApplyDiscountManual } from '../../hooks/useDiscounts';
+
 interface ModalCreateInvoiceProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,6 +36,11 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ========== NEW: Discount states ==========
+  const [selectedDiscountId, setSelectedDiscountId] = useState<string>('');
+  const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
+  const [discountDetails, setDiscountDetails] = useState<any[]>([]);
+
   const createInvoiceMutation = useCreateInvoice();
   const createSubscriptionWithPaymentMutation = useCreateSubscriptionWithPayment();
   const { data: membersResponse } = useMembers();
@@ -39,6 +49,16 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
   const members = membersResponse && 'success' in membersResponse && membersResponse.success
     ? membersResponse.data || []
     : [];
+
+  // ========== NEW: Get available discounts based on selected package ==========
+  const selectedPackageForDiscount = packages.find(pkg => pkg._id === formData.packageId);
+  const { data: availableDiscounts = [] } = useGetAvailableDiscounts({
+    packageType: selectedPackageForDiscount?.type,
+    packageCategory: selectedPackageForDiscount?.packageCategory,
+  });
+  const applyDiscountMutation = useApplyDiscountManual();
+
+
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [qrData, setQrData] = useState<any>(null);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
@@ -93,7 +113,13 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
     setMemberSearchTerm('');
     setShowMemberDropdown(false);
     setErrors({});
+
+    // ========== NEW: Reset discount states ==========
+    setSelectedDiscountId('');
+    setAppliedDiscount(null);
+    setDiscountDetails([]);
   };
+
   // Scroll lock effect
   React.useEffect(() => {
     if (isOpen) {
@@ -129,7 +155,68 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
       socket.off('payment_completed', handlePaymentCompleted);
     };
   }, [showQrModal, qrData?.paymentId, onSuccess, onClose]);
+  
+  // Handle discount selection/change ==========
+  const handleDiscountChange = async (discountId: string) => {
+    // If "NONE" is selected, clear discount
+    if (discountId === "NONE" || !discountId) {
+      setSelectedDiscountId('');
+      setAppliedDiscount(null);
+      setDiscountDetails([]);
+      setFormData(prev => ({
+        ...prev,
+        amount: prev.originalAmount || 0
+      }));
+      return;
+    }
 
+    setSelectedDiscountId(discountId);
+
+    // Validate that package is selected first
+    if (!formData.originalAmount || formData.originalAmount <= 0) {
+      toast.error('Vui lòng chọn gói dịch vụ trước khi áp dụng mã giảm giá');
+      setSelectedDiscountId('');
+      return;
+    }
+
+    try {
+      // Call API to apply discount
+      const result = await applyDiscountMutation.mutateAsync({
+        discountId,
+        originalAmount: formData.originalAmount
+      });
+
+      // Update states with discount result
+      setAppliedDiscount(result);
+      setDiscountDetails(result.discountDetails ? [result.discountDetails] : []);
+      
+      // Update final amount after discount
+      setFormData(prev => ({
+        ...prev,
+        amount: result.finalAmount
+      }));
+
+      toast.success(`Đã áp dụng mã giảm giá: ${result.discount.name}`);
+    } catch (error: any) {
+      console.error('Error applying discount:', error);
+      toast.error(error?.response?.data?.message || 'Có lỗi xảy ra khi áp dụng mã giảm giá');
+      setSelectedDiscountId('');
+    }
+  };
+
+  // ========== NEW: Handle remove discount ==========
+  const handleRemoveDiscount = () => {
+    setSelectedDiscountId('');
+    setSelectedDiscountId('NONE');
+    setAppliedDiscount(null);
+    setDiscountDetails([]);
+    setFormData(prev => ({
+      ...prev,
+      amount: prev.originalAmount || 0
+    }));
+    toast.info('Đã xóa mã giảm giá');
+  };
+  
   const handleInputChange = (field: keyof CreateInvoiceData, value: string | number) => {
     setFormData(prev => ({
       ...prev,
@@ -190,7 +277,8 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
           paymentMethod: 'Momo',
           originalAmount: formData.originalAmount || formData.amount,
           amount: formData.amount,
-          discountDetails: [],
+          // Include discount details in payload
+          discountDetails: discountDetails || [],
           notes: formData.notes,
           dueDate: formData.dueDate || new Date().toISOString()
         };
@@ -214,8 +302,10 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
         return;
       }
 
+      // ========== NEW: Include discount details for non-Momo payments ==========
       await createInvoiceMutation.mutateAsync({
         ...formData,
+        discountDetails: discountDetails, // Include discount details
         dueDate: formData.dueDate || new Date().toISOString()
       });
 
@@ -231,12 +321,21 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
     const selectedPackage = packages.find(pkg => pkg._id === packageId);
     setSelectedPackage(selectedPackage);
     if (selectedPackage) {
+      const originalPrice = selectedPackage.price;
       setFormData(prev => ({
         ...prev,
         packageId,
-        amount: selectedPackage.price,
-        originalAmount: selectedPackage.price
+        amount: appliedDiscount ? appliedDiscount.finalAmount : originalPrice,
+        originalAmount: originalPrice
       }));
+
+      // ========== NEW: Reset discount when package changes ==========
+      if (selectedDiscountId) {
+        setSelectedDiscountId('');
+        setAppliedDiscount(null);
+        setDiscountDetails([]);
+        toast.info('Đã đặt lại mã giảm giá vì đã thay đổi gói dịch vụ');
+      }
     }
   };
 
@@ -384,8 +483,19 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
                   id="originalAmount"
                   type="number"
                   value={formData.originalAmount}
-                  onChange={(e) => handleInputChange('originalAmount', parseFloat(e.target.value) || 0)}
+                  onChange={(e) => {
+                    // ========== NEW: Re-apply discount when original amount changes ==========
+                    const newOriginalAmount = parseFloat(e.target.value) || 0;
+                    handleInputChange('originalAmount', newOriginalAmount);
+                    // If discount is applied, reapply it with new original amount
+                    if (selectedDiscountId && newOriginalAmount > 0) {
+                      handleDiscountChange(selectedDiscountId);
+                    } else {
+                      handleInputChange('amount', newOriginalAmount);
+                    }
+                  }}
                   placeholder="Nhập giá gốc..."
+                  readOnly={!!selectedPackage} // Read-only when package is selected
                 />
               </div>
 
@@ -405,6 +515,92 @@ export function ModalCreateInvoice({ isOpen, onClose, onSuccess }: ModalCreateIn
                 />
               </div>
             </div>
+
+            {/* ========== NEW: Discount Selection Section ========== */}
+            {selectedPackage && formData.originalAmount > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="discountId" className="flex items-center gap-2">
+                  <Tag className="w-4 h-4" />
+                  Chọn mã giảm giá (tùy chọn)
+                </Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={selectedDiscountId || undefined}
+                    onValueChange={handleDiscountChange}
+                    disabled={applyDiscountMutation.isPending}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Chọn mã giảm giá..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Use "NONE" instead of empty string to clear selection */}
+                      <SelectItem value="NONE">Không sử dụng mã</SelectItem>
+                      {availableDiscounts.length > 0 ? (
+                        availableDiscounts.map((discount: any) => (
+                          <SelectItem key={discount._id} value={discount._id}>
+                            {discount.name}
+                            {discount.code && ` (${discount.code})`}
+                            {discount.discountPercentage && ` - ${discount.discountPercentage}%`}
+                            {discount.discountAmount && ` - ${discount.discountAmount.toLocaleString('vi-VN')} VNĐ`}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1.5 text-sm text-gray-500">Không có mã giảm giá khả dụng</div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {appliedDiscount && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveDiscount}
+                      className="flex items-center gap-1"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Xóa
+                    </Button>
+                  )}
+                </div>
+
+                {/* Display discount info when applied */}
+                {appliedDiscount && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-blue-600">{appliedDiscount.discount.name}</Badge>
+                          {appliedDiscount.discount.code && (
+                            <span className="text-sm text-gray-600">({appliedDiscount.discount.code})</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700">{appliedDiscount.discount.conditions}</p>
+                        <div className="text-sm space-y-1 mt-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Giá gốc:</span>
+                            <span>{appliedDiscount.originalAmount.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="flex justify-between text-green-600 font-medium">
+                            <span>Giảm giá:</span>
+                            <span>-{appliedDiscount.discountAmount.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="flex justify-between text-blue-600 font-bold border-t pt-1">
+                            <span>Thành tiền:</span>
+                            <span>{appliedDiscount.finalAmount.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          {appliedDiscount.bonusDays > 0 && (
+                            <div className="flex justify-between text-purple-600">
+                              <span>Tặng thêm:</span>
+                              <span>+{appliedDiscount.bonusDays} ngày</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Payment Method and Due Date */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

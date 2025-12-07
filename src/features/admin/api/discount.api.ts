@@ -1,6 +1,6 @@
 import { API_ENDPOINTS } from '../../../configs/Api';
 import apiClient from '../../../configs/AxiosConfig';
-import { Discount, CreateDiscountData, UpdateDiscountData, DiscountSearchParams } from '../types/discount.types';
+import { Discount, CreateDiscountData, UpdateDiscountData, DiscountSearchParams, GetAvailableDiscountsParams } from '../types/discount.types';
 
 export const discountApi = {
   // Get all discounts
@@ -44,5 +44,16 @@ export const discountApi = {
       params: searchParams
     });
     return response.data.data;
-  }
+  },
+  getAvailableDiscounts: async (params?: GetAvailableDiscountsParams): Promise<Discount[]> => {
+    if (!params) {
+      params = {};
+    }
+    const response = await apiClient.get(API_ENDPOINTS.DISCOUNT.GET_AVAILABLE, { params });
+    return response.data.data;
+  },
+  applyDiscountManual: async (data: { discountId: string; originalAmount: number }): Promise<any> => {
+    const response = await apiClient.post(API_ENDPOINTS.DISCOUNT.APPLY_MANUAL, data);
+    return response.data.data;
+  },
 };

@@ -31,6 +31,7 @@ export interface CreateInvoiceData {
   amount: number;
   originalAmount?: number;
   discountId?: string;
+  discountDetails?: any[];
   paymentMethod: string;
   dueDate: string;
   notes?: string;

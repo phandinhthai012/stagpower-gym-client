@@ -40,3 +40,9 @@ export interface DiscountSearchParams {
   startDate?: string;
   endDate?: string;
 }
+
+export interface GetAvailableDiscountsParams {
+  packageType?: string;
+  packageCategory?: string;
+  memberId?: string;
+}

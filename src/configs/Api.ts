@@ -154,6 +154,9 @@ export const API_ENDPOINTS = {
         UPDATE_DISCOUNT: (discountId: string) => `${API_PREFIX}/discounts/${discountId}`,
         DELETE_DISCOUNT: (discountId: string) => `${API_PREFIX}/discounts/${discountId}`,
         CHANGE_DISCOUNT_STATUS: (discountId: string) => `${API_PREFIX}/discounts/${discountId}/status`,
+        VALIDATE_CODE: `${API_PREFIX}/discounts/validate-code`,
+        GET_AVAILABLE: `${API_PREFIX}/discounts/available`,
+        APPLY_MANUAL: `${API_PREFIX}/discounts/apply-manual`,
     },
     AI_SUGGESTION: {
         CREATE_AI_SUGGESTION: `${API_PREFIX}/ai-suggestions`,

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../../constants/queryKeys';
 import { discountApi } from '../api/discount.api';
-import { CreateDiscountData, UpdateDiscountData } from '../types/discount.types';
+import { CreateDiscountData, GetAvailableDiscountsParams, UpdateDiscountData } from '../types/discount.types';
 import { toast } from 'sonner';
 
 // Query Keys
@@ -11,6 +11,7 @@ export const discountQueryKeys = {
   list: (filters: Record<string, any>) => [...discountQueryKeys.lists(), { filters }] as const,
   details: () => [...discountQueryKeys.all, 'detail'] as const,
   detail: (id: string) => [...discountQueryKeys.details(), id] as const,
+  available: (params: GetAvailableDiscountsParams) => [...discountQueryKeys.all, 'available', { params }] as const,
 };
 
 // Get all discounts
@@ -105,5 +106,22 @@ export const useDeleteDiscount = () => {
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Có lỗi xảy ra khi xóa ưu đãi');
     },
+  });
+};
+
+// get available discounts
+export const useGetAvailableDiscounts = (params?: GetAvailableDiscountsParams) => {
+  return useQuery({
+    queryKey: discountQueryKeys.available(params || {}),
+    queryFn: () => discountApi.getAvailableDiscounts(params),
+    enabled: !!params?.packageType, // Chỉ chạy khi có packageType
+    staleTime: 30 * 60 * 1000,
+  });
+};
+
+export const useApplyDiscountManual = () => {
+  return useMutation({
+    mutationFn: (data: { discountId: string; originalAmount: number }) =>
+      discountApi.applyDiscountManual(data),
   });
 };
