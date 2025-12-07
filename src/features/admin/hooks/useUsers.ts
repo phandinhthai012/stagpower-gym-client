@@ -48,6 +48,7 @@ export const useUserById = (userId: string) => {
   return useQuery({
     queryKey: queryKeys.userById(userId),
     queryFn: () => userApi.getUserById(userId),
+    enabled: !!userId,
   });
 };
 
