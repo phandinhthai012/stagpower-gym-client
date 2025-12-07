@@ -12,6 +12,7 @@ export * from './useUsers';
 export * from './useSubscriptions';
 export * from './useCheckIns';
 export * from './useReports';
+export * from './useDiscountTypes';
 
 // Re-export payment hooks from member hooks
 export * from '../../member/hooks/usePayments';

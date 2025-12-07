@@ -55,7 +55,6 @@ export function ModalEditPackage({ isOpen, onClose, packageId, onSuccess }: Moda
         maxTrialDays: '',
         description: ''
     });
-    console.log("sdhjasd");
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const toast = useToast();

@@ -1,11 +1,15 @@
 export interface Discount {
   _id: string;
   name: string;
-  type: 'HSSV' | 'VIP' | 'Group' | 'Company' | 'Voucher';
+  code?: string; // Thêm code
+  type: string;
   discountPercentage?: number;
   discountAmount?: number;
   maxDiscount?: number;
+  minPurchaseAmount?: number; // Thêm minPurchaseAmount
   bonusDays?: number;
+  usageLimit?: number | null; // Thêm usageLimit
+  usageCount?: number; // Thêm usageCount
   conditions: string;
   durationTypes: ('ShortTerm' | 'MediumTerm' | 'LongTerm')[];
   packageTypes: ('Membership' | 'Combo' | 'PT')[];
@@ -18,11 +22,14 @@ export interface Discount {
 
 export interface CreateDiscountData {
   name: string;
+  code?: string; // Thêm code
   type: string;
   discountPercentage?: number;
   discountAmount?: number;
   maxDiscount?: number;
+  minPurchaseAmount?: number; // Thêm minPurchaseAmount
   bonusDays?: number;
+  usageLimit?: number | null; // Thêm usageLimit
   conditions: string;
   durationTypes: string[];
   packageTypes: string[];

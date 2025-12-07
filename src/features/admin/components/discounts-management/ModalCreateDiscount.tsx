@@ -8,16 +8,20 @@ import { Badge } from '../../../../components/ui/badge';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
 import { useCreateDiscount } from '../../hooks/useDiscounts';
 import { CreateDiscountData } from '../../types/discount.types';
-import { 
-  X, 
-  Percent, 
-  DollarSign, 
-  Calendar, 
+import { useDiscountTypes } from '../../hooks/useDiscountTypes';
+import {
+  X,
+  Percent,
+  DollarSign,
+  Calendar,
   Clock,
   Gift,
   Tag,
   Users,
-  Package
+  Package,
+  Hash,
+  ShoppingCart,
+  Users2
 } from 'lucide-react';
 
 interface ModalCreateDiscountProps {
@@ -28,11 +32,14 @@ interface ModalCreateDiscountProps {
 export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProps) {
   const [formData, setFormData] = useState<CreateDiscountData>({
     name: '',
+    code: '',
     type: '',
     discountPercentage: undefined,
     discountAmount: undefined,
     maxDiscount: undefined,
+    minPurchaseAmount: undefined,
     bonusDays: undefined,
+    usageLimit: null, // null = không giới hạn
     conditions: '',
     durationTypes: [],
     packageTypes: [],
@@ -52,20 +59,21 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
 
   const createDiscountMutation = useCreateDiscount();
+  const { data: discountTypes = [] } = useDiscountTypes();
 
-  const handleInputChange = (field: keyof CreateDiscountData, value: string | number | boolean | string[]) => {
+  const handleInputChange = (field: keyof CreateDiscountData, value: string | number | boolean | string[] | null | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field as string]) {
       setErrors(prev => ({
@@ -108,6 +116,24 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
       newErrors.type = 'Loại ưu đãi là bắt buộc';
     }
 
+    // Kiểm tra code: bắt buộc nếu type là Voucher
+    const isVoucher = formData.type.toUpperCase() === 'VOUCHER';
+    const codeValue = formData.code?.trim() || '';
+
+    if (isVoucher && !codeValue) {
+      newErrors.code = 'Mã giảm giá là bắt buộc cho loại Voucher';
+    }
+
+    // Validate code format nếu có code
+    if (codeValue) {
+      const codeRegex = /^[A-Z0-9_]+$/;
+      if (!codeRegex.test(codeValue)) {
+        newErrors.code = 'Mã chỉ được chứa chữ hoa, số và dấu gạch dưới';
+      } else if (codeValue.length < 3 || codeValue.length > 20) {
+        newErrors.code = 'Mã phải có từ 3 đến 20 ký tự';
+      }
+    }
+
     if (!formData.discountPercentage && !formData.discountAmount) {
       newErrors.discountPercentage = 'Phải có ít nhất một loại giảm giá';
       newErrors.discountAmount = 'Phải có ít nhất một loại giảm giá';
@@ -129,27 +155,47 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
       newErrors.endDate = 'Ngày kết thúc phải sau ngày bắt đầu';
     }
 
+    // Validate usageLimit nếu có
+    if (formData.usageLimit !== null && formData.usageLimit !== undefined) {
+      if (formData.usageLimit < 0) {
+        newErrors.usageLimit = 'Giới hạn sử dụng không được âm';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     try {
-      await createDiscountMutation.mutateAsync(formData);
+      // Chuẩn bị data để gửi
+      const submitData: CreateDiscountData = {
+        ...formData,
+        code: formData.code?.trim() || undefined, // Chỉ gửi nếu có giá trị
+        usageLimit: formData.usageLimit === null || formData.usageLimit === undefined ? null : formData.usageLimit,
+        minPurchaseAmount: formData.minPurchaseAmount || 0,
+      };
+
+      await createDiscountMutation.mutateAsync(submitData);
       onClose();
+      
+      // Reset form
       setFormData({
         name: '',
+        code: '',
         type: '',
         discountPercentage: undefined,
         discountAmount: undefined,
         maxDiscount: undefined,
+        minPurchaseAmount: undefined,
         bonusDays: undefined,
+        usageLimit: null,
         conditions: '',
         durationTypes: [],
         packageTypes: [],
@@ -157,11 +203,11 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
         endDate: '',
         status: 'Active'
       });
+      setErrors({});
     } catch (error) {
       console.error('Error creating discount:', error);
     }
   };
-
 
   if (!isOpen) return null;
 
@@ -193,7 +239,7 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                 <Tag className="w-4 h-4" />
                 Thông tin cơ bản
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">
@@ -214,22 +260,53 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                     Loại ưu đãi <span className="text-red-500">*</span>
                     {errors.type && <span className="text-red-500 ml-1">({errors.type})</span>}
                   </Label>
-                  <Select 
-                    value={formData.type} 
+                  <Select
+                    value={formData.type}
                     onValueChange={(value) => handleInputChange('type', value)}
                   >
                     <SelectTrigger className={errors.type ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Chọn loại ưu đãi" />
+                      <SelectValue placeholder="Chọn loại giảm giá" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="HSSV">HSSV</SelectItem>
-                      <SelectItem value="VIP">VIP</SelectItem>
-                      <SelectItem value="Group">Group</SelectItem>
-                      <SelectItem value="Company">Company</SelectItem>
-                      <SelectItem value="Voucher">Voucher</SelectItem>
+                      {discountTypes.length === 0 ? (
+                        <SelectItem value="" disabled>Đang tải...</SelectItem>
+                      ) : (
+                        discountTypes.map((type) => (
+                          <SelectItem key={type._id} value={type.name}>
+                            {type.displayName} ({type.name})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Code field - Required for Voucher */}
+              <div>
+                <Label htmlFor="code" className="flex items-center gap-2">
+                  <Hash className="w-4 h-4" />
+                  Mã giảm giá
+                  {formData.type.toUpperCase() === 'VOUCHER' && <span className="text-red-500">*</span>}
+                  {!formData.type || formData.type.toUpperCase() !== 'VOUCHER' ? (
+                    <span className="text-gray-500 text-sm">(tùy chọn)</span>
+                  ) : null}
+                  {errors.code && <span className="text-red-500 ml-1">({errors.code})</span>}
+                </Label>
+                <Input
+                  id="code"
+                  value={formData.code || ''}
+                  onChange={(e) => handleInputChange('code', e.target.value.toUpperCase().trim())}
+                  placeholder="VD: HSSV2024, VIP50"
+                  className={errors.code ? 'border-red-500' : ''}
+                  required={formData.type.toUpperCase() === 'VOUCHER'}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.type.toUpperCase() === 'VOUCHER' 
+                    ? 'Mã giảm giá là bắt buộc cho loại Voucher. ' 
+                    : ''}
+                  Mã sẽ tự động chuyển thành chữ hoa. Chỉ chứa chữ cái, số và dấu gạch dưới (3-20 ký tự)
+                </p>
               </div>
 
               <div>
@@ -254,7 +331,7 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                 <Percent className="w-4 h-4" />
                 Cấu hình giảm giá
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="discountPercentage">
@@ -302,7 +379,25 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="minPurchaseAmount" className="flex items-center gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    Số tiền tối thiểu (VNĐ)
+                  </Label>
+                  <Input
+                    id="minPurchaseAmount"
+                    type="number"
+                    value={formData.minPurchaseAmount || ''}
+                    onChange={(e) => handleInputChange('minPurchaseAmount', e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="0"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Số tiền tối thiểu để áp dụng giảm giá
+                  </p>
+                </div>
+
                 <div>
                   <Label htmlFor="bonusDays">Ngày tặng thêm</Label>
                   <Input
@@ -317,9 +412,34 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                 </div>
 
                 <div>
+                  <Label htmlFor="usageLimit" className="flex items-center gap-2">
+                    <Users2 className="w-4 h-4" />
+                    Giới hạn sử dụng
+                    {errors.usageLimit && <span className="text-red-500">({errors.usageLimit})</span>}
+                  </Label>
+                  <Input
+                    id="usageLimit"
+                    type="number"
+                    value={formData.usageLimit === null ? '' : formData.usageLimit || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleInputChange('usageLimit', value === '' ? null : Number(value));
+                    }}
+                    placeholder="Để trống = không giới hạn"
+                    min="0"
+                    className={errors.usageLimit ? 'border-red-500' : ''}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Số lần tối đa có thể sử dụng. Để trống = không giới hạn
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <Label htmlFor="status">Trạng thái</Label>
-                  <Select 
-                    value={formData.status} 
+                  <Select
+                    value={formData.status}
                     onValueChange={(value) => handleInputChange('status', value)}
                   >
                     <SelectTrigger>
@@ -340,16 +460,27 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                 <Package className="w-4 h-4" />
                 Loại gói và thời hạn áp dụng
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Loại thời hạn</Label>
                   <div className="flex gap-2 mb-2">
-                    <Input
+                    <Select
                       value={newDurationType}
-                      onChange={(e) => setNewDurationType(e.target.value)}
-                      placeholder="Nhập loại thời hạn"
-                    />
+                      onValueChange={setNewDurationType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn loại thời hạn" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ShortTerm">ShortTerm</SelectItem>
+                        <SelectItem value="MediumTerm">MediumTerm</SelectItem>
+                        <SelectItem value="LongTerm">LongTerm</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" onClick={addDurationType} size="sm">
+                      Thêm
+                    </Button>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {formData.durationTypes.map((type) => (
@@ -365,19 +496,27 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                       </Badge>
                     ))}
                   </div>
-                  <Button type="button" onClick={addDurationType} size="sm" className="mt-2">
-                    Thêm
-                  </Button>
                 </div>
 
                 <div>
                   <Label>Loại gói</Label>
                   <div className="flex gap-2 mb-2">
-                    <Input
+                    <Select
                       value={newPackageType}
-                      onChange={(e) => setNewPackageType(e.target.value)}
-                      placeholder="Nhập loại gói"
-                    />
+                      onValueChange={setNewPackageType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn loại gói" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Membership">Membership</SelectItem>
+                        <SelectItem value="Combo">Combo</SelectItem>
+                        <SelectItem value="PT">PT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" onClick={addPackageType} size="sm">
+                      Thêm
+                    </Button>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {formData.packageTypes.map((type) => (
@@ -393,9 +532,6 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                       </Badge>
                     ))}
                   </div>
-                  <Button type="button" onClick={addPackageType} size="sm" className="mt-2">
-                    Thêm
-                  </Button>
                 </div>
               </div>
             </div>
@@ -406,7 +542,7 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                 <Calendar className="w-4 h-4" />
                 Thời gian áp dụng
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="startDate">
@@ -450,8 +586,8 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
               >
                 Hủy
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={createDiscountMutation.isPending}
                 className="bg-purple-600 hover:bg-purple-700"
               >

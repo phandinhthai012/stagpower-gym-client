@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../../../../components/ui/badge';
 import { useScrollLock } from '../../../../hooks/useScrollLock';
 import { useUpdateDiscount } from '../../hooks/useDiscounts';
+import { useDiscountTypes } from '../../hooks/useDiscountTypes';
 import { Discount, UpdateDiscountData } from '../../types/discount.types';
 import { 
   X, 
@@ -18,7 +19,10 @@ import {
   Tag,
   Users,
   Package,
-  Edit
+  Edit,
+  Hash,
+  ShoppingCart,
+  Users2
 } from 'lucide-react';
 
 interface ModalEditDiscountProps {
@@ -47,28 +51,32 @@ export function ModalEditDiscount({ isOpen, onClose, discount }: ModalEditDiscou
   }, [isOpen]);
 
   const updateDiscountMutation = useUpdateDiscount();
+  const { data: discountTypes = [] } = useDiscountTypes();
 
   // Initialize form data when discount changes
   useEffect(() => {
     if (discount) {
       setFormData({
         name: discount.name,
+        code: discount.code || '',
         type: discount.type,
         discountPercentage: discount.discountPercentage,
         discountAmount: discount.discountAmount,
         maxDiscount: discount.maxDiscount,
+        minPurchaseAmount: discount.minPurchaseAmount,
         bonusDays: discount.bonusDays,
+        usageLimit: discount.usageLimit ?? null,
         conditions: discount.conditions,
         durationTypes: discount.durationTypes,
         packageTypes: discount.packageTypes,
-        startDate: discount.startDate,
-        endDate: discount.endDate,
+        startDate: discount.startDate ? discount.startDate.split('T')[0] : '',
+        endDate: discount.endDate ? discount.endDate.split('T')[0] : '',
         status: discount.status
       });
     }
   }, [discount]);
 
-  const handleInputChange = (field: keyof UpdateDiscountData, value: string | number | boolean | string[]) => {
+  const handleInputChange = (field: keyof UpdateDiscountData, value: string | number | boolean | string[] | null | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -116,8 +124,27 @@ export function ModalEditDiscount({ isOpen, onClose, discount }: ModalEditDiscou
       newErrors.type = 'Loại ưu đãi là bắt buộc';
     }
 
+    // Kiểm tra code: bắt buộc nếu type là Voucher
+    const isVoucher = formData.type?.toUpperCase() === 'VOUCHER';
+    const codeValue = formData.code?.trim() || '';
+
+    if (isVoucher && !codeValue) {
+      newErrors.code = 'Mã giảm giá là bắt buộc cho loại Voucher';
+    }
+
+    // Validate code format nếu có code
+    if (codeValue) {
+      const codeRegex = /^[A-Z0-9_]+$/;
+      if (!codeRegex.test(codeValue)) {
+        newErrors.code = 'Mã chỉ được chứa chữ hoa, số và dấu gạch dưới';
+      } else if (codeValue.length < 3 || codeValue.length > 20) {
+        newErrors.code = 'Mã phải có từ 3 đến 20 ký tự';
+      }
+    }
+
     if (!formData.discountPercentage && !formData.discountAmount) {
-      newErrors.discount = 'Phải có ít nhất một loại giảm giá';
+      newErrors.discountPercentage = 'Phải có ít nhất một loại giảm giá';
+      newErrors.discountAmount = 'Phải có ít nhất một loại giảm giá';
     }
 
     if (!formData.conditions?.trim()) {
@@ -136,6 +163,13 @@ export function ModalEditDiscount({ isOpen, onClose, discount }: ModalEditDiscou
       newErrors.endDate = 'Ngày kết thúc phải sau ngày bắt đầu';
     }
 
+    // Validate usageLimit nếu có
+    if (formData.usageLimit !== null && formData.usageLimit !== undefined) {
+      if (formData.usageLimit < 0) {
+        newErrors.usageLimit = 'Giới hạn sử dụng không được âm';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -148,9 +182,17 @@ export function ModalEditDiscount({ isOpen, onClose, discount }: ModalEditDiscou
     }
 
     try {
+      // Chuẩn bị data để gửi
+      const submitData: UpdateDiscountData = {
+        ...formData,
+        code: formData.code?.trim() || undefined, // Chỉ gửi nếu có giá trị
+        usageLimit: formData.usageLimit === null || formData.usageLimit === undefined ? null : formData.usageLimit,
+        minPurchaseAmount: formData.minPurchaseAmount || 0,
+      };
+
       await updateDiscountMutation.mutateAsync({
         id: discount._id,
-        data: formData
+        data: submitData
       });
       onClose();
     } catch (error) {
@@ -206,22 +248,54 @@ export function ModalEditDiscount({ isOpen, onClose, discount }: ModalEditDiscou
                 <div>
                   <Label htmlFor="type">Loại ưu đãi *</Label>
                   <Select 
-                    value={formData.type || ''} 
-                    onValueChange={(value) => handleInputChange('type', value)}
+                    key={`type-select-${formData.type || ''}`}
+                    value={formData.type?.toUpperCase() || ''} 
+                    onValueChange={(value) => handleInputChange('type', value.toUpperCase())}
                   >
                     <SelectTrigger className={errors.type ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Chọn loại ưu đãi" />
+                      <SelectValue placeholder="Chọn loại giảm giá" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="HSSV">HSSV</SelectItem>
-                      <SelectItem value="VIP">VIP</SelectItem>
-                      <SelectItem value="Group">Group</SelectItem>
-                      <SelectItem value="Company">Company</SelectItem>
-                      <SelectItem value="Voucher">Voucher</SelectItem>
+                      {discountTypes.length === 0 ? (
+                        <SelectItem value="" disabled>Đang tải...</SelectItem>
+                      ) : (
+                        discountTypes.map((type) => (
+                          <SelectItem key={type._id} value={type.name}>
+                            {type.displayName} ({type.name})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
                 </div>
+              </div>
+
+              {/* Code field - Required for Voucher */}
+              <div>
+                <Label htmlFor="code" className="flex items-center gap-2">
+                  <Hash className="w-4 h-4" />
+                  Mã giảm giá
+                  {formData.type?.toUpperCase() === 'VOUCHER' && <span className="text-red-500">*</span>}
+                  {!formData.type || formData.type.toUpperCase() !== 'VOUCHER' ? (
+                    <span className="text-gray-500 text-sm">(tùy chọn)</span>
+                  ) : null}
+                  {errors.code && <span className="text-red-500 ml-1">({errors.code})</span>}
+                </Label>
+                <Input
+                  id="code"
+                  value={formData.code || ''}
+                  onChange={(e) => handleInputChange('code', e.target.value.toUpperCase().trim())}
+                  placeholder="VD: HSSV2024, VIP50"
+                  className={errors.code ? 'border-red-500' : ''}
+                  required={formData.type?.toUpperCase() === 'VOUCHER'}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.type?.toUpperCase() === 'VOUCHER' 
+                    ? 'Mã giảm giá là bắt buộc cho loại Voucher. ' 
+                    : ''}
+                  Mã sẽ tự động chuyển thành chữ hoa. Chỉ chứa chữ cái, số và dấu gạch dưới (3-20 ký tự)
+                </p>
               </div>
 
               <div>
@@ -284,7 +358,25 @@ export function ModalEditDiscount({ isOpen, onClose, discount }: ModalEditDiscou
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="minPurchaseAmount" className="flex items-center gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    Số tiền tối thiểu (VNĐ)
+                  </Label>
+                  <Input
+                    id="minPurchaseAmount"
+                    type="number"
+                    value={formData.minPurchaseAmount || ''}
+                    onChange={(e) => handleInputChange('minPurchaseAmount', e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="0"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Số tiền tối thiểu để áp dụng giảm giá
+                  </p>
+                </div>
+
                 <div>
                   <Label htmlFor="bonusDays">Ngày tặng thêm</Label>
                   <Input
@@ -298,6 +390,31 @@ export function ModalEditDiscount({ isOpen, onClose, discount }: ModalEditDiscou
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="usageLimit" className="flex items-center gap-2">
+                    <Users2 className="w-4 h-4" />
+                    Giới hạn sử dụng
+                    {errors.usageLimit && <span className="text-red-500">({errors.usageLimit})</span>}
+                  </Label>
+                  <Input
+                    id="usageLimit"
+                    type="number"
+                    value={formData.usageLimit === null ? '' : formData.usageLimit || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleInputChange('usageLimit', value === '' ? null : Number(value));
+                    }}
+                    placeholder="Để trống = không giới hạn"
+                    min="0"
+                    className={errors.usageLimit ? 'border-red-500' : ''}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Số lần tối đa có thể sử dụng. Để trống = không giới hạn
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="status">Trạng thái</Label>
                   <Select 
@@ -327,11 +444,19 @@ export function ModalEditDiscount({ isOpen, onClose, discount }: ModalEditDiscou
                 <div>
                   <Label>Loại thời hạn</Label>
                   <div className="flex gap-2 mb-2">
-                    <Input
+                    <Select
                       value={newDurationType}
-                      onChange={(e) => setNewDurationType(e.target.value)}
-                      placeholder="Nhập loại thời hạn"
-                    />
+                      onValueChange={setNewDurationType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn loại thời hạn" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ShortTerm">ShortTerm</SelectItem>
+                        <SelectItem value="MediumTerm">MediumTerm</SelectItem>
+                        <SelectItem value="LongTerm">LongTerm</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button type="button" onClick={addDurationType} size="sm">
                       Thêm
                     </Button>
@@ -355,11 +480,19 @@ export function ModalEditDiscount({ isOpen, onClose, discount }: ModalEditDiscou
                 <div>
                   <Label>Loại gói</Label>
                   <div className="flex gap-2 mb-2">
-                    <Input
+                    <Select
                       value={newPackageType}
-                      onChange={(e) => setNewPackageType(e.target.value)}
-                      placeholder="Nhập loại gói"
-                    />
+                      onValueChange={setNewPackageType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn loại gói" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Membership">Membership</SelectItem>
+                        <SelectItem value="Combo">Combo</SelectItem>
+                        <SelectItem value="PT">PT</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button type="button" onClick={addPackageType} size="sm">
                       Thêm
                     </Button>

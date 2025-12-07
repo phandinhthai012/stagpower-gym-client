@@ -64,26 +64,48 @@ export function AdminDiscountManagement() {
 
 
   const getTypeBadge = (type: string) => {
-    switch (type) {
-      case 'HSSV':
-        return <Badge className="bg-purple-100 text-purple-800">HSSV</Badge>;
-      case 'VIP':
-        return <Badge className="bg-orange-100 text-orange-800">VIP</Badge>;
-      case 'Group':
-        return <Badge className="bg-blue-100 text-blue-800">Group</Badge>;
-      case 'Company':
-        return <Badge className="bg-green-100 text-green-800">Company</Badge>;
-      case 'Voucher':
-        return <Badge className="bg-pink-100 text-pink-800">Voucher</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">Khác</Badge>;
-    }
+    // Mảng màu sắc có sẵn
+    const colorClasses = [
+      { bg: 'bg-purple-100', text: 'text-purple-800' },
+      { bg: 'bg-orange-100', text: 'text-orange-800' },
+      { bg: 'bg-blue-100', text: 'text-blue-800' },
+      { bg: 'bg-green-100', text: 'text-green-800' },
+      { bg: 'bg-pink-100', text: 'text-pink-800' },
+      { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+      { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+      { bg: 'bg-red-100', text: 'text-red-800' },
+      { bg: 'bg-teal-100', text: 'text-teal-800' },
+      { bg: 'bg-cyan-100', text: 'text-cyan-800' },
+    ];
+
+    // Hash function đơn giản để tạo số từ string
+    const hashString = (str: string): number => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+      }
+      return Math.abs(hash);
+    };
+
+    // Lấy màu dựa trên hash của type name
+    const typeUpper = type.toUpperCase();
+    const hash = hashString(typeUpper);
+    const colorIndex = hash % colorClasses.length;
+    const colors = colorClasses[colorIndex];
+
+    return (
+      <Badge className={`${colors.bg} ${colors.text}`}>
+        {typeUpper}
+      </Badge>
+    );
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Active':
-        return <Badge className="bg-green-100 text-green-800">Đang hoạt động</Badge>;
+        return <Badge className="bg-green-100 text-green-800">Hoạt động</Badge>;
       case 'Inactive':
         return <Badge className="bg-red-100 text-red-800">Tạm dừng</Badge>;
       default:

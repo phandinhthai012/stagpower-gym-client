@@ -4,18 +4,21 @@ import { Button } from '../../../../components/ui/button';
 import { Badge } from '../../../../components/ui/badge';
 import { Label } from '../../../../components/ui/label';
 import { Discount } from '../../types/discount.types';
-import { 
-  X, 
-  Percent, 
-  DollarSign, 
-  Calendar, 
+import {
+  X,
+  Percent,
+  DollarSign,
+  Calendar,
   Clock,
   Gift,
   Tag,
   Users,
   Package,
   CheckCircle,
-  XCircle
+  XCircle,
+  Hash,
+  ShoppingCart,
+  Users2
 } from 'lucide-react';
 
 interface ModalViewDiscountProps {
@@ -40,7 +43,7 @@ export function ModalViewDiscount({ isOpen, onClose, discount }: ModalViewDiscou
       case 'Voucher':
         return <Badge className="bg-pink-100 text-pink-800">Voucher</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">Khác</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{type}</Badge>;
     }
   };
 
@@ -101,18 +104,29 @@ export function ModalViewDiscount({ isOpen, onClose, discount }: ModalViewDiscou
               <Tag className="w-4 h-4" />
               Thông tin cơ bản
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-gray-600">Tên ưu đãi</Label>
                 <p className="text-lg font-semibold">{discount.name}</p>
               </div>
-              
+
               <div>
                 <Label className="text-sm font-medium text-gray-600">Loại ưu đãi</Label>
                 <div className="mt-1">{getTypeBadge(discount.type)}</div>
               </div>
             </div>
+            {discount.code && (
+              <div>
+                <Label className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                  <Hash className="w-4 h-4" />
+                  Mã giảm giá
+                </Label>
+                <p className="mt-1 text-lg font-mono font-semibold text-blue-600 bg-blue-50 p-2 rounded-md">
+                  {discount.code}
+                </p>
+              </div>
+            )}
 
             <div>
               <Label className="text-sm font-medium text-gray-600">Điều kiện áp dụng</Label>
@@ -128,7 +142,7 @@ export function ModalViewDiscount({ isOpen, onClose, discount }: ModalViewDiscou
               <Percent className="w-4 h-4" />
               Cấu hình giảm giá
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
@@ -148,6 +162,17 @@ export function ModalViewDiscount({ isOpen, onClose, discount }: ModalViewDiscou
                   </div>
                   <p className="text-xl font-bold text-blue-600">
                     {discount.maxDiscount.toLocaleString('vi-VN')} VNĐ
+                  </p>
+                </div>
+              )}
+              {discount.minPurchaseAmount !== undefined && discount.minPurchaseAmount > 0 && (
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShoppingCart className="w-4 h-4 text-yellow-600" />
+                    <span className="text-sm font-medium text-gray-600">Số tiền tối thiểu</span>
+                  </div>
+                  <p className="text-xl font-bold text-yellow-600">
+                    {discount.minPurchaseAmount.toLocaleString('vi-VN')} VNĐ
                   </p>
                 </div>
               )}
@@ -177,7 +202,7 @@ export function ModalViewDiscount({ isOpen, onClose, discount }: ModalViewDiscou
               <Package className="w-4 h-4" />
               Loại gói và thời hạn áp dụng
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-gray-600">Loại thời hạn</Label>
@@ -210,6 +235,66 @@ export function ModalViewDiscount({ isOpen, onClose, discount }: ModalViewDiscou
               </div>
             </div>
           </div>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Users2 className="w-4 h-4" />
+              Giới hạn sử dụng
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* {discount.bonusDays && discount.bonusDays > 0 && (
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm font-medium text-gray-600">Ngày tặng thêm</span>
+                  </div>
+                  <p className="text-xl font-bold text-purple-600">
+                    +{discount.bonusDays} ngày
+                  </p>
+                </div>
+              )} */}
+
+              {discount.usageLimit !== null && discount.usageLimit !== undefined && (
+                <div className="bg-indigo-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users2 className="w-4 h-4 text-indigo-600" />
+                    <span className="text-sm font-medium text-gray-600">Giới hạn sử dụng</span>
+                  </div>
+                  <p className="text-xl font-bold text-indigo-600">
+                    {discount.usageLimit.toLocaleString('vi-VN')} lần
+                  </p>
+                </div>
+              )}
+
+              {discount.usageLimit === null && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users2 className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-600">Giới hạn sử dụng</span>
+                  </div>
+                  <p className="text-lg font-semibold text-gray-600">
+                    Không giới hạn
+                  </p>
+                </div>
+              )}
+
+              {discount.usageCount !== undefined && (
+                <div className="bg-teal-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4 text-teal-600" />
+                    <span className="text-sm font-medium text-gray-600">Đã sử dụng</span>
+                  </div>
+                  <p className="text-xl font-bold text-teal-600">
+                    {discount.usageCount.toLocaleString('vi-VN')} lần
+                    {discount.usageLimit !== null && discount.usageLimit !== undefined && (
+                      <span className="text-sm font-normal text-gray-500 block mt-1">
+                        / {discount.usageLimit.toLocaleString('vi-VN')} lần
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Date Range */}
           <div className="space-y-4">
@@ -217,7 +302,7 @@ export function ModalViewDiscount({ isOpen, onClose, discount }: ModalViewDiscou
               <Calendar className="w-4 h-4" />
               Thời gian áp dụng
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
@@ -247,13 +332,13 @@ export function ModalViewDiscount({ isOpen, onClose, discount }: ModalViewDiscou
               <Clock className="w-4 h-4" />
               Thông tin hệ thống
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
               <div>
                 <Label className="text-sm font-medium text-gray-600">Ngày tạo</Label>
                 <p>{formatDate(discount.createdAt)}</p>
               </div>
-              
+
               <div>
                 <Label className="text-sm font-medium text-gray-600">Cập nhật lần cuối</Label>
                 <p>{formatDate(discount.updatedAt)}</p>
