@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
+import { Input } from '../../../components/ui/input';
+import { Label } from '../../../components/ui/label';
 import { 
   X, 
   QrCode, 
@@ -10,7 +12,9 @@ import {
   CheckCircle, 
   AlertTriangle,
   Smartphone,
-  Clock
+  Clock,
+  Tag,
+  XCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -19,7 +23,8 @@ import { useCreatePayment, useCreateMomoPayment } from '../hooks/usePayments';
 import { useBranches } from '../hooks/useBranches';
 import { ModalMomoPayment } from './momo/ModalMomoPayment';
 import { subscriptionApi } from '../api/subscription.api';
-
+// ========== NEW: Import discount hook ==========
+import { useValidateDiscountCode } from '../hooks/useDiscounts';
 interface ModalCreatePaymentProps {
   open: boolean;
   onClose: () => void;
@@ -59,11 +64,22 @@ export function ModalCreatePayment({
     paymentId: string;
   } | null>(null);
   
+  // ========== NEW: Discount states ==========
+  const [discountCode, setDiscountCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
+  const [finalAmount, setFinalAmount] = useState(amount);
+  const [discountDetails, setDiscountDetails] = useState<any[]>([]);
+  const [isValidatingDiscount, setIsValidatingDiscount] = useState(false);
+
+  // Get originalAmount: nếu đã apply discount thì dùng từ result, nếu chưa thì dùng từ prop amount
+  const originalAmount = appliedDiscount?.originalAmount || amount || 0;
+
+
   const { data: branches } = useBranches();
   const createSubscriptionMutation = useCreateSubscription();
   const createPaymentMutation = useCreatePayment();
   const createMomoPaymentMutation = useCreateMomoPayment();
-
+  const validateDiscountMutation = useValidateDiscountCode();
   // Reset state when modal closes
   useEffect(() => {
     if (!open) {
@@ -71,8 +87,101 @@ export function ModalCreatePayment({
       setIsSubmitting(false);
       setShowMomoModal(false);
       setMomoData(null);
+      // ========== NEW: Reset discount states ==========
+      setDiscountCode('');
+      setAppliedDiscount(null);
+      setFinalAmount(amount);
+      setDiscountDetails([]);
+    } else {
+      // ========== NEW: Reset finalAmount when modal opens or amount changes ==========
+      if (!appliedDiscount) {
+        setFinalAmount(amount);
+      }
     }
-  }, [open]);
+  }, [open, amount]);
+  // ========== NEW: Handle apply discount code ==========
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) {
+      toast.error('Vui lòng nhập mã giảm giá');
+      return;
+    }
+
+    if (!user?.id && !user?._id) {
+      toast.error('Không tìm thấy thông tin người dùng');
+      return;
+    }
+
+    setIsValidatingDiscount(true);
+    try {
+      const memberId = user?._id || user?.id;
+      
+      // Đảm bảo originalAmount là số hợp lệ - luôn dùng amount prop vì đây là giá gốc từ package
+      const currentOriginalAmount = Number(amount) || 0;
+      if (!currentOriginalAmount || currentOriginalAmount <= 0) {
+        toast.error('Giá gốc không hợp lệ');
+        setIsValidatingDiscount(false);
+        return;
+      }
+
+      console.log('Applying discount with:', {
+        code: discountCode.trim().toUpperCase(),
+        packageId,
+        originalAmount: currentOriginalAmount,
+      });
+
+      // Backend sẽ tự lấy packageType và packageCategory từ packageId
+      const result = await validateDiscountMutation.mutateAsync({
+        code: discountCode.trim().toUpperCase(),
+        memberId,
+        packageId,
+        originalAmount: currentOriginalAmount,
+        // Không gửi packageType - backend sẽ tự lấy từ Package model
+      });
+
+      // Debug log
+      console.log('Discount result:', result);
+      console.log('Final amount:', result.finalAmount);
+      console.log('Original amount from result:', result.originalAmount);
+      console.log('Current amount prop:', amount);
+      
+      // Kiểm tra finalAmount hợp lệ
+      if (result.finalAmount === undefined || result.finalAmount === null || isNaN(result.finalAmount)) {
+        console.error('Invalid finalAmount from backend:', result);
+        toast.error('Có lỗi xảy ra khi tính toán giảm giá');
+        return;
+      }
+
+      // Đảm bảo originalAmount từ result được sử dụng
+      if (!result.originalAmount || result.originalAmount <= 0) {
+        console.error('Invalid originalAmount from backend:', result);
+        toast.error('Có lỗi xảy ra: số tiền gốc không hợp lệ');
+        return;
+      }
+
+      setAppliedDiscount(result);
+      // Sử dụng finalAmount từ result (đã được validate)
+      setFinalAmount(Number(result.finalAmount));
+      setDiscountDetails(result.discountDetails ? [result.discountDetails] : []);
+      toast.success(`Đã áp dụng mã giảm giá: ${result.discount.name}`);
+    } catch (error: any) {
+      console.error('Error validating discount:', error);
+      // Error toast đã được xử lý trong hook
+      setAppliedDiscount(null);
+      setDiscountDetails([]);
+      setFinalAmount(amount);
+    } finally {
+      setIsValidatingDiscount(false);
+    }
+  };
+
+  // ========== NEW: Handle remove discount ==========
+  const handleRemoveDiscount = () => {
+    setDiscountCode('');
+    setAppliedDiscount(null);
+    setDiscountDetails([]);
+    setFinalAmount(amount);
+    toast.info('Đã xóa mã giảm giá');
+  };
 
   const handleSubmit = async () => {
     if (!user?.id && !user?._id) {
@@ -101,11 +210,12 @@ export function ModalCreatePayment({
           newPackageId: packageId,
           branchId: branchId || undefined,
           paymentDetails: {
-            amount: amount,
+            amount: finalAmount, // ========== NEW: Use finalAmount instead of amount ==========
+            originalAmount: originalAmount, // ========== NEW: Include originalAmount ==========
             paymentMethod: paymentMethodMap[paymentMethod],
-            discountDetails: []
+            discountDetails: discountDetails // ========== NEW: Include discountDetails ==========
           },
-          isPaid: paymentMethod !== 'momo', // Nếu không phải Momo thì đánh dấu đã thanh toán
+          isPaid: paymentMethod !== 'momo',
           paymentDate: paymentMethod !== 'momo' ? new Date().toISOString() : undefined
         });
 
@@ -172,11 +282,12 @@ export function ModalCreatePayment({
         paymentData = {
           subscriptionId: createdSubscription._id,
           memberId,
-          originalAmount: amount,
-          amount: amount,
+          originalAmount: originalAmount, // ========== NEW: Use originalAmount ==========
+          amount: finalAmount, // ========== NEW: Use finalAmount instead of amount ==========
           paymentMethod: paymentMethodMap[paymentMethod],
           paymentStatus: 'Pending' as const,
           paymentType: paymentType,
+          discountDetails: discountDetails, // ========== NEW: Include discountDetails ==========
         };
       }
 
@@ -250,8 +361,8 @@ export function ModalCreatePayment({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm">
-        <Card className="relative w-full max-w-lg bg-white mx-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4">
+        <Card className="relative w-full max-w-4xl bg-white">
           <button
             aria-label="Đóng"
             className="absolute right-4 top-4 rounded-full p-1 text-gray-500 hover:bg-gray-100 z-10"
@@ -267,38 +378,141 @@ export function ModalCreatePayment({
             </CardTitle>
           </CardHeader>
 
-          <CardContent className="p-6 space-y-6">
-            {/* Package Info */}
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Gói tập:</span>
-                  <span className="font-medium text-blue-900">{packageName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Loại:</span>
-                  <Badge className="bg-blue-100 text-blue-800">
-                    {packageType === 'PT' ? 'Mua buổi tập' : 
-                     packageType === 'Combo' ? 'Combo' : 
-                     'Đăng ký gói mới'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between pt-2 border-t">
-                  <span className="text-lg font-semibold text-gray-900">Thành tiền:</span>
-                  <span className="text-2xl font-bold text-blue-900">
-                    {new Intl.NumberFormat('vi-VN', {
-                      style: 'currency',
-                      currency: 'VND'
-                    }).format(amount)}
-                  </span>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column: Package Info & Discount */}
+              <div className="space-y-4">
+                {/* Package Info */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Gói tập:</span>
+                      <span className="font-medium text-blue-900">{packageName}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Loại:</span>
+                      <Badge className="bg-blue-100 text-blue-800">
+                        {packageType === 'PT' ? 'Mua buổi tập' : 
+                         packageType === 'Combo' ? 'Combo' : 
+                         'Đăng ký gói mới'}
+                      </Badge>
+                    </div>
+
+                    {/* ========== NEW: Discount Code Input Section ========== */}
+                    <div className="pt-3 border-t space-y-2">
+                      <Label htmlFor="discountCode" className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        <Tag className="w-4 h-4" />
+                        Mã giảm giá (nếu có)
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="discountCode"
+                          type="text"
+                          placeholder="Nhập mã giảm giá..."
+                          value={discountCode}
+                          onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleApplyDiscount();
+                            }
+                          }}
+                          disabled={isValidatingDiscount || isSubmitting}
+                          className="flex-1"
+                        />
+                        {appliedDiscount ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRemoveDiscount}
+                            disabled={isSubmitting}
+                            className="flex items-center gap-1"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Xóa
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleApplyDiscount}
+                            disabled={isValidatingDiscount || isSubmitting || !discountCode.trim()}
+                            className="flex items-center gap-1"
+                          >
+                            {isValidatingDiscount ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              'Áp dụng'
+                            )}
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* ========== NEW: Display discount info when applied ========== */}
+                      {appliedDiscount && (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg mt-2">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge className="bg-green-600">{appliedDiscount.discount.name}</Badge>
+                                {appliedDiscount.discount.code && (
+                                  <span className="text-sm text-gray-600">({appliedDiscount.discount.code})</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600 mt-1">{appliedDiscount.discount.conditions}</p>
+                              <div className="text-sm space-y-1 mt-2">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Giá gốc:</span>
+                                  <span>{appliedDiscount.originalAmount.toLocaleString('vi-VN')} VNĐ</span>
+                                </div>
+                                <div className="flex justify-between text-green-600 font-medium">
+                                  <span>Giảm giá:</span>
+                                  <span>-{appliedDiscount.discountAmount.toLocaleString('vi-VN')} VNĐ</span>
+                                </div>
+                                {appliedDiscount.bonusDays > 0 && (
+                                  <div className="flex justify-between text-purple-600 text-xs">
+                                    <span>Tặng thêm:</span>
+                                    <span>+{appliedDiscount.bonusDays} ngày tập</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center pt-3 border-t">
+                      <span className="text-lg font-semibold text-gray-900">Thành tiền:</span>
+                      <div className="text-right">
+                        <span className="text-2xl font-bold text-blue-900">
+                          {new Intl.NumberFormat('vi-VN', {
+                            style: 'currency',
+                            currency: 'VND'
+                          }).format(finalAmount)}
+                        </span>
+                        {/* ========== NEW: Show original amount if discount applied ========== */}
+                        {appliedDiscount && (
+                          <div className="text-xs text-gray-500 line-through mt-1">
+                            {new Intl.NumberFormat('vi-VN', {
+                              style: 'currency',
+                              currency: 'VND'
+                            }).format(originalAmount)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Payment Method Selection */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Chọn phương thức thanh toán</h4>
-              <div className="grid grid-cols-1 gap-3">
+              {/* Right Column: Payment Method Selection */}
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-gray-900">Chọn phương thức thanh toán</h4>
+                  <div className="grid grid-cols-1 gap-3">
                 <button
                   onClick={() => setPaymentMethod('momo')}
                   className={`p-4 rounded-lg border-2 transition-all ${
@@ -358,11 +572,11 @@ export function ModalCreatePayment({
                     )}
                   </div>
                 </button>
-              </div>
-            </div>
+                  </div>
+                </div>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-4 border-t">
+                {/* Actions */}
+                <div className="flex gap-3 pt-4 border-t">
               <Button 
                 variant="outline" 
                 className="flex-1" 
@@ -385,6 +599,8 @@ export function ModalCreatePayment({
                   'Xác nhận thanh toán'
                 )}
               </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -396,7 +612,7 @@ export function ModalCreatePayment({
           open={showMomoModal}
           qrCodeUrl={momoData.qrCodeUrl}
           deeplink={momoData.deeplink}
-          amount={amount}
+          amount={finalAmount} // ========== NEW: Use finalAmount instead of amount ==========
           paymentId={momoData.paymentId}
           onCancel={handleMomoCancel}
           onSuccess={handleMomoSuccess}
