@@ -127,6 +127,9 @@ export function AdminReports() {
   // Export report modal state
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<string>('');
+  
+  // Track all dropdown open states to prevent scroll lock
+  const [isAnyDropdownOpen, setIsAnyDropdownOpen] = useState(false);
 
   // Auto-select branch when modal opens and userBranchId is provided (similar to ModalQRCheckIn)
   useEffect(() => {
@@ -138,6 +141,87 @@ export function AdminReports() {
       }
     }
   }, [isExportModalOpen, userBranchId, branches, selectedReportType]);
+  
+  // Prevent scroll lock when any dropdown is open
+  useEffect(() => {
+    if (!isAnyDropdownOpen) return;
+
+    let rafId: number;
+    let lastCheck = 0;
+    const preventScrollLock = () => {
+      const now = Date.now();
+      // Throttle to prevent flickering - only check every 100ms
+      if (now - lastCheck < 100) {
+        if (isAnyDropdownOpen) {
+          rafId = requestAnimationFrame(preventScrollLock);
+        }
+        return;
+      }
+      lastCheck = now;
+
+      // Check if body has fixed position (indicating scroll lock)
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        // Remove data-scroll-locked attribute if present
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      }
+      // Also check for data-scroll-locked attribute
+      if (document.body.hasAttribute('data-scroll-locked')) {
+        document.body.removeAttribute('data-scroll-locked');
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
+
+      // Continue checking only if dropdown is still open
+      if (isAnyDropdownOpen) {
+        rafId = requestAnimationFrame(preventScrollLock);
+      }
+    };
+
+    // Start checking
+    rafId = requestAnimationFrame(preventScrollLock);
+
+    return () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isAnyDropdownOpen]);
+  
+  // Helper function to handle dropdown open/close
+  const handleDropdownOpenChange = (open: boolean) => {
+    setIsAnyDropdownOpen(open);
+    // Prevent scroll lock when dropdown opens/closes
+    requestAnimationFrame(() => {
+      // Restore scroll styles to prevent lock
+      if (document.body.style.position === 'fixed') {
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        document.body.removeAttribute('data-scroll-locked');
+        if (scrollY) {
+          const y = parseInt(scrollY.replace('px', '').replace('-', '') || '0');
+          window.scrollTo(0, y);
+        }
+      } else {
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+        document.body.removeAttribute('data-scroll-locked');
+      }
+    });
+  };
   
   // View mode for each branch (default to year)
   const [branchViewModes, setBranchViewModes] = useState<Record<string, 'year' | 'month'>>({});
@@ -435,7 +519,11 @@ export function AdminReports() {
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     {/* Branch Filter */}
-                    <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                    <Select 
+                      value={selectedBranch} 
+                      onValueChange={setSelectedBranch}
+                      onOpenChange={handleDropdownOpenChange}
+                    >
                       <SelectTrigger className="w-[160px] h-8 text-xs">
                         <SelectValue placeholder="Chọn chi nhánh" />
                       </SelectTrigger>
@@ -1067,7 +1155,11 @@ export function AdminReports() {
           </CardTitle>
               <div className="flex items-center gap-3">
                 {/* Branch Filter */}
-                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                <Select 
+                  value={selectedBranch} 
+                  onValueChange={setSelectedBranch}
+                  onOpenChange={handleDropdownOpenChange}
+                >
                   <SelectTrigger className="w-[200px]">
                     <SelectValue placeholder="Chọn chi nhánh" />
                   </SelectTrigger>
@@ -1513,7 +1605,11 @@ export function AdminReports() {
               </CardTitle>
               {/* Filters */}
               <div className="flex items-center gap-2">
-                <Select value={packageStatsBranch} onValueChange={setPackageStatsBranch}>
+                <Select 
+                  value={packageStatsBranch} 
+                  onValueChange={setPackageStatsBranch}
+                  onOpenChange={handleDropdownOpenChange}
+                >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Chọn chi nhánh" />
                   </SelectTrigger>
@@ -1530,6 +1626,7 @@ export function AdminReports() {
                 <Select 
                   value={packageStatsYear.toString()} 
                   onValueChange={(value) => setPackageStatsYear(parseInt(value))}
+                  onOpenChange={handleDropdownOpenChange}
                 >
                   <SelectTrigger className="w-[100px]">
                     <SelectValue />
@@ -1552,6 +1649,7 @@ export function AdminReports() {
                       setPackageStatsMonth(parseInt(value));
                     }
                   }}
+                  onOpenChange={handleDropdownOpenChange}
                 >
                   <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Chọn tháng" />
@@ -1771,15 +1869,16 @@ export function AdminReports() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-3">
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  Top 10 hội viên tích cực
-                </CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600" />
+              Top 10 hội viên tích cực
+            </CardTitle>
                 {/* Filters */}
                 <div className="flex items-center gap-2">
                   <Select 
                     value={topMembersYear.toString()} 
                     onValueChange={(value) => setTopMembersYear(parseInt(value))}
+                    onOpenChange={handleDropdownOpenChange}
                   >
                     <SelectTrigger className="w-[100px]">
                       <SelectValue />
@@ -1802,6 +1901,7 @@ export function AdminReports() {
                         setTopMembersMonth(parseInt(value));
                       }
                     }}
+                    onOpenChange={handleDropdownOpenChange}
                   >
                     <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Chọn tháng" />
@@ -2226,7 +2326,14 @@ export function AdminReports() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Chi nhánh
                   </label>
-                  <Select value={exportBranchId} onValueChange={setExportBranchId}>
+                  <Select 
+                    value={exportBranchId} 
+                    onValueChange={setExportBranchId}
+                    onOpenChange={(open) => {
+                      setIsExportDropdownOpen(open);
+                      handleDropdownOpenChange(open);
+                    }}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Chọn chi nhánh" />
                     </SelectTrigger>
