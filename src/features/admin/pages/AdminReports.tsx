@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
@@ -31,11 +31,34 @@ import { useSubscriptions } from '../hooks/useSubscriptions';
 import { useCheckIns } from '../hooks/useCheckIns';
 import { useAllSchedules } from '../hooks/useSchedules';
 import { usePackages } from '../hooks/usePackages';
+import { useBranches } from '../hooks/useBranches';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { toast } from 'sonner';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export function AdminReports() {
-  const { data: packageStats, isLoading: isLoadingPackageStats } = usePackageStats();
-  const { data: topMembers, isLoading: isLoadingTopMembers } = useTopActiveMembers(10);
+  const { user } = useAuth();
+  
+  // Package stats filters
+  const [packageStatsBranch, setPackageStatsBranch] = useState<string>('all');
+  const [packageStatsYear, setPackageStatsYear] = useState<number>(new Date().getFullYear());
+  const [packageStatsMonth, setPackageStatsMonth] = useState<number | null>(null); // null = cả năm
+  
+  const { data: packageStats, isLoading: isLoadingPackageStats } = usePackageStats(
+    packageStatsBranch,
+    packageStatsYear,
+    packageStatsMonth
+  );
+  
+  // Top members filters
+  const [topMembersYear, setTopMembersYear] = useState<number>(new Date().getFullYear());
+  const [topMembersMonth, setTopMembersMonth] = useState<number | null>(null); // null = cả năm
+  
+  const { data: topMembers, isLoading: isLoadingTopMembers } = useTopActiveMembers(
+    10,
+    topMembersYear,
+    topMembersMonth
+  );
   const { data: revenueStats, isLoading: isLoadingRevenueStats } = useRevenueStats();
   const { data: peakHours, isLoading: isLoadingPeakHours } = usePeakHours();
   const { data: paymentsResponse } = usePayments();
@@ -69,9 +92,57 @@ export function AdminReports() {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'year' | 'month'>('year');
   
+  // Branch filter for revenue chart
+  const [selectedBranch, setSelectedBranch] = useState<string>('all');
+  const { data: branches = [] } = useBranches();
+  
+  // Get branch ID from user based on role
+  const getUserBranchId = (user: any): string | null => {
+    if (!user) return null;
+    const role = user.role?.toLowerCase() || user.role;
+    
+    if (role === 'admin' && user.adminInfo?.branchId) {
+      // Admin: branchId can be string or object
+      return typeof user.adminInfo.branchId === 'object' 
+        ? user.adminInfo.branchId._id 
+        : user.adminInfo.branchId;
+    }
+    
+    if ((role === 'staff' || role === 'trainer') && user.staffInfo?.brand_id) {
+      // Staff/Trainer: brand_id can be string or object
+      return typeof user.staffInfo.brand_id === 'object'
+        ? user.staffInfo.brand_id._id
+        : user.staffInfo.brand_id;
+    }
+    
+    return null;
+  };
+
+  const userBranchId = getUserBranchId(user);
+  
+  // Branch filter for export revenue report
+  const [exportBranchId, setExportBranchId] = useState<string>('all');
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
+  
   // Export report modal state
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<string>('');
+
+  // Auto-select branch when modal opens and userBranchId is provided (similar to ModalQRCheckIn)
+  useEffect(() => {
+    if (isExportModalOpen && userBranchId && selectedReportType === 'revenue') {
+      // Check if user's branch exists in branches list
+      const branchExists = branches.some((branch: any) => String(branch._id) === String(userBranchId));
+      if (branchExists) {
+        setExportBranchId(userBranchId);
+      }
+    }
+  }, [isExportModalOpen, userBranchId, branches, selectedReportType]);
+  
+  // View mode for each branch (default to year)
+  const [branchViewModes, setBranchViewModes] = useState<Record<string, 'year' | 'month'>>({});
+  const [branchSelectedMonths, setBranchSelectedMonths] = useState<Record<string, number | null>>({});
+  
   // Get first and last day of current month
   const getFirstDayOfMonth = () => {
     const now = new Date();
@@ -107,6 +178,102 @@ export function AdminReports() {
   // Calculate total for percentage
   const totalSold = packageStats?.packageStats.reduce((sum: number, pkg: any) => sum + pkg.count, 0) || 1;
   const totalRevenue = packageStats?.packageStats.reduce((sum: number, pkg: any) => sum + pkg.revenue, 0) || 0;
+
+  // Helper function to get branchId from payment
+  const getPaymentBranchId = (payment: any): string | null => {
+    // Try to get branchId from subscription
+    const subId = payment.subscriptionId?._id || payment.subscriptionId;
+    if (!subId) return null;
+    
+    const subscription = subscriptions.find((sub: any) => 
+      String(sub._id) === String(subId)
+    );
+    
+    if (subscription) {
+      return subscription.branchId?._id || subscription.branchId || null;
+    }
+    return null;
+  };
+
+  // Filter payments by branch
+  const filteredPayments = selectedBranch === 'all' 
+    ? payments 
+    : payments.filter((payment: any) => {
+        const paymentBranchId = getPaymentBranchId(payment);
+        return String(paymentBranchId) === String(selectedBranch);
+      });
+
+  // Calculate revenue stats for filtered payments
+  const calculateRevenueByBranch = (branchId: string | 'all', paymentList: any[]) => {
+    const branchPayments = branchId === 'all' 
+      ? paymentList 
+      : paymentList.filter((payment: any) => {
+          const paymentBranchId = getPaymentBranchId(payment);
+          return String(paymentBranchId) === String(branchId);
+        });
+
+    const monthlyData: Record<string, number> = {};
+    const currentYear = selectedYear;
+    
+    // Initialize all months
+    for (let i = 0; i < 12; i++) {
+      const monthKey = `${currentYear}-${String(i + 1).padStart(2, '0')}`;
+      monthlyData[monthKey] = 0;
+    }
+    
+    // Sum payments by month
+    branchPayments
+      .filter((payment: any) => (payment.paymentStatus || payment.status) === 'Completed')
+      .forEach((payment: any) => {
+        const date = new Date(payment.paymentDate || payment.createdAt || payment.payment_date);
+        if (date.getFullYear() === currentYear) {
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          monthlyData[monthKey] += payment.amount || 0;
+        }
+      });
+    
+    // Convert to array format for chart
+    return Object.entries(monthlyData)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, revenue], index) => ({
+        month: `T${index + 1}`,
+        revenue: revenue / 1000000, // Convert to millions
+        fullDate: key,
+      }));
+  };
+
+  // Calculate revenue stats for current selection
+  const currentRevenueStats = React.useMemo(() => {
+    const monthlyRevenue = calculateRevenueByBranch(selectedBranch, payments);
+    const totalRevenue = monthlyRevenue.reduce((sum, m) => sum + m.revenue, 0);
+    const averageRevenue = monthlyRevenue.length > 0 ? totalRevenue / monthlyRevenue.length : 0;
+
+    // Calculate revenue growth
+    const lastMonth = monthlyRevenue[monthlyRevenue.length - 1]?.revenue || 0;
+    const prevMonth = monthlyRevenue[monthlyRevenue.length - 2]?.revenue || 0;
+    const revenueGrowth = prevMonth > 0 ? (((lastMonth - prevMonth) / prevMonth) * 100).toFixed(1) : '0';
+
+    // Calculate completed vs total payments
+    const branchPayments = selectedBranch === 'all' 
+      ? payments 
+      : payments.filter((payment: any) => {
+          const paymentBranchId = getPaymentBranchId(payment);
+          return String(paymentBranchId) === String(selectedBranch);
+        });
+    const completedPayments = branchPayments.filter((p: any) => (p.paymentStatus || p.status) === 'Completed').length;
+    const totalPayments = branchPayments.length;
+    const successRate = totalPayments > 0 ? ((completedPayments / totalPayments) * 100).toFixed(1) : 0;
+
+    return {
+      monthlyRevenue,
+      totalRevenue,
+      averageRevenue,
+      revenueGrowth,
+      completedPayments,
+      totalPayments,
+      successRate,
+    };
+  }, [selectedBranch, payments, subscriptions, selectedYear]);
 
   // Handle export package report
   const handleExportPackageReport = () => {
@@ -213,6 +380,8 @@ export function AdminReports() {
 
       exportRevenueReportToExcel({
         payments,
+        branches,
+        branchId: exportBranchId,
         dateRange1: {
           from: dateRange1From,
           to: dateRange1To,
@@ -249,9 +418,646 @@ export function AdminReports() {
         </div>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue Chart */}
+      {/* Revenue Chart - Conditional Layout */}
+      {selectedBranch === 'all' ? (
+        // Layout 2 cột khi chọn "Tất cả chi nhánh"
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Biểu đồ tổng - Bên trái (1/3 width) */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BarChart3 className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm">
+                      {viewMode === 'year' ? 'Tổng doanh thu' : `Tổng T${selectedMonth}/${selectedYear}`}
+                    </span>
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {/* Branch Filter */}
+                    <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                      <SelectTrigger className="w-[160px] h-8 text-xs">
+                        <SelectValue placeholder="Chọn chi nhánh" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả chi nhánh</SelectItem>
+                        {branches.map((branch: any) => (
+                          <SelectItem key={branch._id} value={branch._id}>
+                            {branch.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 relative">
+                  {viewMode === 'year' ? (
+                    (() => {
+                      const monthlyRevenues = currentRevenueStats?.monthlyRevenue || [];
+                      const maxMonthlyRevenue = monthlyRevenues.length > 0
+                        ? Math.max(...monthlyRevenues.map((data: any) => data.revenue || 0))
+                        : 1;
+                      const maxRevenue = maxMonthlyRevenue * 1.2 || 1;
+                      
+                      const yAxisLabels = [];
+                      const yAxisPositions = [];
+                      const numLabels = 4;
+                      
+                      for (let i = 0; i < numLabels; i++) {
+                        const value = (maxRevenue / (numLabels - 1)) * (numLabels - 1 - i);
+                        const yPos = 30 + (i * 50);
+                        yAxisLabels.push(value);
+                        yAxisPositions.push(yPos);
+                      }
+                      
+                      const formatYLabel = (value: number): string => {
+                        if (value >= 1000) {
+                          return (value / 1000).toFixed(1) + 'B';
+                        } else if (value >= 1) {
+                          return value.toFixed(1) + 'M';
+                        } else if (value >= 0.001) {
+                          return (value * 1000).toFixed(0) + 'K';
+                        }
+                        return value.toFixed(0);
+                      };
+                      
+                      return (
+                        <svg 
+                          className="w-full h-full" 
+                          viewBox="0 0 400 250"
+                          onMouseLeave={() => setHoveredRevenuePoint(null)}
+                        >
+                          {yAxisLabels.map((label, i) => (
+                            <text key={i} x="8" y={yAxisPositions[i]} className="text-xs fill-gray-500" style={{ fontSize: '10px' }}>
+                              {formatYLabel(label)}
+                            </text>
+                          ))}
+                          
+                          {yAxisPositions.map((yPos, i) => (
+                            <line 
+                              key={i}
+                              x1="35" 
+                              y1={yPos} 
+                              x2="380" 
+                              y2={yPos} 
+                              stroke="#e5e7eb" 
+                              strokeWidth="1" 
+                            />
+                          ))}
+                          
+                          {currentRevenueStats?.monthlyRevenue && (
+                            <>
+                              <polyline
+                                points={currentRevenueStats.monthlyRevenue.map((data: any, i: number) => {
+                                  const x = 35 + (i * 30);
+                                  const y = 190 - ((data.revenue || 0) / maxRevenue * 160);
+                                  return `${x},${y}`;
+                                }).join(' ')}
+                                fill="none"
+                                stroke="#3b82f6"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              {currentRevenueStats.monthlyRevenue.map((data: any, i: number) => {
+                                const x = 35 + (i * 30);
+                                const y = 190 - ((data.revenue || 0) / maxRevenue * 160);
+                                return (
+                                  <g key={i}>
+                                    <circle
+                                      cx={x}
+                                      cy={y}
+                                      r="4"
+                                      fill="#3b82f6"
+                                      stroke="white"
+                                      strokeWidth="1.5"
+                                      className="cursor-pointer"
+                                      onClick={() => {
+                                        setSelectedMonth(i + 1);
+                                        setViewMode('month');
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.setAttribute('r', '5');
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        setHoveredRevenuePoint({
+                                          month: data.month,
+                                          revenue: data.revenue * 1000000,
+                                          type: 'month'
+                                        });
+                                        setRevenueTooltipPosition({
+                                          x: rect.left + rect.width / 2,
+                                          y: rect.top - 10
+                                        });
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.setAttribute('r', '4');
+                                        setHoveredRevenuePoint(null);
+                                      }}
+                                    />
+                                  </g>
+                                );
+                              })}
+                            </>
+                          )}
+                          
+                          {currentRevenueStats?.monthlyRevenue.map((data: any, i: number) => (
+                            <text
+                              key={i}
+                              x={35 + (i * 30)}
+                              y="220"
+                              className="text-xs fill-gray-500 cursor-pointer"
+                              textAnchor="middle"
+                              style={{ fontSize: '9px' }}
+                              onClick={() => {
+                                setSelectedMonth(i + 1);
+                                setViewMode('month');
+                              }}
+                            >
+                              {data.month}
+                            </text>
+                          ))}
+                        </svg>
+                      );
+                    })()
+                  ) : (
+                    (() => {
+                      const daysInMonth = new Date(selectedYear, selectedMonth || 0, 0).getDate();
+                      const dailyRevenueMap: Record<number, number> = {};
+                      
+                      for (let day = 1; day <= daysInMonth; day++) {
+                        dailyRevenueMap[day] = 0;
+                      }
+                      
+                      const monthPayments = filteredPayments.filter((payment: any) => {
+                        const paymentDate = new Date(payment.paymentDate || payment.createdAt || payment.payment_date);
+                        return paymentDate.getFullYear() === selectedYear &&
+                               paymentDate.getMonth() === (selectedMonth! - 1) &&
+                               (payment.paymentStatus || payment.status) === 'Completed';
+                      });
+                      
+                      monthPayments.forEach((payment: any) => {
+                        const paymentDate = new Date(payment.paymentDate || payment.createdAt || payment.payment_date);
+                        const day = paymentDate.getDate();
+                        if (day >= 1 && day <= daysInMonth) {
+                          dailyRevenueMap[day] = (dailyRevenueMap[day] || 0) + (payment.amount || 0);
+                        }
+                      });
+                      
+                      const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
+                        const day = i + 1;
+                        return {
+                          day,
+                          revenue: (dailyRevenueMap[day] || 0) / 1000000
+                        };
+                      });
+                      
+                      const maxRevenue = Math.max(...dailyData.map(d => d.revenue), 0.1) * 1.2 || 1;
+                      const spacing = 350 / daysInMonth;
+                      
+                      const yAxisLabels = [];
+                      const yAxisPositions = [];
+                      const numLabels = 4;
+                      
+                      for (let i = 0; i < numLabels; i++) {
+                        const value = (maxRevenue / (numLabels - 1)) * (numLabels - 1 - i);
+                        const yPos = 30 + (i * 50);
+                        yAxisLabels.push(value);
+                        yAxisPositions.push(yPos);
+                      }
+                      
+                      const formatYLabel = (value: number): string => {
+                        if (value >= 1000) {
+                          return (value / 1000).toFixed(1) + 'B';
+                        } else if (value >= 1) {
+                          return value.toFixed(1) + 'M';
+                        } else if (value >= 0.001) {
+                          return (value * 1000).toFixed(0) + 'K';
+                        }
+                        return value.toFixed(0);
+                      };
+                      
+                      return (
+                        <svg 
+                          className="w-full h-full" 
+                          viewBox="0 0 400 250"
+                          onMouseLeave={() => setHoveredRevenuePoint(null)}
+                        >
+                          {yAxisLabels.map((label, i) => (
+                            <text key={i} x="8" y={yAxisPositions[i]} className="text-xs fill-gray-500" style={{ fontSize: '10px' }}>
+                              {formatYLabel(label)}
+                            </text>
+                          ))}
+                          
+                          {yAxisPositions.map((yPos, i) => (
+                            <line 
+                              key={i}
+                              x1="35" 
+                              y1={yPos} 
+                              x2="380" 
+                              y2={yPos} 
+                              stroke="#e5e7eb" 
+                              strokeWidth="1" 
+                            />
+                          ))}
+                          
+                          <polyline
+                            points={dailyData.map((data, i) => {
+                              const x = 35 + (i * spacing);
+                              const y = 190 - (data.revenue / maxRevenue * 160);
+                              return `${x},${y}`;
+                            }).join(' ')}
+                            fill="none"
+                            stroke="#10b981"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          
+                          <polygon
+                            points={`35,190 ${dailyData.map((data, i) => {
+                              const x = 35 + (i * spacing);
+                              const y = 190 - (data.revenue / maxRevenue * 160);
+                              return `${x},${y}`;
+                            }).join(' ')} ${35 + ((daysInMonth - 1) * spacing)},190`}
+                            fill="url(#gradient-small)"
+                            opacity="0.3"
+                          />
+                          
+                          <defs>
+                            <linearGradient id="gradient-small" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+                              <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
+                            </linearGradient>
+                          </defs>
+                          
+                          {dailyData.map((data, i) => {
+                            const x = 35 + (i * spacing);
+                            const y = 190 - (data.revenue / maxRevenue * 160);
+                            return (
+                              <circle
+                                key={i}
+                                cx={x}
+                                cy={y}
+                                r="2.5"
+                                fill="#10b981"
+                                stroke="white"
+                                strokeWidth="1"
+                                className="cursor-pointer"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.setAttribute('r', '4');
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  const actualRevenue = data.revenue * 1000000;
+                                  setHoveredRevenuePoint({
+                                    day: data.day,
+                                    revenue: actualRevenue,
+                                    month: selectedMonth,
+                                    year: selectedYear,
+                                    type: 'day'
+                                  });
+                                  setRevenueTooltipPosition({
+                                    x: rect.left + rect.width / 2,
+                                    y: rect.top - 10
+                                  });
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.setAttribute('r', '2.5');
+                                  setHoveredRevenuePoint(null);
+                                }}
+                              />
+                            );
+                          })}
+                          
+                          {dailyData.map((data, i) => {
+                            const x = 35 + (i * spacing);
+                            return (
+                              <text
+                                key={i}
+                                x={x}
+                                y="220"
+                                className="text-xs fill-gray-500"
+                                textAnchor="middle"
+                                style={{ fontSize: '8px' }}
+                              >
+                                {data.day}
+                              </text>
+                            );
+                          })}
+                        </svg>
+                      );
+                    })()
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Biểu đồ từng branch - Bên phải (2/3 width) */}
+          <div className="lg:col-span-2">
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold text-gray-900">
+                  Doanh thu theo từng chi nhánh
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 overflow-y-auto overflow-x-hidden pr-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    {branches.map((branch: any) => {
+                  const branchRevenue = calculateRevenueByBranch(branch._id, payments);
+                  const maxBranchRevenue = branchRevenue.length > 0
+                    ? Math.max(...branchRevenue.map((data: any) => data.revenue || 0))
+                    : 1;
+                  const maxRevenue = maxBranchRevenue * 1.2 || 1;
+
+                  const yAxisLabels = [];
+                  const yAxisPositions = [];
+                  const numLabels = 4;
+                  
+                  for (let i = 0; i < numLabels; i++) {
+                    const value = (maxRevenue / (numLabels - 1)) * (numLabels - 1 - i);
+                    const yPos = 25 + (i * 45);
+                    yAxisLabels.push(value);
+                    yAxisPositions.push(yPos);
+                  }
+                  
+                  const formatYLabel = (value: number): string => {
+                    if (value >= 1000) {
+                      return (value / 1000).toFixed(1) + 'B';
+                    } else if (value >= 1) {
+                      return value.toFixed(1) + 'M';
+                    } else if (value >= 0.001) {
+                      return (value * 1000).toFixed(0) + 'K';
+                    }
+                    return value.toFixed(0);
+                  };
+
+                  const branchViewMode = branchViewModes[branch._id] || 'year';
+                  const branchSelectedMonth = branchSelectedMonths[branch._id] || null;
+                  
+                  // Filter payments for this branch
+                  const branchPayments = payments.filter((payment: any) => {
+                    const paymentBranchId = getPaymentBranchId(payment);
+                    return String(paymentBranchId) === String(branch._id);
+                  });
+
+                  return (
+                    <Card key={branch._id}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4 text-blue-600" />
+                            {branch.name}
+                          </CardTitle>
+                          <div className="flex items-center gap-1">
+                            {branchViewMode === 'month' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  setBranchViewModes(prev => ({ ...prev, [branch._id]: 'year' }));
+                                  setBranchSelectedMonths(prev => ({ ...prev, [branch._id]: null }));
+                                }}
+                              >
+                                <ChevronLeft className="w-3 h-3" />
+                              </Button>
+                            )}
+                            {branchViewMode === 'month' && branchSelectedMonth && (
+                              <span className="text-xs font-medium text-gray-700 min-w-[50px] text-center">
+                                T{branchSelectedMonth}/{selectedYear}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-2">
+                        <div className="h-48 relative">
+                          {branchViewMode === 'year' ? (
+                            <svg 
+                              className="w-full h-full" 
+                              viewBox="0 0 350 200"
+                            >
+                              {yAxisLabels.map((label, i) => (
+                                <text key={i} x="8" y={yAxisPositions[i]} className="text-xs fill-gray-500" style={{ fontSize: '9px' }}>
+                                  {formatYLabel(label)}
+                                </text>
+                              ))}
+                              
+                              {yAxisPositions.map((yPos, i) => (
+                                <line 
+                                  key={i}
+                                  x1="30" 
+                                  y1={yPos} 
+                                  x2="330" 
+                                  y2={yPos} 
+                                  stroke="#e5e7eb" 
+                                  strokeWidth="1" 
+                                />
+                              ))}
+                              
+                              {branchRevenue.length > 0 && (
+                                <>
+                                  <polyline
+                                    points={branchRevenue.map((data: any, i: number) => {
+                                      const x = 30 + (i * 25);
+                                      const y = 170 - ((data.revenue || 0) / maxRevenue * 145);
+                                      return `${x},${y}`;
+                                    }).join(' ')}
+                                    fill="none"
+                                    stroke="#3b82f6"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  {branchRevenue.map((data: any, i: number) => {
+                                    const x = 30 + (i * 25);
+                                    const y = 170 - ((data.revenue || 0) / maxRevenue * 145);
+                                    return (
+                                      <circle
+                                        key={i}
+                                        cx={x}
+                                        cy={y}
+                                        r="3"
+                                        fill="#3b82f6"
+                                        stroke="white"
+                                        strokeWidth="1"
+                                        className="cursor-pointer"
+                                        onClick={() => {
+                                          setBranchViewModes(prev => ({ ...prev, [branch._id]: 'month' }));
+                                          setBranchSelectedMonths(prev => ({ ...prev, [branch._id]: i + 1 }));
+                                        }}
+                                      />
+                                    );
+                                  })}
+                                </>
+                              )}
+                              
+                              {branchRevenue.map((data: any, i: number) => (
+                                <text
+                                  key={i}
+                                  x={30 + (i * 25)}
+                                  y="190"
+                                  className="text-xs fill-gray-500 cursor-pointer hover:fill-blue-600"
+                                  textAnchor="middle"
+                                  style={{ fontSize: '8px' }}
+                                  onClick={() => {
+                                    setBranchViewModes(prev => ({ ...prev, [branch._id]: 'month' }));
+                                    setBranchSelectedMonths(prev => ({ ...prev, [branch._id]: i + 1 }));
+                                  }}
+                                >
+                                  {data.month}
+                                </text>
+                              ))}
+                            </svg>
+                          ) : (
+                            (() => {
+                              const daysInMonth = new Date(selectedYear, branchSelectedMonth || 0, 0).getDate();
+                              const dailyRevenueMap: Record<number, number> = {};
+                              
+                              for (let day = 1; day <= daysInMonth; day++) {
+                                dailyRevenueMap[day] = 0;
+                              }
+                              
+                              const monthPayments = branchPayments.filter((payment: any) => {
+                                const paymentDate = new Date(payment.paymentDate || payment.createdAt || payment.payment_date);
+                                return paymentDate.getFullYear() === selectedYear &&
+                                       paymentDate.getMonth() === (branchSelectedMonth! - 1) &&
+                                       (payment.paymentStatus || payment.status) === 'Completed';
+                              });
+                              
+                              monthPayments.forEach((payment: any) => {
+                                const paymentDate = new Date(payment.paymentDate || payment.createdAt || payment.payment_date);
+                                const day = paymentDate.getDate();
+                                if (day >= 1 && day <= daysInMonth) {
+                                  dailyRevenueMap[day] = (dailyRevenueMap[day] || 0) + (payment.amount || 0);
+                                }
+                              });
+                              
+                              const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
+                                const day = i + 1;
+                                return {
+                                  day,
+                                  revenue: (dailyRevenueMap[day] || 0) / 1000000
+                                };
+                              });
+                              
+                              const maxDailyRevenue = Math.max(...dailyData.map(d => d.revenue), 0.1) * 1.2 || 1;
+                              const spacing = 310 / daysInMonth;
+                              
+                              const dailyYAxisLabels = [];
+                              const dailyYAxisPositions = [];
+                              const numLabels = 4;
+                              
+                              for (let i = 0; i < numLabels; i++) {
+                                const value = (maxDailyRevenue / (numLabels - 1)) * (numLabels - 1 - i);
+                                const yPos = 25 + (i * 45);
+                                dailyYAxisLabels.push(value);
+                                dailyYAxisPositions.push(yPos);
+                              }
+                              
+                              return (
+                                <svg 
+                                  className="w-full h-full" 
+                                  viewBox="0 0 350 200"
+                                >
+                                  {dailyYAxisLabels.map((label, i) => (
+                                    <text key={i} x="8" y={dailyYAxisPositions[i]} className="text-xs fill-gray-500" style={{ fontSize: '9px' }}>
+                                      {formatYLabel(label)}
+                                    </text>
+                                  ))}
+                                  
+                                  {dailyYAxisPositions.map((yPos, i) => (
+                                    <line 
+                                      key={i}
+                                      x1="30" 
+                                      y1={yPos} 
+                                      x2="330" 
+                                      y2={yPos} 
+                                      stroke="#e5e7eb" 
+                                      strokeWidth="1" 
+                                    />
+                                  ))}
+                                  
+                                  <polyline
+                                    points={dailyData.map((data, i) => {
+                                      const x = 30 + (i * spacing);
+                                      const y = 170 - (data.revenue / maxDailyRevenue * 145);
+                                      return `${x},${y}`;
+                                    }).join(' ')}
+                                    fill="none"
+                                    stroke="#10b981"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  
+                                  <defs>
+                                    <linearGradient id={`gradient-branch-${branch._id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+                                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
+                                    </linearGradient>
+                                  </defs>
+                                  
+                                  <polygon
+                                    points={`30,170 ${dailyData.map((data, i) => {
+                                      const x = 30 + (i * spacing);
+                                      const y = 170 - (data.revenue / maxDailyRevenue * 145);
+                                      return `${x},${y}`;
+                                    }).join(' ')} ${30 + ((daysInMonth - 1) * spacing)},170`}
+                                    fill={`url(#gradient-branch-${branch._id})`}
+                                    opacity="0.3"
+                                  />
+                                  
+                                  {dailyData.map((data, i) => {
+                                    const x = 30 + (i * spacing);
+                                    const y = 170 - (data.revenue / maxDailyRevenue * 145);
+                                    return (
+                                      <circle
+                                        key={i}
+                                        cx={x}
+                                        cy={y}
+                                        r="2"
+                                        fill="#10b981"
+                                        stroke="white"
+                                        strokeWidth="1"
+                                      />
+                                    );
+                                  })}
+                                  
+                                  {dailyData.map((data, i) => {
+                                    const x = 30 + (i * spacing);
+                                    return (
+                                      <text
+                                        key={i}
+                                        x={x}
+                                        y="190"
+                                        className="text-xs fill-gray-500"
+                                        textAnchor="middle"
+                                        style={{ fontSize: '7px' }}
+                                      >
+                                        {data.day}
+                                      </text>
+                                    );
+                                  })}
+                                </svg>
+                              );
+                            })()
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        // Full width khi chọn branch cụ thể
       <Card>
         <CardHeader>
             <div className="flex items-center justify-between">
@@ -260,6 +1066,20 @@ export function AdminReports() {
                 {viewMode === 'year' ? 'Biểu đồ doanh thu' : `Doanh thu tháng ${selectedMonth}/${selectedYear}`}
           </CardTitle>
               <div className="flex items-center gap-3">
+                {/* Branch Filter */}
+                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Chọn chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả chi nhánh</SelectItem>
+                    {branches.map((branch: any) => (
+                      <SelectItem key={branch._id} value={branch._id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {/* Back to Year View Button */}
                 {viewMode === 'month' && (
                   <div className="relative group">
@@ -353,11 +1173,11 @@ export function AdminReports() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-80 relative">
+            <div className="h-64 relative">
               {viewMode === 'year' ? (
                 (() => {
                   // Calculate max revenue from actual data
-                  const monthlyRevenues = revenueStats?.monthlyRevenue || [];
+                  const monthlyRevenues = currentRevenueStats?.monthlyRevenue || [];
                   const maxMonthlyRevenue = monthlyRevenues.length > 0
                     ? Math.max(...monthlyRevenues.map((data: any) => data.revenue || 0))
                     : 1;
@@ -414,10 +1234,10 @@ export function AdminReports() {
                       ))}
                       
                       {/* Revenue line */}
-                      {revenueStats?.monthlyRevenue && (
+                      {currentRevenueStats?.monthlyRevenue && (
                         <>
                           <polyline
-                            points={revenueStats.monthlyRevenue.map((data: any, i: number) => {
+                            points={currentRevenueStats.monthlyRevenue.map((data: any, i: number) => {
                               const x = 50 + (i * 44);
                               const y = 210 - ((data.revenue || 0) / maxRevenue * 180);
                               return `${x},${y}`;
@@ -429,7 +1249,7 @@ export function AdminReports() {
                             strokeLinejoin="round"
                           />
                           {/* Data points */}
-                          {revenueStats.monthlyRevenue.map((data: any, i: number) => {
+                          {currentRevenueStats.monthlyRevenue.map((data: any, i: number) => {
                             const x = 50 + (i * 44);
                             const y = 210 - ((data.revenue || 0) / maxRevenue * 180);
                             return (
@@ -472,7 +1292,7 @@ export function AdminReports() {
                       )}
                       
                       {/* X-axis labels */}
-                      {revenueStats?.monthlyRevenue.map((data: any, i: number) => (
+                      {currentRevenueStats?.monthlyRevenue.map((data: any, i: number) => (
                         <text
                           key={i}
                           x={50 + (i * 44)}
@@ -503,7 +1323,7 @@ export function AdminReports() {
                   }
                   
                   // Filter payments for the selected month and year
-                  const monthPayments = payments.filter((payment: any) => {
+                  const monthPayments = filteredPayments.filter((payment: any) => {
                     const paymentDate = new Date(payment.paymentDate || payment.createdAt || payment.payment_date);
                     return paymentDate.getFullYear() === selectedYear &&
                            paymentDate.getMonth() === (selectedMonth! - 1) &&
@@ -679,22 +1499,87 @@ export function AdminReports() {
           </div>
         </CardContent>
       </Card>
+      )}
 
-        {/* Package Distribution */}
+      {/* Package Stats & Top Members Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Package Distribution & Effectiveness - Bên trái */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <CardTitle className="flex items-center gap-2">
-                <PieChart className="w-5 h-5 text-purple-600" />
-                Phân bố gói dịch vụ
+                <Package className="w-5 h-5 text-purple-600" />
+                Thống kê gói dịch vụ
               </CardTitle>
+              {/* Filters */}
+              <div className="flex items-center gap-2">
+                <Select value={packageStatsBranch} onValueChange={setPackageStatsBranch}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Chọn chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả chi nhánh</SelectItem>
+                    {branches.map((branch: any) => (
+                      <SelectItem key={branch._id} value={branch._id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select 
+                  value={packageStatsYear.toString()} 
+                  onValueChange={(value) => setPackageStatsYear(parseInt(value))}
+                >
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                      <SelectItem key={y} value={y.toString()}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select 
+                  value={packageStatsMonth?.toString() || 'all'} 
+                  onValueChange={(value) => {
+                    if (value === 'all') {
+                      setPackageStatsMonth(null);
+                    } else {
+                      setPackageStatsMonth(parseInt(value));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Chọn tháng" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Cả năm</SelectItem>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                      <SelectItem key={m} value={m.toString()}>
+                        Tháng {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {/* Donut Chart Placeholder */}
-              <div className="h-64 flex items-center justify-center relative">
-                <div className="relative w-48 h-48">
+              {/* Layout: Chart bên trái, Insights bên phải */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Phân bố gói dịch vụ - Bên trái */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <PieChart className="w-4 h-4 text-purple-600" />
+                    Phân bố gói dịch vụ
+                  </h3>
+                  <div className="h-48 flex items-center justify-center relative">
+                    <div className="relative w-40 h-40">
                   <svg 
                     viewBox="0 0 200 200" 
                     className="w-full h-full transform -rotate-90"
@@ -746,56 +1631,201 @@ export function AdminReports() {
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="text-center transform rotate-0">
-                      <p className="text-3xl font-bold text-gray-900">{totalSold}</p>
+                          <p className="text-2xl font-bold text-gray-900">{totalSold}</p>
                       <p className="text-xs text-gray-600 font-medium">Lượt đăng ký</p>
+                        </div>
                     </div>
                   </div>
                 </div>
           </div>
 
-              {/* Legend */}
+                {/* Insights */}
+                <div className="pt-18">
+                  {packageStats && packageStats.packageStats.length > 0 && (
               <div className="space-y-3">
-                <div className="text-center pb-2 border-b">
-                  <p className="text-xs text-gray-500">
-                    {packageStats?.packageStats.length || 0} loại gói • {totalSold} lượt đăng ký
-                  </p>
+                      <div className="flex items-start gap-2 text-xs">
+                        <TrendingUp className="w-3 h-3 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="font-medium text-gray-900">Phổ biến nhất: </span>
+                          <span className="text-green-600 font-semibold">
+                            {packageStats.mostPopular?.packageName} ({packageStats.mostPopular?.count} lượt)
+                          </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {packageStats?.packageStats.slice(0, 5).map((pkg: any, index: number) => {
-                    const colors = ['bg-green-500', 'bg-blue-500', 'bg-orange-500', 'bg-purple-500', 'bg-red-500'];
+                      </div>
+                      <div className="flex items-start gap-2 text-xs">
+                        <TrendingDown className="w-3 h-3 text-red-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="font-medium text-gray-900">Cần cải thiện: </span>
+                          <span className="text-red-600 font-semibold">
+                            {packageStats.leastPopular?.packageName} ({packageStats.leastPopular?.count} lượt)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 text-xs">
+                        <Target className="w-3 h-3 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="font-medium text-gray-900">Giữ chân tốt: </span>
+                          <span className="text-blue-600 font-semibold">
+                            {(() => {
+                              const bestRetention = [...packageStats.packageStats].sort((a: any, b: any) => 
+                                parseFloat(b.retentionRate) - parseFloat(a.retentionRate)
+                              )[0];
+                              return `${bestRetention?.packageName} (${bestRetention?.retentionRate}%)`;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 text-xs">
+                        <DollarSign className="w-3 h-3 text-purple-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span className="font-medium text-gray-900">Doanh thu cao: </span>
+                          <span className="text-purple-600 font-semibold">
+                            {(() => {
+                              const highestRevenue = [...packageStats.packageStats].sort((a: any, b: any) => 
+                                b.revenue - a.revenue
+                              )[0];
+                              return `${highestRevenue?.packageName} (${formatRevenue(highestRevenue?.revenue)})`;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Hiệu quả gói dịch vụ - Table ở dưới */}
+              <div className="pt-4 border-t">
+                <div className="overflow-x-auto overflow-y-auto max-h-64">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2 font-medium text-gray-600 text-xs">Màu</th>
+                        <th className="text-left p-2 font-medium text-gray-600 text-xs">Gói dịch vụ</th>
+                        <th className="text-left p-2 font-medium text-gray-600 text-xs">Đã đăng ký</th>
+                        <th className="text-left p-2 font-medium text-gray-600 text-xs">Đã thanh toán</th>
+                        <th className="text-left p-2 font-medium text-gray-600 text-xs">Doanh thu</th>
+                        <th className="text-left p-2 font-medium text-gray-600 text-xs">Tỷ lệ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {packageStats?.packageStats.map((pkg: any, index: number) => {
+                        const percentage = ((pkg.count / totalSold) * 100).toFixed(1);
+                        const colors = ['#10b981', '#3b82f6', '#f97316', '#a855f7', '#ef4444'];
+                        const color = colors[index] || '#9ca3af';
+                        
               return (
-                      <div key={index} className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded ${colors[index]}`} />
-                        <span className="text-xs text-gray-700 truncate" title={pkg.packageName}>
+                          <tr key={index} className="border-b hover:bg-gray-50">
+                            <td className="p-2">
+                              <div className="w-4 h-4 rounded" style={{ backgroundColor: color }} />
+                            </td>
+                            <td className="p-2">
+                              <div className="flex items-center gap-1">
+                                {index === 0 && <TrendingUp className="w-3 h-3 text-green-600" />}
+                                {index === packageStats.packageStats.length - 1 && <TrendingDown className="w-3 h-3 text-red-600" />}
+                                <span className="text-xs font-medium text-gray-900 truncate max-w-[100px]" title={pkg.packageName}>
                           {pkg.packageName}
                           </span>
                       </div>
+                            </td>
+                            <td className="p-2">
+                              <span className="text-xs font-semibold text-gray-900">{pkg.count}</span>
+                            </td>
+                            <td className="p-2">
+                              <span className="text-xs font-semibold text-blue-600">{pkg.paidCount || 0}</span>
+                            </td>
+                            <td className="p-2">
+                              <span className="text-xs font-medium text-green-600">
+                                {formatRevenue(pkg.revenue)}
+                              </span>
+                            </td>
+                            <td className="p-2">
+                              <div className="flex items-center gap-1">
+                                <div className="flex-1 bg-gray-200 rounded-full h-1.5 max-w-[50px]">
+                                  <div 
+                                    className="h-1.5 rounded-full" 
+                                    style={{ width: `${percentage}%`, backgroundColor: color }}
+                                  />
+                                </div>
+                                <span className="text-xs text-gray-600">{percentage}%</span>
+                              </div>
+                            </td>
+                          </tr>
                     );
                   })}
+                    </tbody>
+                  </table>
+                  {!packageStats || packageStats.packageStats.length === 0 && (
+                    <div className="text-center py-4 text-gray-500">
+                      <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-xs">Chưa có dữ liệu</p>
+                    </div>
+                  )}
                 </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-          </div>
 
-      {/* Tables Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top 10 Active Members */}
+        {/* Top 10 Active Members - Bên phải */}
           <Card>
             <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-600" />
-              Top 10 hội viên tích cực
-            </CardTitle>
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  Top 10 hội viên tích cực
+                </CardTitle>
+                {/* Filters */}
+                <div className="flex items-center gap-2">
+                  <Select 
+                    value={topMembersYear.toString()} 
+                    onValueChange={(value) => setTopMembersYear(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                        <SelectItem key={y} value={y.toString()}>
+                          {y}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select 
+                    value={topMembersMonth?.toString() || 'all'} 
+                    onValueChange={(value) => {
+                      if (value === 'all') {
+                        setTopMembersMonth(null);
+                      } else {
+                        setTopMembersMonth(parseInt(value));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Chọn tháng" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Cả năm</SelectItem>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                        <SelectItem key={m} value={m.toString()}>
+                          Tháng {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto max-h-96">
               <table className="w-full">
-                <thead>
+                <thead className="sticky top-0 bg-white z-10">
                   <tr className="border-b">
                     <th className="text-left p-3 font-medium text-gray-600 text-sm">Hạng</th>
                     <th className="text-left p-3 font-medium text-gray-600 text-sm">Hội viên</th>
+                    <th className="text-left p-3 font-medium text-gray-600 text-sm">Chi nhánh</th>
                     <th className="text-left p-3 font-medium text-gray-600 text-sm">Lượt check-in</th>
                     <th className="text-left p-3 font-medium text-gray-600 text-sm">Gói hiện tại</th>
                   </tr>
@@ -810,6 +1840,9 @@ export function AdminReports() {
                       </td>
                       <td className="p-3">
                         <p className="font-medium text-gray-900 text-sm">{member.memberName}</p>
+                      </td>
+                      <td className="p-3">
+                        <span className="text-sm text-gray-700">{member.branchName}</span>
                       </td>
                       <td className="p-3">
                         <span className="text-sm text-gray-900 font-semibold">{member.checkInCount}</span>
@@ -830,127 +1863,6 @@ export function AdminReports() {
                 </div>
               )}
               </div>
-            </CardContent>
-          </Card>
-
-        {/* Package Effectiveness */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="w-5 h-5 text-purple-600" />
-              Hiệu quả gói dịch vụ
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-medium text-gray-600 text-sm">Gói dịch vụ</th>
-                    <th className="text-left p-3 font-medium text-gray-600 text-sm">Đã bán</th>
-                    <th className="text-left p-3 font-medium text-gray-600 text-sm">Doanh thu</th>
-                    <th className="text-left p-3 font-medium text-gray-600 text-sm">Tỷ lệ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {packageStats?.packageStats.map((pkg: any, index: number) => {
-                    const percentage = ((pkg.count / totalSold) * 100).toFixed(1);
-                    const revenuePercentage = ((pkg.revenue / totalRevenue) * 100).toFixed(1);
-                    
-              return (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            {index === 0 && <TrendingUp className="w-4 h-4 text-green-600" />}
-                            {index === packageStats.packageStats.length - 1 && <TrendingDown className="w-4 h-4 text-red-600" />}
-                            <span className="text-sm font-medium text-gray-900">{pkg.packageName}</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-sm font-semibold text-gray-900">{pkg.count}</span>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-sm font-medium text-green-600">
-                            {formatRevenue(pkg.revenue)}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[60px]">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full" 
-                                style={{ width: `${percentage}%` }}
-                              />
-                        </div>
-                            <span className="text-xs text-gray-600">{percentage}%</span>
-                      </div>
-                        </td>
-                      </tr>
-              );
-            })}
-                </tbody>
-              </table>
-              {!packageStats || packageStats.packageStats.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>Chưa có dữ liệu</p>
-                </div>
-              )}
-              </div>
-
-            {/* Insights */}
-            {packageStats && packageStats.packageStats.length > 0 && (
-              <div className="mt-4 pt-4 border-t space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="flex items-start gap-2 text-sm">
-                    <TrendingUp className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                      <span className="font-medium text-gray-900">Gói phổ biến nhất: </span>
-                      <span className="text-green-600 font-semibold">
-                        {packageStats.mostPopular?.packageName} ({packageStats.mostPopular?.count} lượt)
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <TrendingDown className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-gray-900">Gói cần cải thiện: </span>
-                      <span className="text-red-600 font-semibold">
-                        {packageStats.leastPopular?.packageName} ({packageStats.leastPopular?.count} lượt)
-                      </span>
-                </div>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <Target className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-gray-900">Tỷ lệ giữ chân tốt nhất: </span>
-                      <span className="text-blue-600 font-semibold">
-                        {(() => {
-                          const bestRetention = [...packageStats.packageStats].sort((a: any, b: any) => 
-                            parseFloat(b.retentionRate) - parseFloat(a.retentionRate)
-                          )[0];
-                          return `${bestRetention?.packageName} (${bestRetention?.retentionRate}%)`;
-                        })()}
-                      </span>
-                </div>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <DollarSign className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <span className="font-medium text-gray-900">Doanh thu cao nhất: </span>
-                      <span className="text-purple-600 font-semibold">
-                        {(() => {
-                          const highestRevenue = [...packageStats.packageStats].sort((a: any, b: any) => 
-                            b.revenue - a.revenue
-                          )[0];
-                          return `${highestRevenue?.packageName} (${formatRevenue(highestRevenue?.revenue)})`;
-                        })()}
-                      </span>
-                </div>
-                  </div>
-                </div>
-              </div>
-            )}
               </CardContent>
             </Card>
           </div>
@@ -971,7 +1883,7 @@ export function AdminReports() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
               </div>
             ) : peakHours ? (
-              <div className="space-y-6">
+              <div className="space-y-6 max-h-96 overflow-y-auto">
                 {/* Time distribution bars */}
             <div className="space-y-4">
                   <div>
@@ -1084,7 +1996,7 @@ export function AdminReports() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : packageStats && packageStats.packageStats.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-96 overflow-y-auto">
                 {packageStats.packageStats.slice(0, 5).map((pkg: any, index: number) => (
                   <div key={index} className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -1103,11 +2015,8 @@ export function AdminReports() {
                         />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{pkg.activeCount} đang dùng / {pkg.count} tổng</span>
-                      <span>
-                        {pkg.expiredCount > 0 && `${pkg.expiredCount} hết hạn`}
-                      </span>
+                    <div className="text-xs text-gray-500">
+                      <span>{pkg.activeCount} người đang sử dụng</span>
                     </div>
                   </div>
                 ))}
@@ -1311,6 +2220,28 @@ export function AdminReports() {
 
             {/* Content */}
             <div className="p-6 space-y-4">
+              {/* Branch Selection - Only for revenue report */}
+              {selectedReportType === 'revenue' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Chi nhánh
+                  </label>
+                  <Select value={exportBranchId} onValueChange={setExportBranchId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Chọn chi nhánh" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả chi nhánh</SelectItem>
+                      {branches.map((branch: any) => (
+                        <SelectItem key={branch._id} value={branch._id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              
               {/* Date Range */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

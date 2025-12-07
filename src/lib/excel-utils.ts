@@ -135,6 +135,8 @@ export const exportWorkoutHistoryToExcel = (
 
 export interface RevenueReportData {
   payments: any[];
+  branches?: any[];
+  branchId?: string;
   dateRange1: { from: string; to: string };
   dateRange2?: { from: string; to: string };
 }
@@ -142,7 +144,23 @@ export interface RevenueReportData {
 export const exportRevenueReportToExcel = (
   data: RevenueReportData
 ): void => {
-  const { payments, dateRange1, dateRange2 } = data;
+  const { payments, branches = [], branchId = 'all', dateRange1, dateRange2 } = data;
+
+  // Helper function to get branch ID from payment
+  const getPaymentBranchId = (payment: any): string | null => {
+    if (payment.subscriptionId && payment.subscriptionId.branchId) {
+      return payment.subscriptionId.branchId._id || payment.subscriptionId.branchId || null;
+    }
+    return null;
+  };
+
+  // Filter payments by branch if not 'all'
+  const filteredPayments = branchId === 'all' 
+    ? payments 
+    : payments.filter((payment: any) => {
+        const paymentBranchId = getPaymentBranchId(payment);
+        return String(paymentBranchId) === String(branchId);
+      });
 
   // Helper function to filter payments by date range
   const filterByDateRange = (paymentList: any[], from: string, to: string) => {
@@ -191,138 +209,84 @@ export const exportRevenueReportToExcel = (
     return sanitized.substring(0, maxLength - 3) + '...';
   };
 
-  // Filter payments for each date range
-  const paymentsRange1 = filterByDateRange(payments, dateRange1.from, dateRange1.to);
-  const paymentsRange2 = dateRange2 
-    ? filterByDateRange(payments, dateRange2.from, dateRange2.to)
-    : [];
+  // Filter payments for date range
+  const paymentsInRange = filterByDateRange(filteredPayments, dateRange1.from, dateRange1.to);
 
   // Create workbook
   const wb = XLSX.utils.book_new();
 
-  // Sheet 1: Khoảng thời gian 1
-  const range1Data = paymentsRange1
-    .filter((p: any) => (p.paymentStatus || p.status) === 'Completed')
-    .map((payment: any) => ({
-      'Ngày thanh toán': formatDate(payment.paymentDate || payment.createdAt || payment.payment_date),
-      'Mã hóa đơn': payment.invoiceNumber || payment.invoice_number || payment._id || '',
-      'Mã giao dịch': payment.transactionId || payment.transaction_id || '',
-      'Hội viên': payment.memberId?.fullName || payment.memberName || 'N/A',
-      'Email': payment.memberId?.email || payment.memberEmail || '',
-      'Số điện thoại': payment.memberId?.phone || payment.memberPhone || '',
-      'Gói dịch vụ': payment.subscriptionId?.packageId?.name || payment.packageName || 'N/A',
-      'Loại thanh toán': payment.paymentType === 'NEW_SUBSCRIPTION' ? 'Đăng ký mới' :
-                        payment.paymentType === 'RENEWAL' ? 'Gia hạn' :
-                        payment.paymentType === 'PT_PURCHASE' ? 'Mua PT' : 'Khác',
-      'Phương thức': payment.paymentMethod === 'momo' ? 'Ví MoMo' :
-                    payment.paymentMethod === 'zalopay' ? 'Ví ZaloPay' :
-                    payment.paymentMethod === 'cash' ? 'Tiền mặt' :
-                    payment.paymentMethod === 'card' ? 'Thẻ' :
-                    payment.paymentMethod === 'banktransfer' || payment.paymentMethod === 'bank_transfer' ? 'Chuyển khoản' : payment.paymentMethod || 'Khác',
-      'Số tiền': payment.amount || 0,
-      'Trạng thái': payment.paymentStatus === 'Completed' ? 'Hoàn thành' :
-                   payment.paymentStatus === 'Pending' ? 'Đang chờ' :
-                   payment.paymentStatus === 'Failed' ? 'Thất bại' : payment.paymentStatus || 'N/A',
-    }));
+  // Helper function to get branch name from payment
+  const getPaymentBranchName = (payment: any): string => {
+    const paymentBranchId = getPaymentBranchId(payment);
+    if (!paymentBranchId) return 'Chưa xác định';
+    const branch = branches.find((b: any) => String(b._id) === String(paymentBranchId));
+    return branch?.name || 'Chưa xác định';
+  };
 
-  if (range1Data.length > 0) {
-    const ws1 = XLSX.utils.json_to_sheet(range1Data);
-    // Set column widths
-    ws1['!cols'] = [
-      { wch: 15 }, // Ngày thanh toán
-      { wch: 15 }, // Mã hóa đơn
-      { wch: 20 }, // Mã giao dịch
-      { wch: 20 }, // Hội viên
-      { wch: 25 }, // Email
-      { wch: 15 }, // Số điện thoại
-      { wch: 20 }, // Gói dịch vụ
-      { wch: 15 }, // Loại thanh toán
-      { wch: 15 }, // Phương thức
-      { wch: 15 }, // Số tiền
-      { wch: 12 }, // Trạng thái
-    ];
-    const sheetName1 = truncateSheetName(`K1_${formatDateShort(dateRange1.from)}_${formatDateShort(dateRange1.to)}`);
-    XLSX.utils.book_append_sheet(wb, ws1, sheetName1);
-  }
-
-  // Sheet 2: Khoảng thời gian 2 (nếu có)
-  if (dateRange2 && paymentsRange2.length > 0) {
-    const range2Data = paymentsRange2
+  // Sheet 1: Chi tiết giao dịch (chỉ khi xuất "Tất cả chi nhánh")
+  if (branchId === 'all') {
+    const rangeData = paymentsInRange
       .filter((p: any) => (p.paymentStatus || p.status) === 'Completed')
-      .map((payment: any) => ({
-        'Ngày thanh toán': formatDate(payment.paymentDate || payment.createdAt || payment.payment_date),
-        'Mã hóa đơn': payment.invoiceNumber || payment.invoice_number || payment._id || '',
-        'Mã giao dịch': payment.transactionId || payment.transaction_id || '',
-        'Hội viên': payment.memberId?.fullName || payment.memberName || 'N/A',
-        'Email': payment.memberId?.email || payment.memberEmail || '',
-        'Số điện thoại': payment.memberId?.phone || payment.memberPhone || '',
-        'Gói dịch vụ': payment.subscriptionId?.packageId?.name || payment.packageName || 'N/A',
-        'Loại thanh toán': payment.paymentType === 'NEW_SUBSCRIPTION' ? 'Đăng ký mới' :
-                          payment.paymentType === 'RENEWAL' ? 'Gia hạn' :
-                          payment.paymentType === 'PT_PURCHASE' ? 'Mua PT' : 'Khác',
-        'Phương thức': payment.paymentMethod === 'momo' ? 'Ví MoMo' :
-                      payment.paymentMethod === 'zalopay' ? 'Ví ZaloPay' :
-                      payment.paymentMethod === 'cash' ? 'Tiền mặt' :
-                      payment.paymentMethod === 'card' ? 'Thẻ' :
-                      payment.paymentMethod === 'banktransfer' || payment.paymentMethod === 'bank_transfer' ? 'Chuyển khoản' : payment.paymentMethod || 'Khác',
-        'Số tiền': payment.amount || 0,
-        'Trạng thái': payment.paymentStatus === 'Completed' ? 'Hoàn thành' :
-                     payment.paymentStatus === 'Pending' ? 'Đang chờ' :
-                     payment.paymentStatus === 'Failed' ? 'Thất bại' : payment.paymentStatus || 'N/A',
-      }));
+      .map((payment: any) => {
+        const baseData: any = {
+          'Ngày thanh toán': formatDate(payment.paymentDate || payment.createdAt || payment.payment_date),
+          'Mã hóa đơn': payment.invoiceNumber || payment.invoice_number || payment._id || '',
+          'Chi nhánh': getPaymentBranchName(payment),
+          'Hội viên': payment.memberId?.fullName || payment.memberName || 'N/A',
+          'Email': payment.memberId?.email || payment.memberEmail || '',
+          'Số điện thoại': payment.memberId?.phone || payment.memberPhone || '',
+          'Gói dịch vụ': payment.subscriptionId?.packageId?.name || payment.packageName || 'N/A',
+          'Loại thanh toán': payment.paymentType === 'NEW_SUBSCRIPTION' ? 'Đăng ký mới' :
+                            payment.paymentType === 'RENEWAL' ? 'Gia hạn' :
+                            payment.paymentType === 'PT_PURCHASE' ? 'Mua PT' : 'Khác',
+          'Phương thức': payment.paymentMethod === 'momo' ? 'Ví MoMo' :
+                        payment.paymentMethod === 'zalopay' ? 'Ví ZaloPay' :
+                        payment.paymentMethod === 'cash' ? 'Tiền mặt' :
+                        payment.paymentMethod === 'card' ? 'Thẻ' :
+                        payment.paymentMethod === 'banktransfer' || payment.paymentMethod === 'bank_transfer' ? 'Chuyển khoản' : payment.paymentMethod || 'Khác',
+          'Số tiền': payment.amount || 0,
+          'Trạng thái': payment.paymentStatus === 'Completed' ? 'Hoàn thành' :
+                       payment.paymentStatus === 'Pending' ? 'Đang chờ' :
+                       payment.paymentStatus === 'Failed' ? 'Thất bại' : payment.paymentStatus || 'N/A',
+        };
 
-    const ws2 = XLSX.utils.json_to_sheet(range2Data);
-    ws2['!cols'] = [
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 20 },
-      { wch: 20 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 20 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 12 },
-    ];
-    const sheetName2 = truncateSheetName(`K2_${formatDateShort(dateRange2.from)}_${formatDateShort(dateRange2.to)}`);
-    XLSX.utils.book_append_sheet(wb, ws2, sheetName2);
+        return baseData;
+      });
+
+    if (rangeData.length > 0) {
+      const ws1 = XLSX.utils.json_to_sheet(rangeData);
+      // Set column widths
+      ws1['!cols'] = [
+        { wch: 15 }, // Ngày thanh toán
+        { wch: 15 }, // Mã hóa đơn
+        { wch: 20 }, // Chi nhánh
+        { wch: 20 }, // Hội viên
+        { wch: 25 }, // Email
+        { wch: 15 }, // Số điện thoại
+        { wch: 20 }, // Gói dịch vụ
+        { wch: 15 }, // Loại thanh toán
+        { wch: 15 }, // Phương thức
+        { wch: 15 }, // Số tiền
+        { wch: 12 }, // Trạng thái
+      ];
+      const sheetName1 = truncateSheetName(`ChiTiet_${formatDateShort(dateRange1.from)}_${formatDateShort(dateRange1.to)}`);
+      XLSX.utils.book_append_sheet(wb, ws1, sheetName1);
+    }
   }
 
-  // Sheet 3: Tổng hợp và so sánh
-  const totalRevenue1 = paymentsRange1
+  // Sheet 2: Tổng hợp
+  const totalRevenue = paymentsInRange
     .filter((p: any) => (p.paymentStatus || p.status) === 'Completed')
     .reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
-  
-  const totalRevenue2 = dateRange2 
-    ? paymentsRange2
-        .filter((p: any) => (p.paymentStatus || p.status) === 'Completed')
-        .reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
-    : 0;
 
-  const count1 = paymentsRange1.filter((p: any) => (p.paymentStatus || p.status) === 'Completed').length;
-  const count2 = dateRange2 
-    ? paymentsRange2.filter((p: any) => (p.paymentStatus || p.status) === 'Completed').length
-    : 0;
+  const count = paymentsInRange.filter((p: any) => (p.paymentStatus || p.status) === 'Completed').length;
 
   const summaryData = [
-    { 'Chỉ số': 'Khoảng thời gian 1', 'Giá trị': `${formatDate(dateRange1.from)} - ${formatDate(dateRange1.to)}` },
-    { 'Chỉ số': 'Tổng doanh thu (Khoảng 1)', 'Giá trị': totalRevenue1 },
-    { 'Chỉ số': 'Số giao dịch (Khoảng 1)', 'Giá trị': count1 },
-    { 'Chỉ số': 'Doanh thu trung bình (Khoảng 1)', 'Giá trị': count1 > 0 ? Math.round(totalRevenue1 / count1) : 0 },
+    { 'Chỉ số': 'Khoảng thời gian', 'Giá trị': `${formatDate(dateRange1.from)} - ${formatDate(dateRange1.to)}` },
+    { 'Chỉ số': 'Tổng doanh thu', 'Giá trị': totalRevenue },
+    { 'Chỉ số': 'Số giao dịch', 'Giá trị': count },
+    { 'Chỉ số': 'Doanh thu trung bình', 'Giá trị': count > 0 ? Math.round(totalRevenue / count) : 0 },
   ];
-
-  if (dateRange2) {
-    summaryData.push(
-      { 'Chỉ số': 'Khoảng thời gian 2', 'Giá trị': `${formatDate(dateRange2.from)} - ${formatDate(dateRange2.to)}` },
-      { 'Chỉ số': 'Tổng doanh thu (Khoảng 2)', 'Giá trị': totalRevenue2 },
-      { 'Chỉ số': 'Số giao dịch (Khoảng 2)', 'Giá trị': count2 },
-      { 'Chỉ số': 'Doanh thu trung bình (Khoảng 2)', 'Giá trị': count2 > 0 ? Math.round(totalRevenue2 / count2) : 0 },
-      { 'Chỉ số': 'Chênh lệch doanh thu', 'Giá trị': totalRevenue2 - totalRevenue1 },
-      { 'Chỉ số': 'Tỷ lệ tăng trưởng (%)', 'Giá trị': totalRevenue1 > 0 ? (((totalRevenue2 - totalRevenue1) / totalRevenue1) * 100).toFixed(2) + '%' : 'N/A' },
-      { 'Chỉ số': 'Chênh lệch số giao dịch', 'Giá trị': count2 - count1 }
-    );
-  }
 
   const ws3 = XLSX.utils.json_to_sheet(summaryData);
   ws3['!cols'] = [
@@ -331,9 +295,112 @@ export const exportRevenueReportToExcel = (
   ];
   XLSX.utils.book_append_sheet(wb, ws3, 'Tổng hợp');
 
+  // Sheet 3: Doanh thu theo từng chi nhánh
+  if (branches.length > 0) {
+    if (branchId === 'all') {
+      // Tất cả chi nhánh: hiển thị bảng tổng hợp
+      const branchRevenueData = branches.map((branch: any) => {
+        // Get payments for this branch
+        const branchPayments = payments.filter((payment: any) => {
+          const paymentBranchId = getPaymentBranchId(payment);
+          return String(paymentBranchId) === String(branch._id);
+        });
+
+        // Filter by date range
+        const branchPaymentsInRange = filterByDateRange(branchPayments, dateRange1.from, dateRange1.to);
+
+        // Calculate revenue
+        const branchRevenue = branchPaymentsInRange
+          .filter((p: any) => (p.paymentStatus || p.status) === 'Completed')
+          .reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+
+        // Count transactions
+        const branchCount = branchPaymentsInRange.filter((p: any) => (p.paymentStatus || p.status) === 'Completed').length;
+
+        return {
+          'Chi nhánh': branch.name || 'Chưa xác định',
+          'Tổng doanh thu': branchRevenue,
+          'Số giao dịch': branchCount,
+          'Doanh thu trung bình': branchCount > 0 ? Math.round(branchRevenue / branchCount) : 0,
+        };
+      });
+
+      if (branchRevenueData.length > 0) {
+        const ws3 = XLSX.utils.json_to_sheet(branchRevenueData);
+        ws3['!cols'] = [
+          { wch: 25 }, // Chi nhánh
+          { wch: 20 }, // Tổng doanh thu
+          { wch: 18 }, // Số giao dịch
+          { wch: 18 }, // Doanh thu TB
+        ];
+        XLSX.utils.book_append_sheet(wb, ws3, 'Doanh thu chi nhánh');
+      }
+    } else {
+      // Một chi nhánh cụ thể: hiển thị chi tiết hóa đơn của chi nhánh đó
+      const selectedBranch = branches.find((b: any) => String(b._id) === String(branchId));
+      if (selectedBranch) {
+        // Get payments for this branch
+        const branchPayments = payments.filter((payment: any) => {
+          const paymentBranchId = getPaymentBranchId(payment);
+          return String(paymentBranchId) === String(branchId);
+        });
+
+        // Filter by date range
+        const branchPaymentsInRange = filterByDateRange(branchPayments, dateRange1.from, dateRange1.to);
+
+        // Create detailed invoice data for this branch
+        const branchDetailData = branchPaymentsInRange
+          .filter((p: any) => (p.paymentStatus || p.status) === 'Completed')
+          .map((payment: any) => ({
+            'Ngày thanh toán': formatDate(payment.paymentDate || payment.createdAt || payment.payment_date),
+            'Mã hóa đơn': payment.invoiceNumber || payment.invoice_number || payment._id || '',
+            'Mã giao dịch': payment.transactionId || payment.transaction_id || '',
+            'Hội viên': payment.memberId?.fullName || payment.memberName || 'N/A',
+            'Email': payment.memberId?.email || payment.memberEmail || '',
+            'Số điện thoại': payment.memberId?.phone || payment.memberPhone || '',
+            'Gói dịch vụ': payment.subscriptionId?.packageId?.name || payment.packageName || 'N/A',
+            'Loại thanh toán': payment.paymentType === 'NEW_SUBSCRIPTION' ? 'Đăng ký mới' :
+                              payment.paymentType === 'RENEWAL' ? 'Gia hạn' :
+                              payment.paymentType === 'PT_PURCHASE' ? 'Mua PT' : 'Khác',
+            'Phương thức': payment.paymentMethod === 'momo' ? 'Ví MoMo' :
+                          payment.paymentMethod === 'zalopay' ? 'Ví ZaloPay' :
+                          payment.paymentMethod === 'cash' ? 'Tiền mặt' :
+                          payment.paymentMethod === 'card' ? 'Thẻ' :
+                          payment.paymentMethod === 'banktransfer' || payment.paymentMethod === 'bank_transfer' ? 'Chuyển khoản' : payment.paymentMethod || 'Khác',
+            'Số tiền': payment.amount || 0,
+            'Trạng thái': payment.paymentStatus === 'Completed' ? 'Hoàn thành' :
+                         payment.paymentStatus === 'Pending' ? 'Đang chờ' :
+                         payment.paymentStatus === 'Failed' ? 'Thất bại' : payment.paymentStatus || 'N/A',
+          }));
+
+        if (branchDetailData.length > 0) {
+          const ws3 = XLSX.utils.json_to_sheet(branchDetailData);
+          ws3['!cols'] = [
+            { wch: 15 }, // Ngày thanh toán
+            { wch: 15 }, // Mã hóa đơn
+            { wch: 20 }, // Mã giao dịch
+            { wch: 20 }, // Hội viên
+            { wch: 25 }, // Email
+            { wch: 15 }, // Số điện thoại
+            { wch: 20 }, // Gói dịch vụ
+            { wch: 15 }, // Loại thanh toán
+            { wch: 15 }, // Phương thức
+            { wch: 15 }, // Số tiền
+            { wch: 12 }, // Trạng thái
+          ];
+          const branchSheetName = truncateSheetName(`Chi tiết ${selectedBranch.name}`);
+          XLSX.utils.book_append_sheet(wb, ws3, branchSheetName);
+        }
+      }
+    }
+  }
+
   // Generate filename
   const dateStr = new Date().toISOString().split('T')[0];
-  const fileName = `BaoCaoDoanhThu-${dateStr}.xlsx`;
+  const branchName = branchId === 'all' 
+    ? 'TatCa' 
+    : branches.find((b: any) => String(b._id) === String(branchId))?.name?.replace(/\s+/g, '_') || 'Unknown';
+  const fileName = `BaoCaoDoanhThu-${branchName}-${dateStr}.xlsx`;
   
   // Write file
   try {
