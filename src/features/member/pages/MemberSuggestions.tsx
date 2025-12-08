@@ -110,11 +110,11 @@ export function MemberSuggestions() {
         if (!user?.id) return;
         const now = new Date();
         const currentQuestion = question?.trim() || '';
-        const messageText = currentQuestion || 'Tạo gợi ý toàn diện';
+        const messageText = currentQuestion || 'Tạo gợi ý luyện tập';
         const userMessage = {
           id: Math.random().toString(16).slice(2),
           role: 'user' as const,
-          content: currentQuestion ? `Tạo gợi ý toàn diện: ${currentQuestion}` : 'Tạo gợi ý toàn diện',
+          content: currentQuestion ? `Tạo gợi ý luyện tập: ${currentQuestion}` : 'Tạo gợi ý luyện tập',
           time: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         };
         setMessages((prev) => [...prev, userMessage]);
