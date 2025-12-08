@@ -69,7 +69,30 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
   }, [isOpen]);
 
   const createDiscountMutation = useCreateDiscount();
-  const { data: discountTypes = [] } = useDiscountTypes();
+  const { data: discountTypesData, isLoading: isLoadingDiscountTypes, isError: isErrorDiscountTypes } = useDiscountTypes();
+  
+  // Fallback data chỉ dùng khi có lỗi hoặc data rỗng (không dùng khi đang loading)
+  const discountTypes = discountTypesData && discountTypesData.length > 0 
+    ? discountTypesData 
+    : (isErrorDiscountTypes || (!isLoadingDiscountTypes && (!discountTypesData || discountTypesData.length === 0))
+      ? [
+          {
+            _id: '1',
+            name: 'VOUCHER',
+            displayName: 'Voucher',
+          },
+          {
+            _id: '2',
+            name: 'HSSV',
+            displayName: 'HSSV',
+          },
+          {
+            _id: '3',
+            name: 'VIP',
+            displayName: 'VIP',
+          },
+        ]
+      : []);
 
   const handleInputChange = (field: keyof CreateDiscountData, value: string | number | boolean | string[] | null | undefined) => {
     setFormData(prev => ({
@@ -283,8 +306,10 @@ export function ModalCreateDiscount({ isOpen, onClose }: ModalCreateDiscountProp
                       <SelectValue placeholder="Chọn loại giảm giá" />
                     </SelectTrigger>
                     <SelectContent>
-                      {discountTypes.length === 0 ? (
-                        <SelectItem value="" disabled>Đang tải...</SelectItem>
+                      {isLoadingDiscountTypes ? (
+                        <SelectItem value="" disabled>Đang tải loại ưu đãi...</SelectItem>
+                      ) : discountTypes.length === 0 ? (
+                        <SelectItem value="" disabled>Không có loại ưu đãi nào</SelectItem>
                       ) : (
                         discountTypes.map((type) => (
                           <SelectItem key={type._id} value={type.name}>
