@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
@@ -15,9 +15,13 @@ import { useCheckInMember, useMySchedules } from '../hooks';
 import { exportWorkoutHistoryToExcel } from '../../../lib/excel-utils';
 import { ScheduleWithDetails } from '../types/schedule.types';
 import { toast } from 'sonner';
+import socketService from '../../../services/socket';
+import { useQueryClient } from '@tanstack/react-query';
+import { scheduleQueryKeys } from '../hooks/useSchedules';
 
 export function MemberHistory() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const memberId = user?._id || user?.id || '';
 
   // Modal state for day schedules
@@ -26,8 +30,8 @@ export function MemberHistory() {
   const [selectedDaySchedules, setSelectedDaySchedules] = useState<ScheduleWithDetails[]>([]);
 
   // Fetch data from APIs
-  const { checkInHistory, isLoadingHistory } = useCheckInMember(memberId);
-  const { data: schedulesData, isLoading: isLoadingSchedules } = useMySchedules();
+  const { checkInHistory, isLoadingHistory, refetchHistory } = useCheckInMember(memberId);
+  const { data: schedulesData, isLoading: isLoadingSchedules, refetch: refetchSchedules } = useMySchedules();
 
   // Process schedules data for calendar
   const schedules = useMemo(() => {
@@ -142,6 +146,76 @@ export function MemberHistory() {
       toast.error('Có lỗi xảy ra khi xuất báo cáo');
     }
   };
+
+  // Socket listeners for real-time updates
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken') || undefined;
+    const socket = socketService.connect(token);
+
+    // Schedule events
+    const handleScheduleCreated = (schedule: any) => {
+      const scheduleMemberId = typeof schedule.memberId === 'object' && schedule.memberId?._id 
+        ? schedule.memberId._id 
+        : schedule.memberId;
+      if (scheduleMemberId === memberId) {
+        queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all });
+        refetchSchedules();
+      }
+    };
+
+    const handleScheduleUpdated = (schedule: any) => {
+      const scheduleMemberId = typeof schedule.memberId === 'object' && schedule.memberId?._id 
+        ? schedule.memberId._id 
+        : schedule.memberId;
+      if (scheduleMemberId === memberId) {
+        queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all });
+        refetchSchedules();
+      }
+    };
+
+    const handleScheduleDeleted = (schedule: any) => {
+      const scheduleMemberId = typeof schedule.memberId === 'object' && schedule.memberId?._id 
+        ? schedule.memberId._id 
+        : schedule.memberId;
+      if (scheduleMemberId === memberId) {
+        queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all });
+        refetchSchedules();
+      }
+    };
+
+    // Check-in events
+    const handleCheckInCreated = (checkIn: any) => {
+      const checkInMemberId = typeof checkIn.memberId === 'object' ? checkIn.memberId?._id : checkIn.memberId;
+      if (checkInMemberId === memberId) {
+        queryClient.invalidateQueries({ queryKey: ['checkin-history', memberId] });
+        queryClient.invalidateQueries({ queryKey: ['active-checkin', memberId] });
+        refetchHistory();
+      }
+    };
+
+    const handleCheckInCheckedOut = (checkIn: any) => {
+      const checkInMemberId = typeof checkIn.memberId === 'object' ? checkIn.memberId?._id : checkIn.memberId;
+      if (checkInMemberId === memberId) {
+        queryClient.invalidateQueries({ queryKey: ['checkin-history', memberId] });
+        queryClient.invalidateQueries({ queryKey: ['active-checkin', memberId] });
+        refetchHistory();
+      }
+    };
+
+    socket.on('schedule_created', handleScheduleCreated);
+    socket.on('schedule_updated', handleScheduleUpdated);
+    socket.on('schedule_deleted', handleScheduleDeleted);
+    socket.on('checkIn_created', handleCheckInCreated);
+    socket.on('checkIn_checked_out', handleCheckInCheckedOut);
+
+    return () => {
+      socket.off('schedule_created', handleScheduleCreated);
+      socket.off('schedule_updated', handleScheduleUpdated);
+      socket.off('schedule_deleted', handleScheduleDeleted);
+      socket.off('checkIn_created', handleCheckInCreated);
+      socket.off('checkIn_checked_out', handleCheckInCheckedOut);
+    };
+  }, [memberId, queryClient, refetchSchedules, refetchHistory]);
 
   if (isLoading) {
     return (

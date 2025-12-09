@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -30,9 +30,13 @@ import { useMySchedules, useCancelSchedule, useCompleteSchedule, useDeleteSchedu
 import { ScheduleWithDetails } from '../types/schedule.types';
 import { ModalCreateSchedule } from '../components';
 import { toast } from 'sonner';
+import socketService from '../../../services/socket';
+import { useQueryClient } from '@tanstack/react-query';
+import { scheduleQueryKeys } from '../hooks/useSchedules';
 
 export function TrainerSchedulePage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialViewParam = searchParams.get('view');
   const [currentView, setCurrentView] = useState<'timeline' | 'list'>(initialViewParam === 'list' ? 'list' : 'timeline');
@@ -271,6 +275,53 @@ export function TrainerSchedulePage() {
     setSelectedDaySchedules(daySchedules);
     setShowDaySchedulesModal(true);
   };
+
+  // Socket listeners for real-time schedule updates
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken') || undefined;
+    const socket = socketService.connect(token);
+    const trainerId = user?._id || user?.id;
+
+    const handleScheduleCreated = (schedule: ScheduleWithDetails) => {
+      // Only update if this schedule belongs to current trainer
+      const scheduleTrainerId = typeof schedule.trainerId === 'object' ? schedule.trainerId?._id : schedule.trainerId;
+      if (scheduleTrainerId === trainerId) {
+        queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all });
+        refetch();
+        toast.success('Bạn có lịch dạy mới!');
+      }
+    };
+
+    const handleScheduleUpdated = (schedule: ScheduleWithDetails) => {
+      // Only update if this schedule belongs to current trainer
+      const scheduleTrainerId = typeof schedule.trainerId === 'object' ? schedule.trainerId?._id : schedule.trainerId;
+      if (scheduleTrainerId === trainerId) {
+        queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all });
+        refetch();
+        toast.info('Lịch dạy của bạn đã được cập nhật');
+      }
+    };
+
+    const handleScheduleDeleted = (schedule: ScheduleWithDetails) => {
+      // Only update if this schedule belongs to current trainer
+      const scheduleTrainerId = typeof schedule.trainerId === 'object' ? schedule.trainerId?._id : schedule.trainerId;
+      if (scheduleTrainerId === trainerId) {
+        queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all });
+        refetch();
+        toast.warning('Lịch dạy của bạn đã bị hủy');
+      }
+    };
+
+    socket.on('schedule_created', handleScheduleCreated);
+    socket.on('schedule_updated', handleScheduleUpdated);
+    socket.on('schedule_deleted', handleScheduleDeleted);
+
+    return () => {
+      socket.off('schedule_created', handleScheduleCreated);
+      socket.off('schedule_updated', handleScheduleUpdated);
+      socket.off('schedule_deleted', handleScheduleDeleted);
+    };
+  }, [user?._id, user?.id, queryClient, refetch]);
 
 
 

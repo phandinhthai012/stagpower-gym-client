@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
@@ -30,9 +30,13 @@ import ModalCreateScheduleWithPT from '../components/ModalCreateScheduleWithPT';
 import { useMySchedules, useCancelSchedule } from '../hooks';
 import { ScheduleWithDetails } from '../types/schedule.types';
 import { toast } from 'sonner';
+import socketService from '../../../services/socket';
+import { useQueryClient } from '@tanstack/react-query';
+import { scheduleQueryKeys } from '../hooks/useSchedules';
 
 export function MemberSchedule() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [openCreate, setOpenCreate] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [scheduleToCancel, setScheduleToCancel] = useState<string | null>(null);
@@ -150,6 +154,58 @@ export function MemberSchedule() {
       toast.error(error?.response?.data?.message || 'Có lỗi xảy ra khi hủy lịch!');
     }
   };
+
+  // Socket listeners for real-time schedule updates
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken') || undefined;
+    const socket = socketService.connect(token);
+
+    const handleScheduleCreated = (schedule: any) => {
+      // Only update if this schedule belongs to current user
+      const scheduleMemberId = typeof schedule.memberId === 'object' && schedule.memberId?._id 
+        ? schedule.memberId._id 
+        : schedule.memberId;
+      if (scheduleMemberId && (scheduleMemberId === user?.id || scheduleMemberId === user?._id)) {
+        queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all });
+        refetch();
+        toast.success('Bạn có lịch tập mới!');
+      }
+    };
+
+    const handleScheduleUpdated = (schedule: any) => {
+      // Only update if this schedule belongs to current user
+      const scheduleMemberId = typeof schedule.memberId === 'object' && schedule.memberId?._id 
+        ? schedule.memberId._id 
+        : schedule.memberId;
+      if (scheduleMemberId && (scheduleMemberId === user?.id || scheduleMemberId === user?._id)) {
+        queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all });
+        refetch();
+        toast.info('Lịch tập của bạn đã được cập nhật');
+      }
+    };
+
+    const handleScheduleDeleted = (schedule: any) => {
+      // Only update if this schedule belongs to current user
+      const scheduleMemberId = typeof schedule.memberId === 'object' && schedule.memberId?._id 
+        ? schedule.memberId._id 
+        : schedule.memberId;
+      if (scheduleMemberId && (scheduleMemberId === user?.id || scheduleMemberId === user?._id)) {
+        queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all });
+        refetch();
+        toast.warning('Lịch tập của bạn đã bị hủy');
+      }
+    };
+
+    socket.on('schedule_created', handleScheduleCreated);
+    socket.on('schedule_updated', handleScheduleUpdated);
+    socket.on('schedule_deleted', handleScheduleDeleted);
+
+    return () => {
+      socket.off('schedule_created', handleScheduleCreated);
+      socket.off('schedule_updated', handleScheduleUpdated);
+      socket.off('schedule_deleted', handleScheduleDeleted);
+    };
+  }, [user?.id, queryClient, refetch]);
 
   if (isLoading) {
     return (
