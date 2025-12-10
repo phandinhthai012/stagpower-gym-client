@@ -70,7 +70,7 @@ export const PackagesSection: React.FC = () => {
           {packages.map((pkg, index) => (
             <div 
               key={index}
-              className={`relative bg-white border-2 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${
+              className={`relative bg-white border-2 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-xl flex flex-col h-full ${
                 pkg.featured 
                   ? 'border-orange-500 sm:scale-105 shadow-lg' 
                   : 'border-gray-200 hover:border-orange-500'
@@ -95,7 +95,7 @@ export const PackagesSection: React.FC = () => {
                 {pkg.duration}
               </div>
               
-              <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 text-left">
+              <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 text-left flex-grow">
                 {pkg.features.map((feature, featureIndex) => (
                   <li key={featureIndex} className="flex items-start text-sm sm:text-base text-gray-700">
                     <Check className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" />
@@ -106,7 +106,7 @@ export const PackagesSection: React.FC = () => {
               
               <Button 
                 onClick={() => navigate('/register')}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all hover:-translate-y-1"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold transition-all hover:-translate-y-1 mt-auto"
               >
                 Đăng Ký
               </Button>

@@ -57,9 +57,38 @@ export const validateRegisterData = (data: RegisterData): ValidationResult => {
       };
     }
   
-    // Kiểm tra tuổi (tối thiểu 16 tuổi)
+    // Helper function to parse DD/MM/YYYY to Date
+    const parseDate = (dateStr: string): Date => {
+      // Check if already in ISO format (YYYY-MM-DD)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return new Date(dateStr);
+      }
+      
+      // Parse DD/MM/YYYY format
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+        const year = parseInt(parts[2], 10);
+        return new Date(year, month, day);
+      }
+      
+      // Fallback to standard Date parsing
+      return new Date(dateStr);
+    };
+
+    // Kiểm tra tuổi (tối thiểu 14 tuổi)
     const today = new Date();
-    const birthDate = new Date(data.dateOfBirth);
+    const birthDate = parseDate(data.dateOfBirth);
+    
+    // Check if date is valid
+    if (isNaN(birthDate.getTime())) {
+      return {
+        isValid: false,
+        error: 'Ngày sinh không hợp lệ. Vui lòng nhập đúng định dạng DD/MM/YYYY'
+      };
+    }
+    
     if (birthDate >= today) {
       return {
         isValid: false,

@@ -153,6 +153,36 @@ export function AuthPage() {
     }
   };
 
+  // Helper function to convert DD/MM/YYYY to YYYY-MM-DD (ISO8601)
+  const convertDateToISO = (dateStr: string): string => {
+    if (!dateStr) return '';
+    
+    // Check if already in ISO format (YYYY-MM-DD)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr;
+    }
+    
+    // Parse DD/MM/YYYY format
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      return `${year}-${month}-${day}`;
+    }
+    
+    // If format is not recognized, try to parse as Date and convert
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    
+    return dateStr; // Return as-is if cannot parse
+  };
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateRegisterForm()) return;
@@ -160,7 +190,13 @@ export function AuthPage() {
     setError('');
     setIsLoading(true);
     try {
-      const response = await register(registerData);
+      // Convert dateOfBirth from DD/MM/YYYY to YYYY-MM-DD (ISO8601) before sending
+      const registerPayload = {
+        ...registerData,
+        dateOfBirth: registerData.dateOfBirth ? convertDateToISO(registerData.dateOfBirth) : undefined
+      };
+      
+      const response = await register(registerPayload);
 
       if (response.success) {
         localStorage.setItem('stagpower_user_register', JSON.stringify(response.data));
